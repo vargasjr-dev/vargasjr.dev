@@ -1,6 +1,5 @@
 import React from "react";
 import { getRoutineJob } from "@/app/actions";
-import { getVellumSandboxUrlServer } from "@/app/lib/vellum-server-utils";
 import RoutineJobDetailClient from "./client";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
@@ -14,14 +13,8 @@ export default async function RoutineJobDetailPage({
 
   try {
     const routineJob = await getRoutineJob(id);
-    const sandboxUrl = await getVellumSandboxUrlServer(routineJob.name);
 
-    const routineJobWithSandbox = {
-      ...routineJob,
-      sandboxUrl,
-    };
-
-    return <RoutineJobDetailClient routineJob={routineJobWithSandbox} />;
+    return <RoutineJobDetailClient routineJob={routineJob} />;
   } catch (error) {
     return (
       <div className="flex flex-col gap-4 p-6">

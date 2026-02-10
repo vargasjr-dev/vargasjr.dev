@@ -9,13 +9,11 @@
     "start": "next start",
     "lint": "next lint && POSTGRES_URL=postgresql://dummy:dummy@localhost:5432/dummy knip",
     "format:check": "prettier --check .",
-    "postversion": "npx tsx scripts/sync-version.ts",
     "db:generate": "drizzle-kit generate",
     "ssh": "ssh -i ~/.ssh/vargasjr-dev.pem ubuntu@ec2-34-239-127-55.compute-1.amazonaws.com",
     "test": "vitest run",
     "create-agent": "npx tsx scripts/create-agent.ts",
     "cleanup-pr": "npx tsx scripts/cleanup-pr.ts",
-    "push-vellum-workflows": "npx tsx scripts/push-vellum-workflows.ts",
     "merge": "npx tsx scripts/merge-pr.ts",
     "one-time-migration": "npx tsx scripts/run-draft-pr-scripts.ts",
     "run-migrations": "npx tsx scripts/run-migrations.ts",
@@ -26,10 +24,8 @@
     "agent:build": "npx tsx scripts/build-agent.ts",
     "agent:dev": "tsx worker/index.ts",
     "agent:start": "node dist/worker.js",
-    "agent:publish": "npx tsx scripts/publish-agent.ts",
     "connect": "npx tsx scripts/ssh-connect.ts",
-    "debug-agent": "npx tsx scripts/debug-agent.ts",
-    "upgrade-vargasjr-image": "npx tsx scripts/upgrade-vargasjr-image.ts"
+    "debug-agent": "npx tsx scripts/debug-agent.ts"
   },
   "dependencies": {
     "@aws-sdk/client-ec2": "^3.716.0",
@@ -61,7 +57,6 @@
     "twilio": "^5.4.0",
     "typescript": "^5",
     "uuid": "^11.1.0",
-    "vellum-ai": "^1.7.8",
     "zod": "^3.24.1"
   },
   "devDependencies": {

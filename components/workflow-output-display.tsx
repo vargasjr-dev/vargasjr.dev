@@ -1,41 +1,25 @@
 "use client";
 
 import React from "react";
-import { Vellum } from "vellum-ai";
+
+interface WorkflowOutput {
+  id: string;
+  name: string;
+  type: string;
+  value: any;
+}
 
 interface WorkflowOutputDisplayProps {
-  outputs: Vellum.WorkflowOutput[];
+  outputs: WorkflowOutput[];
 }
 
 const WorkflowOutputDisplay = ({ outputs }: WorkflowOutputDisplayProps) => {
-  const renderOutputValue = (output: Vellum.WorkflowOutput) => {
-    switch (output.type) {
-      case "STRING":
-        return (
-          <span className="text-gray-900 break-words">
-            {JSON.stringify(output.value)}
-          </span>
-        );
-      case "NUMBER":
-        return (
-          <span className="text-gray-900 font-mono">
-            {JSON.stringify(output.value)}
-          </span>
-        );
-      case "JSON":
-      case "ARRAY":
-      case "ERROR":
-      case "CHAT_HISTORY":
-      case "SEARCH_RESULTS":
-      case "FUNCTION_CALL":
-      case "IMAGE":
-      default:
-        return (
-          <span className="text-gray-900 break-words font-mono text-sm">
-            {JSON.stringify(output.value, null, 2)}
-          </span>
-        );
-    }
+  const renderOutputValue = (output: WorkflowOutput) => {
+    return (
+      <span className="text-gray-900 break-words font-mono text-sm">
+        {JSON.stringify(output.value, null, 2)}
+      </span>
+    );
   };
 
   if (!outputs || outputs.length === 0) {
