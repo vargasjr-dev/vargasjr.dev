@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
-import TestButton from "./test-button";
 
 interface WorkflowDeployment {
   id: string;
@@ -148,14 +147,6 @@ export default function NewRoutineJobPage() {
             ))}
           </select>
         </div>
-        {selectedWorkflow && (
-          <div>
-            <TestButton
-              workflowDeploymentName={selectedWorkflow}
-              disabled={!selectedWorkflow}
-            />
-          </div>
-        )}
         <div>
           <label htmlFor="scheduleDescription" className="block mb-1">
             Schedule Description
