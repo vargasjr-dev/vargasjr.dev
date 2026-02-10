@@ -261,7 +261,7 @@ export async function updateContact(id: string, formData: FormData) {
   return updatedContact[0];
 }
 
-export async function deleteMessage(messageId: string, inboxId: string) {
+export async function deleteMessage(messageId: string) {
   const db = getDb();
 
   const message = await db
@@ -319,8 +319,7 @@ export async function deleteMessage(messageId: string, inboxId: string) {
 }
 
 export async function markMessageAsUnread(
-  messageId: string,
-  inboxId: string
+  messageId: string
 ): Promise<{ success: true } | { success: false; error: string }> {
   const db = getDb();
 
@@ -351,8 +350,7 @@ export async function markMessageAsUnread(
 }
 
 export async function markMessageAsArchived(
-  messageId: string,
-  inboxId: string
+  messageId: string
 ) {
   const db = getDb();
 
@@ -448,8 +446,7 @@ export async function deleteInbox(inboxId: string) {
 }
 
 export async function bulkArchiveMessages(
-  messageIds: string[],
-  inboxId: string
+  messageIds: string[]
 ) {
   const db = getDb();
 
