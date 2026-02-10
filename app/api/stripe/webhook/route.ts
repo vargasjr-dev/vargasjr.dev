@@ -161,12 +161,10 @@ async function handleVargasJrHired(event: Stripe.Event) {
     }
 
     const contactId = contact[0].id;
-    const baseUrl = getBaseUrl();
     const environmentPrefix = getEnvironmentPrefix();
-    const crmUrl = `${baseUrl}/admin/crm/${contactId}`;
 
     const prefix = environmentPrefix ? `${environmentPrefix}: ` : "";
-    const message = `${prefix}🎉 New customer signed up!\n\nContact: ${customerEmail}\nView details: ${crmUrl}`;
+    const message = `${prefix}🎉 New customer signed up!\n\nContact: ${customerEmail}\nContact ID: ${contactId}`;
 
     await postSlackMessage({
       channel: "#sales-alert",
