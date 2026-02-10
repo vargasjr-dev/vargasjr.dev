@@ -349,9 +349,7 @@ export async function markMessageAsUnread(
   }
 }
 
-export async function markMessageAsArchived(
-  messageId: string
-) {
+export async function markMessageAsArchived(messageId: string) {
   const db = getDb();
 
   await db
@@ -361,7 +359,6 @@ export async function markMessageAsArchived(
       operation: "ARCHIVED",
     })
     .execute();
-
 }
 
 export async function deleteInbox(inboxId: string) {
@@ -445,9 +442,7 @@ export async function deleteInbox(inboxId: string) {
   return deletedInbox[0];
 }
 
-export async function bulkArchiveMessages(
-  messageIds: string[]
-) {
+export async function bulkArchiveMessages(messageIds: string[]) {
   const db = getDb();
 
   await db
@@ -459,7 +454,6 @@ export async function bulkArchiveMessages(
       }))
     )
     .execute();
-
 }
 export async function mergeContact(
   currentContactId: string,
@@ -589,7 +583,6 @@ export async function mergeContact(
     if (targetSummary) {
       await deleteContactSummaryFromS3(targetContactId);
     }
-
 
     return deletedContact[0];
   });
