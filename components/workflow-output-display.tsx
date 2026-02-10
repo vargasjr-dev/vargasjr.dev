@@ -6,7 +6,7 @@ interface WorkflowOutput {
   id: string;
   name: string;
   type: string;
-  value: any;
+  value: unknown;
 }
 
 interface WorkflowOutputDisplayProps {

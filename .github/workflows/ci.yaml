@@ -97,7 +97,9 @@ jobs:
       - name: Build agent services
         run: npm run agent:build
       - name: Create complete agent package
-        run: npm run agent:publish
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          tar -czf vargasjr_dev_agent-${VERSION}.tar.gz dist/
       - name: Publish package
         uses: actions/upload-artifact@v4
         with:

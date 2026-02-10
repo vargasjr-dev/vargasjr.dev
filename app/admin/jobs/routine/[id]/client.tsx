@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import TestButton from "./test-button";
 import ExecutionHistory from "./execution-history";
 import DeleteRoutineJobButton from "@/components/delete-routine-job-button";
 import EditCronButton from "./edit-cron-button";
@@ -89,8 +88,6 @@ export default function RoutineJobDetailClient({
       </div>
 
       <div className="flex gap-4">
-        <TestButton routineJobId={currentRoutineJob.id} />
-
         {currentRoutineJob.sandboxUrl && (
           <a
             href={currentRoutineJob.sandboxUrl}

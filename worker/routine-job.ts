@@ -101,7 +101,9 @@ export class RoutineJob {
       return null;
     }
 
-    this.logger.info(`Routine job ${this.name} execution placeholder - workflow integration removed`);
+    this.logger.info(
+      `Routine job ${this.name} execution placeholder - workflow integration removed`
+    );
     return null;
   }
 }
