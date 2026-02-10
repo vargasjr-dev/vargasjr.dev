@@ -4,7 +4,7 @@ import { generateContractorAgreementPDF } from "@/app/lib/pdf-generator";
 import { uploadPDFToS3 } from "@/app/lib/s3-client";
 import { ContactsTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { getEnvironmentPrefix, getBaseUrl } from "@/app/api/constants";
+import { getEnvironmentPrefix } from "@/app/api/constants";
 import {
   postSlackMessage,
   createContactWithValidation,
