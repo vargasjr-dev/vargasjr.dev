@@ -32,7 +32,6 @@ export interface HealthCheckData {
   };
   network: {
     github: string;
-    vellum: string;
   };
   logs: {
     errorLog: any;
@@ -55,7 +54,6 @@ export async function getHealthCheckData(): Promise<HealthCheckData> {
   const criticalEnvVars = [
     "AGENT_ENVIRONMENT",
     "DATABASE_URL",
-    "VELLUM_API_KEY",
     "AWS_ACCESS_KEY_ID",
     "AWS_SECRET_ACCESS_KEY",
   ];
@@ -158,7 +156,6 @@ export async function getHealthCheckData(): Promise<HealthCheckData> {
 
   detailedReport += "--- Network Connectivity ---\n";
   let githubTest = "";
-  let vellumTest = "";
   try {
     detailedReport += "Testing GitHub API connectivity...\n";
     githubTest = execSync(
@@ -169,18 +166,6 @@ export async function getHealthCheckData(): Promise<HealthCheckData> {
   } catch (error) {
     githubTest = `Failed: ${error}`;
     detailedReport += `GitHub API test failed: ${error}\n`;
-  }
-
-  try {
-    detailedReport += "Testing Vellum API connectivity...\n";
-    vellumTest = execSync(
-      'curl -s -o /dev/null -w "%{http_code}" https://api.vellum.ai',
-      { encoding: "utf8", timeout: 10000 }
-    );
-    detailedReport += `Vellum API response: ${vellumTest}\n`;
-  } catch (error) {
-    vellumTest = `Failed: ${error}`;
-    detailedReport += `Vellum API test failed: ${error}\n`;
   }
   detailedReport += "\n";
 
@@ -319,7 +304,6 @@ export async function getHealthCheckData(): Promise<HealthCheckData> {
     },
     network: {
       github: githubTest,
-      vellum: vellumTest,
     },
     logs: {
       ...logAnalysis,

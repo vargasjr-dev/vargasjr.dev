@@ -1,5 +1,4 @@
 import { Logger } from "./utils";
-import { VellumClient } from "vellum-ai";
 
 export class RoutineJob {
   private name: string;
@@ -102,64 +101,7 @@ export class RoutineJob {
       return null;
     }
 
-    let executionId: string | null = null;
-
-    try {
-      const apiKey = process.env.VELLUM_API_KEY;
-      if (!apiKey) {
-        throw new Error("VELLUM_API_KEY environment variable is required");
-      }
-
-      const vellumClient = new VellumClient({
-        apiKey: apiKey,
-      });
-
-      const stream = await vellumClient.executeWorkflowStream({
-        workflowDeploymentName: this.name,
-        inputs: [],
-        metadata: {
-          environment: `${process.env.AGENT_ENVIRONMENT || "unknown"}-${
-            process.env.PR_NUMBER || "none"
-          }`,
-          location: "routine-job-execution",
-        },
-      });
-
-      let workflowOutputs: any = null;
-
-      for await (const event of stream) {
-        if (!executionId && event.executionId) {
-          executionId = event.executionId;
-          this.logger.info(
-            `Workflow ${this.name} initiated with execution ID: ${executionId}`
-          );
-        }
-
-        if (event.type === "WORKFLOW") {
-          if (event.data.error) {
-            this.logger.error(
-              `Workflow ${this.name} (${executionId}) failed: ${event.data.error.message}`
-            );
-            throw new Error(
-              `Workflow ${this.name} failed: ${event.data.error.message}`
-            );
-          }
-
-          if (event.data.state === "FULFILLED" && event.data.outputs) {
-            workflowOutputs = event.data.outputs;
-          }
-        }
-      }
-
-      this.logger.info(`Completed Routine Job ${this.name} (${executionId})`);
-      return { outputs: workflowOutputs, executionId };
-    } catch (error) {
-      this.logger.error(
-        `Failed to execute workflow ${this.name} (${
-          executionId || "unknown execution"
-        }): ${error}`
-      );
-      throw error;
-    }
+    this.logger.info(`Routine job ${this.name} execution placeholder - workflow integration removed`);
+    return null;
   }
 }
