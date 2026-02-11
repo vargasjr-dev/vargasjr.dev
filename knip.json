@@ -14,7 +14,6 @@
     "scripts/**/*.{ts,tsx,js,jsx}",
     "server/**/*.{ts,tsx,js,jsx}",
     "utils/**/*.{ts,tsx,js,jsx}",
-    "terraform/main.ts",
     "!**/*.test.{ts,tsx,js,jsx}",
     "!**/*.spec.{ts,tsx,js,jsx}",
     "!eslint-rules/**/*.js"
