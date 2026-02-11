@@ -4,7 +4,6 @@
     "app/**/*.{ts,tsx}",
     "components/**/*.{ts,tsx}",
     "scripts/**/*.ts",
-    "worker/**/*.ts",
     "server/**/*.ts",
     "utils/**/*.ts",
     "terraform/main.ts"
@@ -13,7 +12,6 @@
     "app/**/*.{ts,tsx,js,jsx}",
     "components/**/*.{ts,tsx,js,jsx}",
     "scripts/**/*.{ts,tsx,js,jsx}",
-    "worker/**/*.{ts,tsx,js,jsx}",
     "server/**/*.{ts,tsx,js,jsx}",
     "utils/**/*.{ts,tsx,js,jsx}",
     "terraform/main.ts",
