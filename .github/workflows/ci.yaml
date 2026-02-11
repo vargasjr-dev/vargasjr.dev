@@ -29,12 +29,6 @@ on:
       - "knip.json"
       - ".github/workflows/ci.yaml"
       - "run_agent.sh"
-  workflow_dispatch:
-    inputs:
-      agent_name:
-        description: "Agent name to create (e.g., vargas-jr for production)"
-        required: false
-        type: string
 
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -115,11 +109,3 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
-
-  create-preview-agent:
-    needs: [lint, test, publish-agent]
-    if: false # Disabled per user request
-    uses: ./.github/workflows/create-agent.yaml
-    with:
-      agent_name: pr-${{ github.event.number }}
-    secrets: inherit

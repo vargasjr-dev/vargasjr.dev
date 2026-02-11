@@ -14,7 +14,6 @@ This repository contains the following top-level directories:
 
 The `/scripts` directory contains TypeScript utilities for various operational tasks:
 
-- `create-agent.ts` - Creates new Vargas JR agent instances with automated EC2 setup
-- `cleanup-agent.ts` - Cleans up agent infrastructure
+- `cleanup-pr.ts` - Cleans up PR infrastructure
 
 All scripts can be run via npm scripts defined in `package.json`.
