@@ -125,7 +125,6 @@ export async function createJob(formData: FormData) {
     .returning()
     .execute();
 
-  revalidatePath("/admin/jobs");
   return newJob[0];
 }
 
@@ -158,7 +157,6 @@ export async function updateJob(id: string, formData: FormData) {
     throw new Error("Job not found");
   }
 
-  revalidatePath("/admin/jobs");
   return updatedJob[0];
 }
 
@@ -174,7 +172,6 @@ export async function deleteJob(id: string) {
     throw new Error("Job not found");
   }
 
-  revalidatePath("/admin/jobs");
   return deletedJob[0];
 }
 
@@ -210,7 +207,6 @@ export async function deleteRoutineJob(id: string) {
     throw new Error("Routine job not found");
   }
 
-  revalidatePath("/admin/jobs");
   return deletedRoutineJob[0];
 }
 
@@ -232,7 +228,6 @@ export async function deleteContact(id: string) {
     throw new Error("Contact not found");
   }
 
-  revalidatePath("/admin/crm");
   return deletedContact[0];
 }
 
@@ -263,12 +258,10 @@ export async function updateContact(id: string, formData: FormData) {
     throw new Error("Contact not found");
   }
 
-  revalidatePath("/admin/crm");
-  revalidatePath(`/admin/crm/${id}`);
   return updatedContact[0];
 }
 
-export async function deleteMessage(messageId: string, inboxId: string) {
+export async function deleteMessage(messageId: string) {
   const db = getDb();
 
   const message = await db
@@ -322,13 +315,11 @@ export async function deleteMessage(messageId: string, inboxId: string) {
     .returning()
     .execute();
 
-  revalidatePath(`/admin/inboxes/${inboxId}`);
   return deletedMessage[0];
 }
 
 export async function markMessageAsUnread(
-  messageId: string,
-  inboxId: string
+  messageId: string
 ): Promise<{ success: true } | { success: false; error: string }> {
   const db = getDb();
 
@@ -351,8 +342,6 @@ export async function markMessageAsUnread(
       })
       .execute();
 
-    revalidatePath(`/admin/messages/${messageId}`);
-    revalidatePath(`/admin/inboxes/${inboxId}`);
     return { success: true };
   } catch (e) {
     const err = e instanceof Error ? e.message : String(e);
@@ -360,10 +349,7 @@ export async function markMessageAsUnread(
   }
 }
 
-export async function markMessageAsArchived(
-  messageId: string,
-  inboxId: string
-) {
+export async function markMessageAsArchived(messageId: string) {
   const db = getDb();
 
   await db
@@ -373,9 +359,6 @@ export async function markMessageAsArchived(
       operation: "ARCHIVED",
     })
     .execute();
-
-  revalidatePath(`/admin/messages/${messageId}`);
-  revalidatePath(`/admin/inboxes/${inboxId}`);
 }
 
 export async function deleteInbox(inboxId: string) {
@@ -456,14 +439,10 @@ export async function deleteInbox(inboxId: string) {
     throw new Error("Inbox not found");
   }
 
-  revalidatePath("/admin/inboxes");
   return deletedInbox[0];
 }
 
-export async function bulkArchiveMessages(
-  messageIds: string[],
-  inboxId: string
-) {
+export async function bulkArchiveMessages(messageIds: string[]) {
   const db = getDb();
 
   await db
@@ -475,9 +454,6 @@ export async function bulkArchiveMessages(
       }))
     )
     .execute();
-
-  revalidatePath(`/admin/inboxes/${inboxId}`);
-  revalidatePath("/admin/inboxes");
 }
 export async function mergeContact(
   currentContactId: string,
@@ -607,9 +583,6 @@ export async function mergeContact(
     if (targetSummary) {
       await deleteContactSummaryFromS3(targetContactId);
     }
-
-    revalidatePath("/admin/crm");
-    revalidatePath(`/admin/crm/${currentContactId}`);
 
     return deletedContact[0];
   });
