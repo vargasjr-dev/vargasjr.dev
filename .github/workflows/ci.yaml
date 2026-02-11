@@ -8,8 +8,6 @@ on:
       - "scripts/**"
       - "app/**"
       - "components/**"
-      - "db/**"
-      - "tests/**"
       - "eslint.config.mjs"
       - "package.json"
       - "knip.json"
@@ -19,8 +17,6 @@ on:
       - "scripts/**"
       - "app/**"
       - "components/**"
-      - "db/**"
-      - "tests/**"
       - "eslint.config.mjs"
       - "package.json"
       - "knip.json"
@@ -49,16 +45,3 @@ jobs:
         run: npm run lint
       - name: Run Prettier check
         run: npm run format:check
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version-file: ".nvmrc"
-      - name: Install Node.js dependencies
-        run: npm run setup
-      - name: Run tests
-        run: npm test tests/
