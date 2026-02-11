@@ -32,11 +32,6 @@ jobs:
       - name: Install dependencies
         run: npm run setup
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.5.0"
-
       - name: Discover and run scripts
         id: run_scripts
         run: npm run one-time-migration -- --branch ${{ github.head_ref || github.ref_name }}${{ inputs.preview && ' --preview' || '' }}
