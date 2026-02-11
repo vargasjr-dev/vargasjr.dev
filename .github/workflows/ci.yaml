@@ -118,7 +118,7 @@ jobs:
 
   create-preview-agent:
     needs: [lint, test, publish-agent]
-    if: github.event_name == 'pull_request'
+    if: false # Disabled per user request
     uses: ./.github/workflows/create-agent.yaml
     with:
       agent_name: pr-${{ github.event.number }}
