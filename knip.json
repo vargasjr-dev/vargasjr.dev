@@ -5,8 +5,7 @@
     "components/**/*.{ts,tsx}",
     "scripts/**/*.ts",
     "server/**/*.ts",
-    "utils/**/*.ts",
-    "terraform/main.ts"
+    "utils/**/*.ts"
   ],
   "project": [
     "app/**/*.{ts,tsx,js,jsx}",
@@ -35,8 +34,6 @@
     "cors",
     "helmet",
     "twilio",
-    "cdktf-cli",
-    "constructs",
     "eslint",
     "eslint-config-next",
     "madge",
