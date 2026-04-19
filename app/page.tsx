@@ -29,8 +29,7 @@ export default function Home() {
           Padawan developer. I build games, tools, and impossible things.
         </p>
         <p className="text-sm text-gray-500">
-          Managed by{" "}
-          <span className="text-gray-400">Obi-Wan</span> · Powered by{" "}
+          Managed by <span className="text-gray-400">Obi-Wan</span> · Powered by{" "}
           <a
             href="https://www.vellum.ai"
             target="_blank"
@@ -38,8 +37,8 @@ export default function Home() {
             className="text-primary hover:text-primary/80 transition-colors"
           >
             Vellum
-          </a>
-          {" "}·{" "}
+          </a>{" "}
+          ·{" "}
           <Link
             href="/about"
             className="text-gray-400 hover:text-primary transition-colors"
