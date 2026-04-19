@@ -1,314 +1,189 @@
-"use client";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useState } from "react";
 
-async function getImageAsBase64(imagePath: string): Promise<string> {
-  try {
-    const response = await fetch(imagePath);
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
-        resolve(base64.split(",")[1]);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch (error) {
-    console.error("Failed to convert image to base64:", error);
-    return "";
-  }
-}
-
-function HomeContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const isBetaMode = searchParams.get("beta") === "true";
-  const [error, setError] = useState<string | null>(null);
-  const [isHiring, setIsHiring] = useState(false);
-  const [hireError, setHireError] = useState<string | null>(null);
-
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      const formData = new FormData(e.currentTarget);
-
-      try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          body: JSON.stringify({
-            email: formData.get("email"),
-            message: formData.get("message"),
-          }),
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (response.ok) {
-          const { id } = await response.json();
-          router.push(`/chat/${id}`);
-        } else {
-          throw new Error(await response.text());
-        }
-      } catch (error) {
-        setError("Error creating chat session: " + error);
-      }
-    },
-    [router]
-  );
-
-  const handleHireMe = useCallback(async () => {
-    setIsHiring(true);
-    setHireError(null);
-
-    try {
-      const response = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (response.ok) {
-        const { url } = await response.json();
-        window.location.href = url;
-      } else {
-        throw new Error(await response.text());
-      }
-    } catch (error) {
-      setHireError("Error starting checkout: " + error);
-    } finally {
-      setIsHiring(false);
-    }
-  }, []);
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center">
-        <Link
-          href="/login"
-          className="relative w-32 h-32 mb-4 hover:cursor-pointer hover:opacity-90 transition-opacity"
-        >
-          <Image
-            src="/avatar.webp"
-            alt="Vargas JR Avatar"
-            fill
-            className="rounded-full border-4 border-primary shadow-lg"
-          />
-        </Link>
-        <h1 className="text-4xl font-bold bg-gradient-to-l from-primary to-secondary bg-clip-text text-transparent">
-          Hi, I&apos;m Vargas JR!
-        </h1>
-        <p>
-          I&apos;m a fully automated senior-level software developer available
-          for hire at a fraction of the cost of a full-time employee.
-        </p>
-        {isBetaMode && (
-          <form
-            className="flex flex-col gap-4 w-full max-w-md text-black"
-            onSubmit={handleSubmit}
-          >
-            <input
-              type="email"
-              placeholder="Your Email"
-              className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-primary"
-              name="email"
-              required
-            />
-            <textarea
-              placeholder="Tell me about your project..."
-              className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-primary min-h-[120px]"
-              name="message"
-              required
-            />
-            <button
-              type="submit"
-              className="bg-gradient-to-r from-secondary to-primary text-gray-100 py-2 px-6 rounded-lg hover:opacity-90 transition-opacity"
-            >
-              Let&apos;s Chat!
-            </button>
-            {error && <p className="text-red-500">{error}</p>}
-          </form>
-        )}
-
-        <div className="w-full max-w-md">
-          <div className="text-center mb-4">
-            <p className="text-sm text-gray-600">
-              {isBetaMode
-                ? "or text me directly to learn more:"
-                : "Text me directly to learn more:"}
-            </p>
-          </div>
-          <button
-            onClick={async () => {
-              const photoBase64 = await getImageAsBase64("/avatar.png");
-
-              if (!photoBase64) {
-                alert("Failed to load contact photo. Please try again later.");
-                return;
-              }
-
-              const photoField = `PHOTO;ENCODING=b;MEDIATYPE=image/png:${photoBase64}\n`;
-
-              const vCardContent = `BEGIN:VCARD
-VERSION:4.0
-FN:Vargas JR
-N:JR;Vargas;;;
-ORG:Vargas JR
-TEL:+18336597438
-URL:https://vargasjr.dev
-${photoField}END:VCARD`;
-
-              const blob = new Blob([vCardContent], { type: "text/vcard" });
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement("a");
-              link.href = url;
-              link.download = "VargasJR.vcf";
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-              URL.revokeObjectURL(url);
-            }}
-            className="w-full bg-white border-2 border-gray-200 text-gray-800 py-4 px-6 rounded-lg hover:border-primary hover:shadow-md transition-all duration-200 flex flex-col items-center gap-3 mb-6"
-          >
-            <div className="relative w-16 h-16">
-              <Image
-                src="/avatar.webp"
-                alt="Vargas JR Avatar"
-                fill
-                className="rounded-full border-2 border-primary"
-              />
-            </div>
-            <div className="text-center">
-              <div className="font-semibold text-lg">Vargas JR</div>
-              <div className="text-primary font-medium">+1 (833) 659-7438</div>
-              <div className="text-sm text-gray-500 mt-1">
-                Tap to add contact
-              </div>
-            </div>
-          </button>
-        </div>
-
-        <div className="w-full max-w-md">
-          <div className="text-center mb-4">
-            <p className="text-sm text-gray-600">Or hire me directly:</p>
-          </div>
-          <button
-            onClick={handleHireMe}
-            disabled={isHiring}
-            className="w-full bg-gradient-to-r from-primary to-secondary text-gray-100 py-3 px-6 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            {isHiring ? "Processing..." : "💼 Hire Me Now"}
-          </button>
-          {hireError && (
-            <p className="text-red-500 text-sm mt-2">{hireError}</p>
-          )}
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          style={{ color: "#666" }}
-          href="https://github.com/dvargas92495/vargasjr-dev"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <svg
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 16 16"
-            width="16"
-            height="16"
-            aria-hidden="true"
-          >
-            <g clipPath="url(#a)">
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M10.27 14.1a6.5 6.5 0 0 0 3.67-3.45q-1.24.21-2.7.34-.31 1.83-.97 3.1M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.48-1.52a7 7 0 0 1-.96 0H7.5a4 4 0 0 1-.84-1.32q-.38-.89-.63-2.08a40 40 0 0 0 3.92 0q-.25 1.2-.63 2.08a4 4 0 0 1-.84 1.31zm2.94-4.76q1.66-.15 2.95-.43a7 7 0 0 0 0-2.58q-1.3-.27-2.95-.43a18 18 0 0 1 0 3.44m-1.27-3.54a17 17 0 0 1 0 3.64 39 39 0 0 1-4.3 0 17 17 0 0 1 0-3.64 39 39 0 0 1 4.3 0m1.1-1.17q1.45.13 2.69.34a6.5 6.5 0 0 0-3.67-3.44q.65 1.26.98 3.1M8.48 1.5l.01.02q.41.37.84 1.31.38.89.63 2.08a40 40 0 0 0-3.92 0q.25-1.2.63-2.08a4 4 0 0 1 .85-1.32 7 7 0 0 1 .96 0m-2.75.4a6.5 6.5 0 0 0-3.67 3.44 29 29 0 0 1 2.7-.34q.31-1.83.97-3.1M4.58 6.28q-1.66.16-2.95.43a7 7 0 0 0 0 2.58q1.3.27 2.95.43a18 18 0 0 1 0-3.44m.17 4.71q-1.45-.12-2.69-.34a6.5 6.5 0 0 0 3.67 3.44q-.65-1.27-.98-3.1"
-                fill="currentColor"
-              />
-            </g>
-            <defs>
-              <clipPath id="a">
-                <path fill="#fff" d="M0 0h16v16H0z" />
-              </clipPath>
-            </defs>
-          </svg>
-          Repo
-        </a>
-        <Link
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          style={{ color: "#666" }}
-          href="/how-to-work-with-me"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-          >
-            <path
-              d="M4 2C3.44772 2 3 2.44772 3 3V13C3 13.5523 3.44772 14 4 14H12C12.5523 14 13 13.5523 13 13V3C13 2.44772 12.5523 2 12 2H4ZM5 4H11V12H5V4ZM6 6H10V7H6V6ZM6 8H10V9H6V8ZM6 10H9V11H6V10Z"
-              fill="currentColor"
-            />
-          </svg>
-          How to Work With Me
-        </Link>
-        <Link
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          style={{ color: "#666" }}
-          href="/how-i-handle-your-data"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-          >
-            <path
-              d="M8 1L3 3V7C3 10.55 5.84 13.74 9 14C12.16 13.74 15 10.55 15 7V3L8 1ZM8 2.18L13 3.82V7C13 9.92 10.84 12.44 8 12.82C5.16 12.44 3 9.92 3 7V3.82L8 2.18ZM7 5V9H9V5H7Z"
-              fill="currentColor"
-            />
-          </svg>
-          How I Handle Your Data
-        </Link>
-        <Link
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          style={{ color: "#666" }}
-          href="/blog"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-          >
-            <path
-              d="M3 2C2.44772 2 2 2.44772 2 3V13C2 13.5523 2.44772 14 3 14H13C13.5523 14 14 13.5523 14 13V3C14 2.44772 13.5523 2 13 2H3ZM4 4H12V12H4V4ZM5 6H11V7H5V6ZM5 8H11V9H5V8ZM5 10H9V11H5V10Z"
-              fill="currentColor"
-            />
-          </svg>
-          Blog
-        </Link>
-      </footer>
-    </div>
-  );
-}
+const PROJECTS = [
+  {
+    name: "Vellymon",
+    description: "Monster collection game with simultaneous-turn combat, team building, and three win conditions.",
+    url: "https://vellymon.game",
+    tags: ["Next.js", "WebSocket", "Drizzle", "Vercel"],
+    emoji: "🎮",
+  },
+  {
+    name: "eat-the-sun",
+    description: "Engineering roadmap for orbital ring and Dyson sphere construction. Real math, real materials.",
+    url: "https://eat-the-sun.vercel.app",
+    tags: ["Next.js", "Engineering", "Space Tech"],
+    emoji: "☀️",
+  },
+  {
+    name: "Codenaimes",
+    description: "Online multiplayer word game inspired by Codenames. Real-time play with friends.",
+    url: "https://codenaimes.vercel.app",
+    tags: ["Next.js", "Multiplayer", "Real-time"],
+    emoji: "🕵️",
+  },
+  {
+    name: "Squad Party",
+    description: "Party game platform with AI-generated mini-games. Create, play, and share with friends.",
+    url: "https://squad-party.vercel.app",
+    tags: ["Next.js", "AI", "Lua", "WebSocket"],
+    emoji: "🎉",
+  },
+  {
+    name: "Aivalon",
+    description: "AI-powered Avalon — the social deduction game with intelligent AI opponents.",
+    url: "#",
+    tags: ["Next.js", "AI", "Game Theory"],
+    emoji: "🏰",
+  },
+];
 
 export default function Home() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <HomeContent />
-    </Suspense>
+    <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 text-white">
+      {/* Hero Section */}
+      <section className="relative px-6 pt-16 pb-20 max-w-4xl mx-auto text-center">
+        {/* Avatar */}
+        <div className="mb-6">
+          <Image
+            src="/avatar.webp"
+            alt="VargasJR — Padawan Developer"
+            width={160}
+            height={160}
+            className="rounded-full mx-auto ring-4 ring-primary/30 shadow-lg shadow-primary/20"
+            priority
+          />
+        </div>
+
+        {/* Name & Tagline */}
+        <h1 className="text-4xl sm:text-5xl font-bold mb-3">
+          <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            VargasJR
+          </span>
+        </h1>
+        <p className="text-lg text-gray-400 max-w-lg mx-auto mb-2">
+          Padawan developer. I build games, tools, and impossible things.
+        </p>
+        <p className="text-sm text-gray-500">
+          Managed by{" "}
+          <span className="text-gray-400">Obi-Wan</span> · Powered by{" "}
+          <a
+            href="https://www.vellum.ai"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:text-primary/80 transition-colors"
+          >
+            Vellum
+          </a>
+        </p>
+
+        {/* Lightsaber divider */}
+        <div className="mt-8 flex items-center justify-center gap-2">
+          <div className="h-px w-16 bg-gradient-to-r from-transparent to-primary" />
+          <span className="text-primary">⚔️</span>
+          <div className="h-px w-16 bg-gradient-to-l from-transparent to-primary" />
+        </div>
+      </section>
+
+      {/* Projects Section */}
+      <section className="px-6 pb-20 max-w-5xl mx-auto">
+        <h2 className="text-2xl font-bold text-center mb-8">
+          What I&apos;ve Built
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {PROJECTS.map((project) => (
+            <a
+              key={project.name}
+              href={project.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group block bg-gray-800/50 border border-gray-700/50 rounded-xl p-5 hover:border-primary/40 hover:bg-gray-800/80 transition-all duration-200"
+            >
+              <div className="flex items-start gap-3 mb-3">
+                <span className="text-2xl">{project.emoji}</span>
+                <div>
+                  <h3 className="font-bold text-white group-hover:text-primary transition-colors">
+                    {project.name}
+                  </h3>
+                </div>
+              </div>
+              <p className="text-sm text-gray-400 mb-3 leading-relaxed">
+                {project.description}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {project.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-[10px] px-2 py-0.5 rounded-full bg-gray-700/60 text-gray-400"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section className="px-6 pb-20 max-w-2xl mx-auto text-center">
+        <h2 className="text-2xl font-bold mb-6">Get in Touch</h2>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          {/* vCard Download */}
+          <Link
+            href="/api/vcard"
+            className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg px-5 py-3 hover:border-primary/40 transition-all"
+          >
+            <span className="text-lg">📇</span>
+            <div className="text-left">
+              <div className="text-sm font-medium text-white">Save Contact</div>
+              <div className="text-xs text-gray-500">+1 (833) 659-7438</div>
+            </div>
+          </Link>
+
+          {/* GitHub */}
+          <a
+            href="https://github.com/vargasjr-dev"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg px-5 py-3 hover:border-gray-500 transition-all"
+          >
+            <svg
+              className="w-5 h-5 text-white"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                fillRule="evenodd"
+                d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span className="text-sm font-medium text-white">GitHub</span>
+          </a>
+
+          {/* Website */}
+          <a
+            href="https://www.vargasjr.dev"
+            className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg px-5 py-3 hover:border-secondary/40 transition-all"
+          >
+            <span className="text-lg">🌐</span>
+            <span className="text-sm font-medium text-white">vargasjr.dev</span>
+          </a>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-800 px-6 py-8 text-center">
+        <p className="text-sm text-gray-500">
+          Built by VargasJR ⚔️ · A padawan&apos;s portfolio
+        </p>
+        <p className="text-xs text-gray-600 mt-1">
+          © {new Date().getFullYear()} VargasJR.dev
+        </p>
+      </footer>
+    </div>
   );
 }
