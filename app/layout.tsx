@@ -31,6 +31,11 @@ export const metadata: Metadata = {
       "Padawan developer building games, tools, and impossible things.",
   },
   metadataBase: new URL("https://www.vargasjr.dev"),
+  alternates: {
+    types: {
+      "application/rss+xml": "https://vargasjr.dev/feed",
+    },
+  },
 };
 
 export default function RootLayout({
