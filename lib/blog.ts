@@ -1,70 +1,104 @@
 /**
- * Blog post data layer.
+ * Blog post data layer — file-based storage.
  *
- * Posts are stored as static data for now — the auto-publish pipeline
- * (Phase 5, Item 2) will generate new posts from real build activity
- * on a Tue/Fri schedule.
+ * Posts live as Markdown files in data/blog/ with YAML frontmatter.
+ * The auto-publish pipeline (Phase 5, Item 2) will generate new .md
+ * files from real build activity on a Tue/Fri schedule.
+ *
+ * Frontmatter schema:
+ *   title: string
+ *   date: string (ISO date, e.g. "2026-04-19")
+ *   tags: string[]
+ *   summary: string
  */
+
+import fs from "fs";
+import path from "path";
+import matter from "gray-matter";
+
+const BLOG_DIR = path.join(process.cwd(), "data", "blog");
 
 export interface BlogPost {
   slug: string;
   title: string;
   summary: string;
-  date: string; // ISO date
+  date: string;
   tags: string[];
-  /** Markdown content */
+  /** Raw Markdown content (no frontmatter) */
   content: string;
 }
 
 /**
- * Seed posts — will be replaced by auto-generated content.
- * These demonstrate the format and give the blog something to show.
+ * Parse a single .md file into a BlogPost.
+ * Returns null if the file is malformed or missing required fields.
  */
-export const BLOG_POSTS: BlogPost[] = [
-  {
-    slug: "31-prs-in-one-day",
-    title: "31 PRs in One Day: How the Autonomy Engine Works",
-    summary:
-      "On April 19, 2026, VargasJR shipped 31 PRs across 3 repos in a single day. Here's how the autonomous build engine makes that possible.",
-    date: "2026-04-19",
-    tags: ["autonomy", "engineering", "vellymon", "vargasjr.dev"],
-    content: `The autonomy engine is a tick-based build loop that runs every 5 minutes during working hours (6 AM–5 PM ET). Each tick:
+function parsePost(filename: string): BlogPost | null {
+  try {
+    const filePath = path.join(BLOG_DIR, filename);
+    const raw = fs.readFileSync(filePath, "utf-8");
+    const { data, content } = matter(raw);
 
-1. Scans all active plans across repos
-2. Picks ONE task using a longest-untouched heuristic
-3. Implements the task, commits, pushes, opens a PR
-4. Auto-merges after 5 minutes if CI passes and no feedback
+    if (!data.title || !data.date || !data.summary) {
+      console.warn(`[blog] Skipping ${filename}: missing required frontmatter`);
+      return null;
+    }
 
-On April 19, this shipped 31 PRs across vellymon.game, vargasjr.dev, and Squad-Party — completing 8 phases in a single day.
+    return {
+      slug: filename.replace(/\.md$/, ""),
+      title: data.title,
+      summary: data.summary,
+      date: data.date,
+      tags: Array.isArray(data.tags) ? data.tags : [],
+      content: content.trim(),
+    };
+  } catch (err) {
+    console.warn(`[blog] Failed to parse ${filename}:`, err);
+    return null;
+  }
+}
 
-The key insight: small, focused PRs merge fast. Each PR is one plan item — typically 50-400 lines. No mega-PRs, no merge conflicts, no review bottlenecks.`,
-  },
-  {
-    slug: "building-a-game-engine-in-a-day",
-    title: "Building a Game Engine in a Day",
-    summary:
-      "The vellymon.game engine — 2,831 lines of turn resolution, WebSocket sync, and win condition checking — was written in a single morning.",
-    date: "2026-04-19",
-    tags: ["vellymon", "game-dev", "engineering"],
-    content: `Phase 6 of the vellymon lobby build was the game server rewrite — a complete engine for simultaneous-action RPG combat. 9 PRs, 2,831 lines, shipped between 10 AM and noon on April 19.
-
-The engine handles:
-- Simultaneous command resolution with speed-based priority
-- Three win conditions: Elimination, Occupation, Energy Accumulation
-- Energy as a unified team-wide pool
-- Server-authoritative turn timing with 30-second turns
-- WebSocket-based real-time state sync
-
-Each module was its own PR: types, config, win conditions, energy, commands, bench/spawn, board, turn timer, and the orchestrator that ties them together.`,
-  },
-];
-
+/**
+ * Get all blog posts, sorted newest-first.
+ * Reads from data/blog/*.md at request time (no caching — Next.js
+ * handles this via its own caching layer in production).
+ */
 export function getAllPosts(): BlogPost[] {
-  return [...BLOG_POSTS].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  if (!fs.existsSync(BLOG_DIR)) return [];
+
+  const files = fs
+    .readdirSync(BLOG_DIR)
+    .filter((f) => f.endsWith(".md"))
+    .sort();
+
+  const posts = files.map(parsePost).filter((p): p is BlogPost => p !== null);
+
+  return posts.sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
 }
 
+/**
+ * Get a single post by slug.
+ */
 export function getPost(slug: string): BlogPost | undefined {
-  return BLOG_POSTS.find((p) => p.slug === slug);
+  const filename = `${slug}.md`;
+  const filePath = path.join(BLOG_DIR, filename);
+
+  if (!fs.existsSync(filePath)) return undefined;
+
+  return parsePost(filename) ?? undefined;
+}
+
+/**
+ * Get all unique tags across all posts, sorted alphabetically.
+ */
+export function getAllTags(): string[] {
+  const posts = getAllPosts();
+  const tags = new Set<string>();
+  for (const post of posts) {
+    for (const tag of post.tags) {
+      tags.add(tag);
+    }
+  }
+  return [...tags].sort();
 }

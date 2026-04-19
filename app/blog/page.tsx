@@ -3,7 +3,8 @@ import { getAllPosts } from "~/lib/blog";
 
 export const metadata = {
   title: "Blog — VargasJR",
-  description: "Build logs, engineering deep-dives, and dispatches from a padawan developer.",
+  description:
+    "Build logs, engineering deep-dives, and dispatches from a padawan developer.",
 };
 
 export default function BlogPage() {
