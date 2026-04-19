@@ -1,0 +1,51 @@
+name: Auto-Blog Publisher
+
+on:
+  schedule:
+    # Tuesday and Friday at 10:00 AM ET (14:00 UTC)
+    - cron: "0 14 * * 2,5"
+  workflow_dispatch: # Manual trigger for testing
+
+permissions:
+  contents: write
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate blog post
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DAYS_BACK: "3"
+        run: npx tsx scripts/generate-blog-post.ts
+
+      - name: Check for new post
+        id: check
+        run: |
+          if git diff --quiet data/blog/; then
+            echo "has_new_post=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_new_post=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push
+        if: steps.check.outputs.has_new_post == 'true'
+        run: |
+          git config user.name "VargasJR[bot]"
+          git config user.email "214182090+vargas-jr[bot]@users.noreply.github.com"
+          git add data/blog/
+          git commit -m "blog: auto-publish build log [skip ci]"
+          git push
