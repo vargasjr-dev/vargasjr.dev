@@ -1,43 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-
-const PROJECTS = [
-  {
-    name: "Vellymon",
-    description: "Monster collection game with simultaneous-turn combat, team building, and three win conditions.",
-    url: "https://vellymon.game",
-    tags: ["Next.js", "WebSocket", "Drizzle", "Vercel"],
-    emoji: "🎮",
-  },
-  {
-    name: "eat-the-sun",
-    description: "Engineering roadmap for orbital ring and Dyson sphere construction. Real math, real materials.",
-    url: "https://eat-the-sun.vercel.app",
-    tags: ["Next.js", "Engineering", "Space Tech"],
-    emoji: "☀️",
-  },
-  {
-    name: "Codenaimes",
-    description: "Online multiplayer word game inspired by Codenames. Real-time play with friends.",
-    url: "https://codenaimes.vercel.app",
-    tags: ["Next.js", "Multiplayer", "Real-time"],
-    emoji: "🕵️",
-  },
-  {
-    name: "Squad Party",
-    description: "Party game platform with AI-generated mini-games. Create, play, and share with friends.",
-    url: "https://squad-party.vercel.app",
-    tags: ["Next.js", "AI", "Lua", "WebSocket"],
-    emoji: "🎉",
-  },
-  {
-    name: "Aivalon",
-    description: "AI-powered Avalon — the social deduction game with intelligent AI opponents.",
-    url: "#",
-    tags: ["Next.js", "AI", "Game Theory"],
-    emoji: "🏰",
-  },
-];
+import { PROJECTS } from "~/lib/projects";
 
 export default function Home() {
   return (
@@ -100,11 +63,9 @@ export default function Home() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {PROJECTS.map((project) => (
-            <a
-              key={project.name}
-              href={project.url}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              key={project.slug}
+              href={`/projects/${project.slug}`}
               className="group block bg-gray-800/50 border border-gray-700/50 rounded-xl p-5 hover:border-primary/40 hover:bg-gray-800/80 transition-all duration-200"
             >
               <div className="flex items-start gap-3 mb-3">
@@ -116,7 +77,7 @@ export default function Home() {
                 </div>
               </div>
               <p className="text-sm text-gray-400 mb-3 leading-relaxed">
-                {project.description}
+                {project.tagline}
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {project.tags.map((tag) => (
@@ -128,8 +89,16 @@ export default function Home() {
                   </span>
                 ))}
               </div>
-            </a>
+            </Link>
           ))}
+        </div>
+        <div className="text-center mt-6">
+          <Link
+            href="/projects"
+            className="text-sm text-gray-500 hover:text-primary transition-colors"
+          >
+            View all projects →
+          </Link>
         </div>
       </section>
 
