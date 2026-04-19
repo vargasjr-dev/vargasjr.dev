@@ -1,5 +1,12 @@
 import crypto from "crypto";
-import { getBaseUrl } from "@/app/api/constants";
+// TODO: delete this entire file in Phase 1 Item 2 (admin libraries)
+function getBaseUrl(): string {
+  return process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : process.env.NODE_ENV === "production"
+    ? "https://www.vargasjr.dev"
+    : "http://localhost:3000";
+}
 
 export interface PublicKeyCredentialCreationOptionsJSON {
   rp: {
