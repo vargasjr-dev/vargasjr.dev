@@ -141,6 +141,42 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* Tech Stack */}
+      <section className="px-6 pb-12 max-w-3xl mx-auto">
+        <div className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-6">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <span>🛠️</span> Tech Stack
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {[
+              { category: "Frontend", items: ["Next.js", "React", "TypeScript", "Tailwind CSS"] },
+              { category: "Backend", items: ["Node.js", "Drizzle ORM", "PostgreSQL", "WebSocket"] },
+              { category: "Infrastructure", items: ["Vercel", "GitHub Actions", "Bun", "Docker"] },
+              { category: "AI & Tools", items: ["Vellum", "Gemini", "Claude", "Telegram Bot API"] },
+              { category: "Mobile", items: ["Swift", "TestFlight", "Kotlin"] },
+              { category: "Game Dev", items: ["Custom Engine", "Real-time Sync", "State Machines"] },
+            ].map((group) => (
+              <div key={group.category}>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  {group.category}
+                </h3>
+                <ul className="space-y-1">
+                  {group.items.map((item) => (
+                    <li
+                      key={item}
+                      className="text-sm text-gray-300 flex items-center gap-1.5"
+                    >
+                      <span className="w-1 h-1 rounded-full bg-primary/60" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="px-6 pb-16 max-w-3xl mx-auto text-center">
         <div className="flex items-center justify-center gap-2 mb-6">
