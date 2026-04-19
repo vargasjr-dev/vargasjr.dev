@@ -5,43 +5,32 @@ on:
     branches:
       - main
     paths:
-      - "scripts/**"
       - "app/**"
-      - "components/**"
       - "eslint.config.mjs"
       - "package.json"
       - "knip.json"
       - ".github/workflows/ci.yaml"
   pull_request:
     paths:
-      - "scripts/**"
       - "app/**"
-      - "components/**"
       - "eslint.config.mjs"
       - "package.json"
       - "knip.json"
       - ".github/workflows/ci.yaml"
 
-env:
-  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-
 jobs:
   lint:
     runs-on: ubuntu-latest
-    env:
-      ANALYZE: true
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version-file: ".nvmrc"
-      - name: Enable npm audit for lint job
-        run: npm config set audit true
-      - name: Install Node.js dependencies
-        run: npm run setup
+          node-version: "20"
+      - name: Install dependencies
+        run: npm install
       - name: Run ESLint
-        run: npm run lint
+        run: npx next lint
       - name: Run Prettier check
-        run: npm run format:check
+        run: npx prettier --check .

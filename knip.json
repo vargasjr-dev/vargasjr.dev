@@ -1,18 +1,10 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
-    "app/**/*.{ts,tsx}",
-    "components/**/*.{ts,tsx}",
-    "scripts/**/*.ts",
-    "server/**/*.ts",
-    "utils/**/*.ts"
+    "app/**/*.{ts,tsx}"
   ],
   "project": [
     "app/**/*.{ts,tsx,js,jsx}",
-    "components/**/*.{ts,tsx,js,jsx}",
-    "scripts/**/*.{ts,tsx,js,jsx}",
-    "server/**/*.{ts,tsx,js,jsx}",
-    "utils/**/*.{ts,tsx,js,jsx}",
     "!**/*.test.{ts,tsx,js,jsx}",
     "!**/*.spec.{ts,tsx,js,jsx}",
     "!eslint-rules/**/*.js"
@@ -26,18 +18,7 @@
     "drizzle.config.ts",
     "next.config.ts",
     "tailwind.config.ts",
-    "vitest.config.ts",
-    "knip.config.json"
-  ],
-  "ignoreDependencies": [
-    "@stripe/stripe-js",
-    "cors",
-    "helmet",
-    "twilio",
-    "eslint",
-    "eslint-config-next",
-    "madge",
-    "postcss-load-config"
+    "vitest.config.ts"
   ],
   "ignoreBinaries": ["prettier"]
 }
