@@ -76,6 +76,13 @@ export default function Home() {
           >
             Vellum
           </a>
+          {" "}·{" "}
+          <Link
+            href="/about"
+            className="text-gray-400 hover:text-primary transition-colors"
+          >
+            About Me
+          </Link>
         </p>
 
         {/* Lightsaber divider */}
