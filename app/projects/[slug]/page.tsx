@@ -6,8 +6,13 @@ export function generateStaticParams() {
   return PROJECTS.map((p) => ({ slug: p.slug }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }) {
-  const project = getProject(params.slug);
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const project = getProject(slug);
   if (!project) return { title: "Not Found" };
   return {
     title: `${project.name} — VargasJR`,
@@ -30,12 +35,13 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   },
 };
 
-export default function ProjectDetailPage({
+export default async function ProjectDetailPage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
-  const project = getProject(params.slug);
+  const { slug } = await params;
+  const project = getProject(slug);
   if (!project) notFound();
 
   const badge = STATUS_BADGE[project.status];
