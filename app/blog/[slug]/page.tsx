@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BLOG_POSTS, getPost } from "~/lib/blog";
+import { BLOG_POSTS, getPost } from "@/lib/blog";
 
 export function generateStaticParams() {
   return BLOG_POSTS.map((p) => ({ slug: p.slug }));
