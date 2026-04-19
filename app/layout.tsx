@@ -13,9 +13,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Vargas JR",
+  title: "VargasJR — Padawan Developer",
   description:
-    "I'm a fully automated senior-level software developer available for hire at a fraction of the cost of a full-time employee.",
+    "Padawan developer building games, tools, and impossible things. Portfolio of VargasJR — managed by Obi-Wan, powered by Vellum.",
+  openGraph: {
+    title: "VargasJR — Padawan Developer",
+    description:
+      "Padawan developer building games, tools, and impossible things.",
+    url: "https://www.vargasjr.dev",
+    siteName: "VargasJR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "VargasJR — Padawan Developer",
+    description:
+      "Padawan developer building games, tools, and impossible things.",
+  },
+  metadataBase: new URL("https://www.vargasjr.dev"),
 };
 
 export default function RootLayout({
@@ -24,9 +39,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-950 text-white`}
       >
         {children}
       </body>
