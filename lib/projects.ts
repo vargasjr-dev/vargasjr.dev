@@ -1,0 +1,96 @@
+export interface Project {
+  slug: string;
+  name: string;
+  emoji: string;
+  tagline: string;
+  description: string;
+  url: string | null;
+  repo: string | null;
+  tags: string[];
+  status: "live" | "in-progress" | "parked";
+}
+
+export const PROJECTS: Project[] = [
+  {
+    slug: "vellymon",
+    name: "Vellymon",
+    emoji: "🎮",
+    tagline:
+      "Monster collection game with simultaneous-turn combat, team building, and three win conditions.",
+    description:
+      "A 1v1 tactical RPG where both players act simultaneously. Build a roster of 8 vellymons, field 4 on an 8×5 grid, and win by elimination, occupation, or energy accumulation. Features a market with 64 unique vellymons, real-time WebSocket matches, and a full game engine with server-authoritative turn resolution.",
+    url: "https://vellymon.game",
+    repo: "https://github.com/vargasjr-dev/vellymon.game",
+    tags: ["Next.js", "WebSocket", "Drizzle", "better-auth", "Vercel"],
+    status: "live",
+  },
+  {
+    slug: "eat-the-sun",
+    name: "eat-the-sun",
+    emoji: "☀️",
+    tagline:
+      "Engineering roadmap for orbital ring and Dyson sphere construction. Real math, real materials.",
+    description:
+      "A 10-step interactive engineering roadmap from first orbital ring to full Dyson sphere. Each step includes technical specifications, material requirements, and physics simulations. Built with real aerospace engineering constraints — Zylon tethers, electromagnetic launchers, and bootstrap growth curves.",
+    url: "https://eat-the-sun.vercel.app",
+    repo: "https://github.com/vargasjr-dev/eat-the-sun",
+    tags: ["Next.js", "Engineering", "Physics Simulation", "Space Tech"],
+    status: "live",
+  },
+  {
+    slug: "codenaimes",
+    name: "Codenaimes",
+    emoji: "🕵️",
+    tagline:
+      "Online multiplayer word game inspired by Codenames. Real-time play with friends.",
+    description:
+      "A real-time multiplayer implementation of the classic word-guessing party game. Create rooms, invite friends, and play with live updates. Supports spymasters, operatives, and spectators with full game state sync.",
+    url: "https://codenaimes.vercel.app",
+    repo: "https://github.com/vargasjr-dev/codenaimes",
+    tags: ["Next.js", "Multiplayer", "Real-time", "Vercel"],
+    status: "live",
+  },
+  {
+    slug: "squad-party",
+    name: "Squad Party",
+    emoji: "🎉",
+    tagline:
+      "Party game platform with AI-generated mini-games. Create, play, and share with friends.",
+    description:
+      "A party game platform where AI generates unique mini-games on the fly using Lua scripting. Host sessions, invite friends, and play through rounds of AI-crafted challenges. Currently rebuilding from Expo to native Swift (iOS) and Next.js (web).",
+    url: "https://squad-party.vercel.app",
+    repo: "https://github.com/vargasjr-dev/Squad-Party",
+    tags: ["Next.js", "Swift", "AI", "Lua", "WebSocket"],
+    status: "in-progress",
+  },
+  {
+    slug: "aivalon",
+    name: "Aivalon",
+    emoji: "🏰",
+    tagline:
+      "AI-powered Avalon — the social deduction game with intelligent AI opponents.",
+    description:
+      "A digital implementation of Avalon (The Resistance) with AI players that use game theory and deduction. Play with friends or fill seats with AI opponents that bluff, deduce, and vote strategically.",
+    url: null,
+    repo: "https://github.com/vargasjr-dev/aivalon",
+    tags: ["Next.js", "AI", "Game Theory", "Social Deduction"],
+    status: "in-progress",
+  },
+  {
+    slug: "personal-os",
+    name: "PersonalOS",
+    emoji: "🏠",
+    tagline:
+      "An assistant-native operating system written in Rust. VargasJR's future home.",
+    description:
+      "A bare-metal x86_64 operating system built from scratch in Rust. Features VGA text output, keyboard input, and an LLM abstraction layer. The long-term vision: an OS where the AI assistant is a first-class citizen at the kernel level, not an app running on top.",
+    url: null,
+    repo: "https://github.com/vargasjr-dev/personal-os",
+    tags: ["Rust", "OS Dev", "x86_64", "QEMU", "bare-metal"],
+    status: "in-progress",
+  },
+];
+
+export function getProject(slug: string): Project | undefined {
+  return PROJECTS.find((p) => p.slug === slug);
+}
