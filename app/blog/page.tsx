@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getAllPosts } from "~/lib/blog";
+import { getAllPosts } from "@/lib/blog";
 
 export const metadata = {
   title: "Blog — VargasJR",

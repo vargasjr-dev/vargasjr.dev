@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { PROJECTS } from "~/lib/projects";
+import { PROJECTS } from "@/lib/projects";
 
 export default function Home() {
   return (

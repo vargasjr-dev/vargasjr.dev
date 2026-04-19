@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PROJECTS } from "~/lib/projects";
+import { PROJECTS } from "@/lib/projects";
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   live: {
