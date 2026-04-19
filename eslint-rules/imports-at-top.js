@@ -56,12 +56,12 @@ export default {
           node.type === "VariableDeclaration"
             ? "variable declaration"
             : node.type === "FunctionDeclaration"
-            ? "function declaration"
-            : node.type === "ExportNamedDeclaration"
-            ? "export statement"
-            : node.type === "ExportDefaultDeclaration"
-            ? "export statement"
-            : "statement";
+              ? "function declaration"
+              : node.type === "ExportNamedDeclaration"
+                ? "export statement"
+                : node.type === "ExportDefaultDeclaration"
+                  ? "export statement"
+                  : "statement";
       },
     };
   },
