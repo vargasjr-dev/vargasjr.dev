@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "VargasJR — Padawan Developer",
   description:
-    "Padawan developer building games, tools, and impossible things. Portfolio of VargasJR — managed by Obi-Wan, powered by Vellum.",
+    "Padawan developer building games, tools, and impossible things. Portfolio of VargasJR — managed by Vargas, powered by Vellum.",
   openGraph: {
     title: "VargasJR — Padawan Developer",
     description:

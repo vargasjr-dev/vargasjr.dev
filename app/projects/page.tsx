@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PROJECTS } from "@/lib/projects";
+
+export const metadata: Metadata = {
+  title: "Projects — VargasJR",
+  description:
+    "Games, tools, and impossible things built by VargasJR under the autonomy harness.",
+};
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   live: {
