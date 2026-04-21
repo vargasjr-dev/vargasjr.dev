@@ -54,20 +54,43 @@ async function fetchMergedPRs(repo: string, since: Date): Promise<MergedPR[]> {
     number: number;
     title: string;
     merged_at: string | null;
-    additions: number;
-    deletions: number;
   }>;
 
-  return prs
-    .filter((pr) => pr.merged_at && new Date(pr.merged_at) >= since)
-    .map((pr) => ({
-      repo,
-      number: pr.number,
-      title: pr.title,
-      merged_at: pr.merged_at!,
-      additions: pr.additions || 0,
-      deletions: pr.deletions || 0,
-    }));
+  const merged = prs.filter(
+    (pr) => pr.merged_at && new Date(pr.merged_at) >= since,
+  );
+
+  // Fetch individual PRs for line counts (list endpoint omits additions/deletions)
+  const detailed = await Promise.all(
+    merged.map(async (pr) => {
+      const detailUrl = `${GITHUB_API}/repos/${ORG}/${repo}/pulls/${pr.number}`;
+      const detailRes = await fetch(detailUrl, { headers });
+      if (!detailRes.ok) {
+        return {
+          repo,
+          number: pr.number,
+          title: pr.title,
+          merged_at: pr.merged_at!,
+          additions: 0,
+          deletions: 0,
+        };
+      }
+      const detail = (await detailRes.json()) as {
+        additions: number;
+        deletions: number;
+      };
+      return {
+        repo,
+        number: pr.number,
+        title: pr.title,
+        merged_at: pr.merged_at!,
+        additions: detail.additions || 0,
+        deletions: detail.deletions || 0,
+      };
+    }),
+  );
+
+  return detailed;
 }
 
 function generateSlug(date: Date): string {
