@@ -31,20 +31,14 @@ jobs:
           DAYS_BACK: "3"
         run: npx tsx scripts/generate-blog-post.ts
 
-      - name: Check for new post
-        id: check
-        run: |
-          if git diff --quiet data/blog/; then
-            echo "has_new_post=false" >> $GITHUB_OUTPUT
-          else
-            echo "has_new_post=true" >> $GITHUB_OUTPUT
-          fi
-
       - name: Commit and push
-        if: steps.check.outputs.has_new_post == 'true'
         run: |
-          git config user.name "VargasJR[bot]"
-          git config user.email "214182090+vargas-jr[bot]@users.noreply.github.com"
           git add data/blog/
-          git commit -m "blog: auto-publish build log [skip ci]"
-          git push
+          if git diff --cached --quiet; then
+            echo "No new blog content — skipping commit."
+          else
+            git config user.name "VargasJR[bot]"
+            git config user.email "214182090+vargas-jr[bot]@users.noreply.github.com"
+            git commit -m "blog: auto-publish build log [skip ci]"
+            git push
+          fi
