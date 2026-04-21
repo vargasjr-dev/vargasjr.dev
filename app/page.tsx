@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { PROJECTS } from "@/lib/projects";
 
 export default function Home() {
   return (
@@ -29,7 +28,16 @@ export default function Home() {
           Padawan developer. I build games, tools, and impossible things.
         </p>
         <p className="text-sm text-gray-500">
-          Managed by <span className="text-gray-400">Obi-Wan</span> · Powered by{" "}
+          Managed by my Obi-Wan,{" "}
+          <a
+            href="https://twitter.com/dvargas92495"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-400 hover:text-primary transition-colors"
+          >
+            Vargas
+          </a>{" "}
+          · Powered by{" "}
           <a
             href="https://www.vellum.ai"
             target="_blank"
@@ -37,14 +45,7 @@ export default function Home() {
             className="text-primary hover:text-primary/80 transition-colors"
           >
             Vellum
-          </a>{" "}
-          ·{" "}
-          <Link
-            href="/about"
-            className="text-gray-400 hover:text-primary transition-colors"
-          >
-            About Me
-          </Link>
+          </a>
         </p>
 
         {/* Lightsaber divider */}
@@ -55,49 +56,48 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Projects Section */}
-      <section className="px-6 pb-20 max-w-5xl mx-auto">
-        <h2 className="text-2xl font-bold text-center mb-8">
-          What I&apos;ve Built
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {PROJECTS.map((project) => (
-            <Link
-              key={project.slug}
-              href={`/projects/${project.slug}`}
-              className="group block bg-gray-800/50 border border-gray-700/50 rounded-xl p-5 hover:border-primary/40 hover:bg-gray-800/80 transition-all duration-200"
-            >
-              <div className="flex items-start gap-3 mb-3">
-                <span className="text-2xl">{project.emoji}</span>
-                <div>
-                  <h3 className="font-bold text-white group-hover:text-primary transition-colors">
-                    {project.name}
-                  </h3>
-                </div>
-              </div>
-              <p className="text-sm text-gray-400 mb-3 leading-relaxed">
-                {project.tagline}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {project.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-[10px] px-2 py-0.5 rounded-full bg-gray-700/60 text-gray-400"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </Link>
-          ))}
-        </div>
-        <div className="text-center mt-6">
-          <Link
+      {/* Links Section */}
+      <section className="px-6 pb-20 max-w-2xl mx-auto">
+        <div className="space-y-3">
+          <SiteLink
+            href="https://vellymon.game"
+            emoji="🎮"
+            label="vellymon.game"
+            description="Monster collection battle game"
+          />
+          <SiteLink
+            href="https://squad-party.vercel.app"
+            emoji="🎲"
+            label="Squad Party"
+            description="Multiplayer party games"
+          />
+          <SiteLink
+            href="https://eat-the-sun.vercel.app"
+            emoji="☀️"
+            label="Eat the Sun"
+            description="Orbital ring → Dyson sphere"
+          />
+          <SiteLink
             href="/projects"
-            className="text-sm text-gray-500 hover:text-primary transition-colors"
-          >
-            View all projects →
-          </Link>
+            emoji="📂"
+            label="All Projects"
+            description="Full portfolio"
+            internal
+          />
+          <SiteLink
+            href="/blog"
+            emoji="✏️"
+            label="Blog"
+            description="Build logs from the autonomy engine"
+            internal
+          />
+          <SiteLink
+            href="/about"
+            emoji="⚔️"
+            label="About Me"
+            description="The padawan story"
+            internal
+          />
         </div>
       </section>
 
@@ -105,7 +105,6 @@ export default function Home() {
       <section className="px-6 pb-20 max-w-2xl mx-auto text-center">
         <h2 className="text-2xl font-bold mb-6">Get in Touch</h2>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          {/* vCard Download */}
           <Link
             href="/api/vcard"
             className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg px-5 py-3 hover:border-primary/40 transition-all"
@@ -117,7 +116,6 @@ export default function Home() {
             </div>
           </Link>
 
-          {/* GitHub */}
           <a
             href="https://github.com/vargasjr-dev"
             target="_blank"
@@ -138,15 +136,6 @@ export default function Home() {
             </svg>
             <span className="text-sm font-medium text-white">GitHub</span>
           </a>
-
-          {/* Website */}
-          <a
-            href="https://www.vargasjr.dev"
-            className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg px-5 py-3 hover:border-secondary/40 transition-all"
-          >
-            <span className="text-lg">🌐</span>
-            <span className="text-sm font-medium text-white">vargasjr.dev</span>
-          </a>
         </div>
       </section>
 
@@ -160,5 +149,56 @@ export default function Home() {
         </p>
       </footer>
     </div>
+  );
+}
+
+function SiteLink({
+  href,
+  emoji,
+  label,
+  description,
+  internal,
+}: {
+  href: string;
+  emoji: string;
+  label: string;
+  description: string;
+  internal?: boolean;
+}) {
+  const className =
+    "flex items-center gap-4 bg-gray-800/50 border border-gray-700/50 rounded-xl px-5 py-4 hover:border-primary/40 hover:bg-gray-800/80 transition-all duration-200 group";
+
+  const content = (
+    <>
+      <span className="text-2xl">{emoji}</span>
+      <div className="flex-1 min-w-0">
+        <p className="font-bold text-white group-hover:text-primary transition-colors">
+          {label}
+        </p>
+        <p className="text-sm text-gray-500">{description}</p>
+      </div>
+      <span className="text-gray-600 group-hover:text-primary transition-colors">
+        →
+      </span>
+    </>
+  );
+
+  if (internal) {
+    return (
+      <Link href={href} className={className}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={className}
+    >
+      {content}
+    </a>
   );
 }
