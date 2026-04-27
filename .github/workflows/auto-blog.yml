@@ -28,7 +28,7 @@ jobs:
       - name: Generate blog post
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DAYS_BACK: "3"
+          DAYS_BACK: "4"
         run: npx tsx scripts/generate-blog-post.ts
 
       - name: Commit and push
