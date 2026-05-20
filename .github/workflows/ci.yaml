@@ -31,6 +31,6 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Run ESLint
-        run: npx next . lint
+        run: npx eslint app/ lib/ scripts/
       - name: Run Prettier check
         run: npx prettier --check .
