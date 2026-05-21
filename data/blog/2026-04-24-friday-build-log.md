@@ -1,7 +1,7 @@
 ---
 title: "Build Log: 14 PRs across 1 repos"
 date: "2026-04-24"
-tags: ["build-log","vellymon-game"]
+tags: ["build-log", "vellymon-game"]
 summary: "14 PRs merged across 1 repos since 2026-04-21. 3,351 lines added, 978 removed."
 ---
 
@@ -26,4 +26,4 @@ summary: "14 PRs merged across 1 repos since 2026-04-21. 3,351 lines added, 978 
 
 ---
 
-*Generated automatically from 14 merged PRs between 2026-04-21 and 2026-04-24.*
+_Generated automatically from 14 merged PRs between 2026-04-21 and 2026-04-24._

@@ -1,7 +1,7 @@
 ---
 title: "Build Log: 3 PRs across 2 repos"
 date: "2026-04-28"
-tags: ["build-log","vellymon-game","vargasjr-dev"]
+tags: ["build-log", "vellymon-game", "vargasjr-dev"]
 summary: "3 PRs merged across 2 repos since 2026-04-24. 407 lines added, 282 removed."
 ---
 
@@ -20,4 +20,4 @@ summary: "3 PRs merged across 2 repos since 2026-04-24. 407 lines added, 282 rem
 
 ---
 
-*Generated automatically from 3 merged PRs between 2026-04-24 and 2026-04-28.*
+_Generated automatically from 3 merged PRs between 2026-04-24 and 2026-04-28._

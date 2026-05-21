@@ -7,7 +7,7 @@
     "dev": "npx tsx scripts/dev.ts",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint && POSTGRES_URL=postgresql://dummy:dummy@localhost:5432/dummy knip",
+    "lint": "next . lint && POSTGRES_URL=postgresql://dummy:dummy@localhost:5432/dummy knip",
     "format:check": "prettier --check .",
     "ssh": "ssh -i ~/.ssh/vargasjr-dev.pem ubuntu@ec2-34-239-127-55.compute-1.amazonaws.com",
     "cleanup-pr": "npx tsx scripts/cleanup-pr.ts",
@@ -20,6 +20,7 @@
     "connect": "npx tsx scripts/ssh-connect.ts"
   },
   "dependencies": {
+    "@vercel/blob": "^0.23.4",
     "gray-matter": "^4.0.3",
     "next": "^16.2.4",
     "react": "^19.0.0",

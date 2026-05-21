@@ -1,19 +1,20 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import typescriptEslint from "typescript-eslint";
 import noMockInternalModules from "./eslint-rules/no-mock-internal-modules.js";
 import importsAtTop from "./eslint-rules/imports-at-top.js";
 import noInlineImports from "./eslint-rules/no-inline-imports.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    ignores: [".next/**", "node_modules/**", "dist/**", ".git/**"],
+  },
+  ...typescriptEslint.configs.recommended,
+  {
+    files: ["**/*.{js,jsx,ts,tsx}"],
+    rules: {
+      "no-console": "warn",
+      "no-unused-vars": "off",
+    },
+  },
   {
     plugins: {
       custom: {
@@ -33,6 +34,7 @@ const eslintConfig = [
     files: ["**/*.test.ts", "**/*.test.js", "**/*.spec.ts", "**/*.spec.js"],
     rules: {
       "custom/no-mock-internal-modules": "error",
+      "no-console": "off",
     },
   },
 ];
