@@ -22,9 +22,9 @@ export async function GET() {
   const cycleSeconds = 9;
   const phaseSeconds = cycleSeconds / PHRASES.length; // 3s each
 
-  // pct helpers for keyframe percentages
-  const inEnd = ((0.3 / phaseSeconds) * 100).toFixed(1); // ~10%
-  const outStart = (((phaseSeconds - 0.3) / phaseSeconds) * 100).toFixed(1); // ~90%
+  // pct helpers — percentages of the FULL cycle, not the phase
+  const inEnd = ((0.3 / cycleSeconds) * 100).toFixed(1); // ~3.3%
+  const outStart = (((phaseSeconds - 0.3) / cycleSeconds) * 100).toFixed(1); // ~30%
 
   const texts = PHRASES.map((phrase, i) => {
     const delay = i * phaseSeconds;
