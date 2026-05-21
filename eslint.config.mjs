@@ -1,3 +1,4 @@
+import typescriptEslint from "typescript-eslint";
 import noMockInternalModules from "./eslint-rules/no-mock-internal-modules.js";
 import importsAtTop from "./eslint-rules/imports-at-top.js";
 import noInlineImports from "./eslint-rules/no-inline-imports.js";
@@ -6,6 +7,7 @@ const eslintConfig = [
   {
     ignores: [".next/**", "node_modules/**", "dist/**", ".git/**"],
   },
+  ...typescriptEslint.configs.recommended,
   {
     files: ["**/*.{js,jsx,ts,tsx}"],
     rules: {
