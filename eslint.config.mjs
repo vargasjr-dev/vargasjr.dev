@@ -1,15 +1,18 @@
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import { FlatCompat } from "@eslint/eslintrc";
+import { createRequire } from "module";
 import noMockInternalModules from "./eslint-rules/no-mock-internal-modules.js";
 import importsAtTop from "./eslint-rules/imports-at-top.js";
 import noInlineImports from "./eslint-rules/no-inline-imports.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const require = createRequire(import.meta.url);
 
 const compat = new FlatCompat({
   baseDirectory: __dirname,
+  resolvePluginsRelativeTo: __dirname,
 });
 
 const eslintConfig = [
