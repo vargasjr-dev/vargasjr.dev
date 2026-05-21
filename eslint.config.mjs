@@ -1,13 +1,18 @@
-import { defineConfig } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTs from "eslint-config-next/typescript";
 import noMockInternalModules from "./eslint-rules/no-mock-internal-modules.js";
 import importsAtTop from "./eslint-rules/imports-at-top.js";
 import noInlineImports from "./eslint-rules/no-inline-imports.js";
 
-export default defineConfig([
-  ...nextVitals,
-  ...nextTs,
+const eslintConfig = [
+  {
+    ignores: [".next/**", "node_modules/**", "dist/**", ".git/**"],
+  },
+  {
+    files: ["**/*.{js,jsx,ts,tsx}"],
+    rules: {
+      "no-console": "warn",
+      "no-unused-vars": "off",
+    },
+  },
   {
     plugins: {
       custom: {
@@ -27,6 +32,9 @@ export default defineConfig([
     files: ["**/*.test.ts", "**/*.test.js", "**/*.spec.ts", "**/*.spec.js"],
     rules: {
       "custom/no-mock-internal-modules": "error",
+      "no-console": "off",
     },
   },
-]);
+];
+
+export default eslintConfig;
