@@ -9,12 +9,14 @@
  * Auth: uses GITHUB_PRIVATE_KEY env var (PKCS#1 RSA PEM, already in Vercel)
  * to mint a GitHub App installation token via node:crypto — no PAT needed.
  *
- * Caching: historical days (before today) are cached in-process forever —
- * they're immutable once the day ends. Only today + the last 7 days are
- * re-fetched on each miss. Full cold-start fetch covers the past year.
+ * Caching: historical days (before today) are cached in-process + Vercel Blob.
+ * On cold start, reads cached historical data from Blob. Only today + the last
+ * 7 days are re-fetched on each miss. Full cold-start fetch (no Blob data)
+ * covers the past year. Persists historical data to Blob on each update.
  */
 
 import { createSign } from "node:crypto";
+import { list, put } from "@vercel/blob";
 
 const GITHUB_GRAPHQL_URL = "https://api.github.com/graphql";
 const GITHUB_APP_ID = process.env.GITHUB_APP_ID ?? "1344447";
@@ -30,11 +32,13 @@ type DayData = { vargas: number; vargasJR: number };
 type GridData = Record<string, DayData>;
 
 // ── Per-day cache ─────────────────────────────────────────────────────────────
-// Historical days (before today) never change — keep them forever.
+// Historical days (before today) never change — kept in-process and persisted to Blob.
 // Today + recent 7 days are re-fetched on cache miss.
 const historicalCache = new Map<string, DayData>();
 let recentCache: { fetchedAt: number; data: GridData } | null = null;
+let blobLoaded = false; // track if we've already tried to load from Blob this instance
 const RECENT_TTL_MS = 60 * 60 * 1000; // re-fetch recent window every 1h
+const BLOB_CACHE_KEY = "github-stats-cache.json";
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -144,9 +148,66 @@ async function fetchPRsForRange(
   return grid;
 }
 
+// ── Vercel Blob persistence ───────────────────────────────────────────────────
+
+async function loadHistoricalFromBlob(): Promise<void> {
+  if (blobLoaded || !process.env.BLOB_READ_WRITE_TOKEN) {
+    return; // already tried, or Blob not available
+  }
+  blobLoaded = true;
+
+  try {
+    const blobs = await list({ prefix: BLOB_CACHE_KEY });
+    if (!blobs.blobs.length) return; // no cache file yet
+
+    const blob = blobs.blobs[0];
+    const response = await fetch(blob.url);
+    if (!response.ok) return;
+
+    const cached = (await response.json()) as Record<string, DayData>;
+    for (const [day, data] of Object.entries(cached)) {
+      historicalCache.set(day, data);
+    }
+    console.log(
+      `[github-stats] loaded ${historicalCache.size} cached days from Blob`,
+    );
+  } catch (err) {
+    // Graceful fallback: Blob unavailable, just continue with in-process cache
+    console.warn("[github-stats] failed to load from Blob:", err);
+  }
+}
+
+async function saveHistoricalToBlob(): Promise<void> {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return; // Blob not configured yet
+  }
+
+  if (historicalCache.size === 0) {
+    return; // nothing to save
+  }
+
+  try {
+    const cached = Object.fromEntries(historicalCache);
+    await put(BLOB_CACHE_KEY, JSON.stringify(cached), {
+      contentType: "application/json",
+    });
+    console.log(
+      `[github-stats] persisted ${historicalCache.size} cached days to Blob`,
+    );
+  } catch (err) {
+    // Graceful fallback: Blob write failed, but in-process cache is intact
+    console.warn("[github-stats] failed to save to Blob:", err);
+  }
+}
+
 async function getMergedPRGrid(): Promise<GridData> {
   const todayStr = today();
   const now = Date.now();
+
+  // On cold start, try to load historical cache from Blob (only once per instance)
+  if (historicalCache.size === 0 && !blobLoaded) {
+    await loadHistoricalFromBlob();
+  }
 
   // Is recent cache still fresh?
   const recentFresh =
@@ -192,6 +253,11 @@ async function getMergedPRGrid(): Promise<GridData> {
       historicalCache.set(day, data);
     }
   }
+
+  // Save historical cache to Blob (in background; don't wait for it)
+  saveHistoricalToBlob().catch(() => {
+    // already logged in saveHistoricalToBlob
+  });
 
   // Cache recent window (today + any days fetched this run)
   const recentData: GridData = {};
