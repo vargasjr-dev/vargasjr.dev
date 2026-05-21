@@ -189,6 +189,7 @@ async function saveHistoricalToBlob(): Promise<void> {
   try {
     const cached = Object.fromEntries(historicalCache);
     await put(BLOB_CACHE_KEY, JSON.stringify(cached), {
+      access: "public",
       contentType: "application/json",
     });
     console.log(
