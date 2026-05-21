@@ -6,11 +6,15 @@
  * VargasJR (app/vargas-jr). Each cell has a <title> tooltip with the
  * per-day breakdown on hover.
  *
- * Auth: uses GITHUB_PRIVATE_KEY + GITHUB_APP_ID env vars (already in Vercel)
- * to mint an installation token via the GitHub App — no separate PAT needed.
+ * Auth: uses GITHUB_PRIVATE_KEY env var (PKCS#1 RSA PEM, already in Vercel)
+ * to mint a GitHub App installation token via node:crypto — no PAT needed.
  *
- * Results are cached for 1 hour.
+ * Caching: historical days (before today) are cached in-process forever —
+ * they're immutable once the day ends. Only today + the last 7 days are
+ * re-fetched on each miss. Full cold-start fetch covers the past year.
  */
+
+import { createSign } from "node:crypto";
 
 const GITHUB_GRAPHQL_URL = "https://api.github.com/graphql";
 const GITHUB_APP_ID = process.env.GITHUB_APP_ID ?? "1344447";
@@ -21,63 +25,41 @@ const COLOR_VARGAS = "#3ba4dc";
 const COLOR_VARGASJR = "#fb923c";
 const COLOR_BOTH = "#a78bfa";
 const COLOR_EMPTY = "#161b22";
-const COLOR_LIGHT = "#21262d";
 
 type DayData = { vargas: number; vargasJR: number };
 type GridData = Record<string, DayData>;
 
-// ── JWT signing via Web Crypto (no jsonwebtoken dependency) ──────────────────
+// ── Per-day cache ─────────────────────────────────────────────────────────────
+// Historical days (before today) never change — keep them forever.
+// Today + recent 7 days are re-fetched on cache miss.
+const historicalCache = new Map<string, DayData>();
+let recentCache: { fetchedAt: number; data: GridData } | null = null;
+const RECENT_TTL_MS = 60 * 60 * 1000; // re-fetch recent window every 1h
 
-function base64url(buf: ArrayBuffer): string {
-  return btoa(String.fromCharCode(...new Uint8Array(buf)))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
-async function signJWT(payload: Record<string, unknown>): Promise<string> {
+// ── JWT + token ───────────────────────────────────────────────────────────────
+
+function signJWT(payload: Record<string, unknown>): string {
   const rawKey = (process.env.GITHUB_PRIVATE_KEY ?? "").replace(/\\n/g, "\n");
   if (!rawKey) throw new Error("GITHUB_PRIVATE_KEY not set");
 
-  const pemBody = rawKey
-    .replace(/-----BEGIN RSA PRIVATE KEY-----/, "")
-    .replace(/-----END RSA PRIVATE KEY-----/, "")
-    .replace(/-----BEGIN PRIVATE KEY-----/, "")
-    .replace(/-----END PRIVATE KEY-----/, "")
-    .replace(/\s+/g, "");
-  const keyDer = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0));
-
-  const key = await crypto.subtle.importKey(
-    "pkcs8",
-    keyDer,
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-
-  const header = base64url(
-    new TextEncoder().encode(JSON.stringify({ alg: "RS256", typ: "JWT" }))
-      .buffer as ArrayBuffer,
-  );
-  const body = base64url(
-    new TextEncoder().encode(JSON.stringify(payload)).buffer as ArrayBuffer,
-  );
+  const header = Buffer.from(
+    JSON.stringify({ alg: "RS256", typ: "JWT" }),
+  ).toString("base64url");
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
   const signingInput = `${header}.${body}`;
-  const sig = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
-    key,
-    new TextEncoder().encode(signingInput),
-  );
-  return `${signingInput}.${base64url(sig)}`;
+
+  const sign = createSign("RSA-SHA256");
+  sign.update(signingInput);
+  return `${signingInput}.${sign.sign(rawKey, "base64url")}`;
 }
 
 async function getInstallationToken(): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
-  const jwt = await signJWT({
-    iat: now - 60,
-    exp: now + 540,
-    iss: GITHUB_APP_ID,
-  });
+  const jwt = signJWT({ iat: now - 60, exp: now + 540, iss: GITHUB_APP_ID });
 
   const res = await fetch(
     `https://api.github.com/app/installations/${GITHUB_INSTALLATION_ID}/access_tokens`,
@@ -89,25 +71,21 @@ async function getInstallationToken(): Promise<string> {
       },
     },
   );
-  if (!res.ok) throw new Error(`Token exchange failed: ${res.status}`);
-  const data = await res.json();
-  return data.token as string;
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Token exchange failed ${res.status}: ${text}`);
+  }
+  const data = (await res.json()) as { token: string };
+  return data.token;
 }
 
-// ── PR data fetching ─────────────────────────────────────────────────────────
+// ── PR data fetching ──────────────────────────────────────────────────────────
 
-async function fetchMergedPRs(): Promise<GridData> {
-  let token: string;
-  try {
-    token = await getInstallationToken();
-  } catch {
-    return {};
-  }
-
+async function fetchPRsForRange(
+  token: string,
+  sinceDate: string,
+): Promise<GridData> {
   const grid: GridData = {};
-  const since = new Date();
-  since.setFullYear(since.getFullYear() - 1);
-  const sinceDate = since.toISOString().slice(0, 10);
 
   async function fetchForAuthor(
     authorQuery: string,
@@ -117,8 +95,8 @@ async function fetchMergedPRs(): Promise<GridData> {
     let hasMore = true;
 
     while (hasMore) {
-      const after: string = cursor ? `, after: "${cursor}"` : "";
-      const query: string = `{
+      const after = cursor ? `, after: "${cursor}"` : "";
+      const query = `{
         search(
           query: "is:pr is:merged org:vargasjr-dev ${authorQuery} merged:>=${sinceDate}"
           type: ISSUE
@@ -130,7 +108,7 @@ async function fetchMergedPRs(): Promise<GridData> {
         }
       }`;
 
-      const res: Response = await fetch(GITHUB_GRAPHQL_URL, {
+      const res = await fetch(GITHUB_GRAPHQL_URL, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -166,7 +144,69 @@ async function fetchMergedPRs(): Promise<GridData> {
   return grid;
 }
 
-// ── SVG rendering ────────────────────────────────────────────────────────────
+async function getMergedPRGrid(): Promise<GridData> {
+  const todayStr = today();
+  const now = Date.now();
+
+  // Is recent cache still fresh?
+  const recentFresh =
+    recentCache && now - recentCache.fetchedAt < RECENT_TTL_MS;
+
+  if (historicalCache.size > 0 && recentFresh) {
+    // Serve everything from cache
+    return {
+      ...Object.fromEntries(historicalCache),
+      ...recentCache!.data,
+    };
+  }
+
+  // Need to (re)fetch. Determine the right range:
+  // - Cold start: fetch full year
+  // - Warm / recent stale: only fetch last 8 days (keeps historical cache intact)
+  const isWarm = historicalCache.size > 0;
+  const since = new Date();
+  if (isWarm) {
+    since.setDate(since.getDate() - 8);
+  } else {
+    since.setFullYear(since.getFullYear() - 1);
+  }
+  const sinceDate = since.toISOString().slice(0, 10);
+
+  let token: string;
+  try {
+    token = await getInstallationToken();
+  } catch (err) {
+    console.error("[github-stats] token error:", err);
+    // Return whatever we have cached rather than empty grid
+    return {
+      ...Object.fromEntries(historicalCache),
+      ...(recentCache?.data ?? {}),
+    };
+  }
+
+  const fresh = await fetchPRsForRange(token, sinceDate);
+
+  // Persist completed days to historical cache
+  for (const [day, data] of Object.entries(fresh)) {
+    if (day < todayStr) {
+      historicalCache.set(day, data);
+    }
+  }
+
+  // Cache recent window (today + any days fetched this run)
+  const recentData: GridData = {};
+  for (const [day, data] of Object.entries(fresh)) {
+    if (day >= todayStr) recentData[day] = data;
+  }
+  recentCache = { fetchedAt: now, data: recentData };
+
+  return {
+    ...Object.fromEntries(historicalCache),
+    ...recentData,
+  };
+}
+
+// ── SVG rendering ─────────────────────────────────────────────────────────────
 
 function cellColor(d: DayData): string {
   if (d.vargas > 0 && d.vargasJR > 0) return COLOR_BOTH;
@@ -182,10 +222,10 @@ function cellOpacity(total: number): number {
 }
 
 function generateSVG(grid: GridData): string {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const todayDate = new Date();
+  todayDate.setHours(0, 0, 0, 0);
 
-  const start = new Date(today);
+  const start = new Date(todayDate);
   start.setDate(start.getDate() - 52 * 7);
   start.setDate(start.getDate() - start.getDay()); // back to Sunday
 
@@ -207,7 +247,7 @@ function generateSVG(grid: GridData): string {
     for (let row = 0; row < ROWS; row++) {
       const d = new Date(start);
       d.setDate(d.getDate() + col * 7 + row);
-      if (d > today) continue;
+      if (d > todayDate) continue;
 
       const key = d.toISOString().slice(0, 10);
       const data = grid[key] ?? { vargas: 0, vargasJR: 0 };
@@ -277,10 +317,10 @@ function generateSVG(grid: GridData): string {
 </svg>`;
 }
 
-// ── Handler ──────────────────────────────────────────────────────────────────
+// ── Handler ───────────────────────────────────────────────────────────────────
 
 export async function GET() {
-  const grid = await fetchMergedPRs();
+  const grid = await getMergedPRGrid();
   const svg = generateSVG(grid);
 
   return new Response(svg, {
