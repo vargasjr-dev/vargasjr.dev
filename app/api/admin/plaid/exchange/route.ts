@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { writeFileSync } from "fs";
-import { join } from "path";
 
 function checkAuth(request: Request): boolean {
   const token = request.headers.get("x-admin-token");
@@ -36,15 +34,5 @@ export async function POST(request: Request) {
     return NextResponse.json(data, { status: 400 });
   }
 
-  // Write to /tmp so VargasJR can retrieve and store in vault
-  try {
-    writeFileSync(
-      join("/tmp", "plaid_result.json"),
-      JSON.stringify({ access_token: data.access_token, item_id: data.item_id, timestamp: new Date().toISOString() })
-    );
-  } catch {
-    // Best effort — return success regardless
-  }
-
-  return NextResponse.json({ success: true, item_id: data.item_id });
+  return NextResponse.json({ success: true, item_id: data.item_id, access_token: data.access_token });
 }

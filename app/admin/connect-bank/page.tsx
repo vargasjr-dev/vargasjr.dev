@@ -59,7 +59,7 @@ export default function ConnectBankPage() {
 
           if (exchData.success) {
             setStatus("success");
-            setMessage(`✅ ${metadata?.institution?.name ?? "Bank"} connected! Item ID: ${exchData.item_id}`);
+            setMessage(exchData.access_token);
           } else {
             setStatus("error");
             setMessage("Exchange failed: " + JSON.stringify(exchData));
@@ -95,12 +95,23 @@ export default function ConnectBankPage() {
           </button>
         )}
 
-        {message && (
+        {status === "success" && message && (
+          <div className="mt-6 text-left">
+            <p className="text-green-400 text-sm mb-2 font-semibold">✅ Connected! Copy this access token and give it to VargasJR via the secure vault prompt:</p>
+            <textarea
+              readOnly
+              value={message}
+              className="w-full p-3 rounded-lg bg-gray-800 text-green-300 font-mono text-xs border border-green-800 resize-none"
+              rows={3}
+              onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+            />
+          </div>
+        )}
+
+        {status !== "success" && message && (
           <div
             className={`mt-6 p-4 rounded-lg text-sm ${
-              status === "success"
-                ? "bg-green-950 text-green-400 border border-green-900"
-                : status === "error"
+              status === "error"
                 ? "bg-red-950 text-red-400 border border-red-900"
                 : "bg-blue-950 text-[#3ba4dc] border border-blue-900"
             }`}
