@@ -14,7 +14,10 @@ export async function POST(request: Request) {
   const secret = process.env.PLAID_SECRET;
 
   if (!clientId || !secret) {
-    return NextResponse.json({ error: "Plaid credentials not configured" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Plaid credentials not configured" },
+      { status: 500 },
+    );
   }
 
   const res = await fetch("https://production.plaid.com/link/token/create", {

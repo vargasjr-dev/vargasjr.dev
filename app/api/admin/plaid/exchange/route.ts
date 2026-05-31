@@ -14,19 +14,28 @@ export async function POST(request: Request) {
   const secret = process.env.PLAID_SECRET;
 
   if (!clientId || !secret) {
-    return NextResponse.json({ error: "Plaid credentials not configured" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Plaid credentials not configured" },
+      { status: 500 },
+    );
   }
 
   const { public_token } = await request.json();
   if (!public_token) {
-    return NextResponse.json({ error: "Missing public_token" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing public_token" },
+      { status: 400 },
+    );
   }
 
-  const res = await fetch("https://production.plaid.com/item/public_token/exchange", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ client_id: clientId, secret, public_token }),
-  });
+  const res = await fetch(
+    "https://production.plaid.com/item/public_token/exchange",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ client_id: clientId, secret, public_token }),
+    },
+  );
 
   const data = await res.json();
 
@@ -34,5 +43,9 @@ export async function POST(request: Request) {
     return NextResponse.json(data, { status: 400 });
   }
 
-  return NextResponse.json({ success: true, item_id: data.item_id, access_token: data.access_token });
+  return NextResponse.json({
+    success: true,
+    item_id: data.item_id,
+    access_token: data.access_token,
+  });
 }
