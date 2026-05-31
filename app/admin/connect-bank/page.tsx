@@ -11,7 +11,9 @@ declare global {
 }
 
 export default function ConnectBankPage() {
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
   const [message, setMessage] = useState("");
   const router = useRouter();
 
@@ -24,7 +26,9 @@ export default function ConnectBankPage() {
     script.src = "https://cdn.plaid.com/link/v2/stable/link-initialize.js";
     script.async = true;
     document.head.appendChild(script);
-    return () => { document.head.removeChild(script); };
+    return () => {
+      document.head.removeChild(script);
+    };
   }, [router]);
 
   async function handleConnect() {
@@ -47,12 +51,20 @@ export default function ConnectBankPage() {
 
       const handler = window.Plaid.create({
         token: tokenData.link_token,
-        onSuccess: async (publicToken: string, metadata: { institution?: { name?: string } }) => {
-          setMessage(`Connected to ${metadata?.institution?.name ?? "bank"}. Exchanging token...`);
+        onSuccess: async (
+          publicToken: string,
+          metadata: { institution?: { name?: string } },
+        ) => {
+          setMessage(
+            `Connected to ${metadata?.institution?.name ?? "bank"}. Exchanging token...`,
+          );
 
           const exchRes = await fetch("/api/admin/plaid/exchange", {
             method: "POST",
-            headers: { "Content-Type": "application/json", "x-admin-token": adminToken },
+            headers: {
+              "Content-Type": "application/json",
+              "x-admin-token": adminToken,
+            },
             body: JSON.stringify({ public_token: publicToken }),
           });
           const exchData = await exchRes.json();
@@ -66,8 +78,13 @@ export default function ConnectBankPage() {
           }
         },
         onExit: (err: { display_message?: string } | null) => {
-          if (err) { setStatus("error"); setMessage(err.display_message ?? "Link exited with error"); }
-          else { setStatus("idle"); setMessage(""); }
+          if (err) {
+            setStatus("error");
+            setMessage(err.display_message ?? "Link exited with error");
+          } else {
+            setStatus("idle");
+            setMessage("");
+          }
         },
       });
 
@@ -82,8 +99,12 @@ export default function ConnectBankPage() {
   return (
     <main className="min-h-screen bg-gray-950 flex items-center justify-center">
       <div className="w-full max-w-md p-8 text-center">
-        <h1 className="text-2xl font-bold text-[#3ba4dc] mb-2">⚔️ Connect Bank</h1>
-        <p className="text-gray-400 text-sm mb-8">Sunday Fundsday — Capital One connection</p>
+        <h1 className="text-2xl font-bold text-[#3ba4dc] mb-2">
+          ⚔️ Connect Bank
+        </h1>
+        <p className="text-gray-400 text-sm mb-8">
+          Sunday Fundsday — Capital One connection
+        </p>
 
         {status !== "success" && (
           <button
@@ -97,7 +118,10 @@ export default function ConnectBankPage() {
 
         {status === "success" && message && (
           <div className="mt-6 text-left">
-            <p className="text-green-400 text-sm mb-2 font-semibold">✅ Connected! Copy this access token and give it to VargasJR via the secure vault prompt:</p>
+            <p className="text-green-400 text-sm mb-2 font-semibold">
+              ✅ Connected! Copy this access token and give it to VargasJR via
+              the secure vault prompt:
+            </p>
             <textarea
               readOnly
               value={message}

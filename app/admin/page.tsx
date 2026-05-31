@@ -35,7 +35,9 @@ export default function AdminLoginPage() {
     <main className="min-h-screen bg-gray-950 flex items-center justify-center">
       <div className="w-full max-w-sm p-8 text-center">
         <h1 className="text-2xl font-bold text-[#3ba4dc] mb-2">⚔️ Admin</h1>
-        <p className="text-gray-400 text-sm mb-8">Private area — VargasJR only</p>
+        <p className="text-gray-400 text-sm mb-8">
+          Private area — VargasJR only
+        </p>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <input

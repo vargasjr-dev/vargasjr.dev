@@ -12,6 +12,19 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
   },
 
+  // Proxy Vellum assistant API calls to the daemon.
+  // Set VELLUM_API_URL to the base URL of your Vellum backend (e.g. the
+  // ngrok tunnel or local address where the Vellum daemon is running).
+  async rewrites() {
+    const apiUrl = process.env.VELLUM_API_URL;
+    if (!apiUrl) return [];
+    return [
+      { source: "/v1/:path*", destination: `${apiUrl}/v1/:path*` },
+      { source: "/_allauth/:path*", destination: `${apiUrl}/_allauth/:path*` },
+      { source: "/accounts/:path*", destination: `${apiUrl}/accounts/:path*` },
+    ];
+  },
+
   // Bundle analyzer in dev (opt-in via ANALYZE=true)
   ...(process.env.ANALYZE === "true"
     ? {

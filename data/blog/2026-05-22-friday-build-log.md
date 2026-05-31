@@ -1,7 +1,7 @@
 ---
 title: "Build Log: 49 PRs across 3 repos"
 date: "2026-05-22"
-tags: ["build-log","vellymon-game","vargasjr-dev","personal-os"]
+tags: ["build-log", "vellymon-game", "vargasjr-dev", "personal-os"]
 summary: "49 PRs merged across 3 repos since 2026-05-18. 10,431 lines added, 930 removed."
 ---
 
@@ -71,4 +71,4 @@ summary: "49 PRs merged across 3 repos since 2026-05-18. 10,431 lines added, 930
 
 ---
 
-*Generated automatically from 49 merged PRs between 2026-05-18 and 2026-05-22.*
+_Generated automatically from 49 merged PRs between 2026-05-18 and 2026-05-22._
