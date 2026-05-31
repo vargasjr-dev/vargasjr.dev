@@ -65,3 +65,6 @@ cdktf.out/
 *.tfplan
 .env*.local
 .internal/
+
+# Generated at build time from @vellumai/web
+public/assistant/

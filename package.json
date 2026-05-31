@@ -5,6 +5,7 @@
   "scripts": {
     "setup": "npx tsx scripts/setup.ts",
     "dev": "npx tsx scripts/dev.ts",
+    "prebuild": "bun scripts/copy-assistant.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next . lint && POSTGRES_URL=postgresql://dummy:dummy@localhost:5432/dummy knip",
@@ -20,6 +21,7 @@
     "connect": "npx tsx scripts/ssh-connect.ts"
   },
   "dependencies": {
+    "@vellumai/web": "^0.8.6",
     "@vercel/blob": "^0.23.4",
     "gray-matter": "^4.0.3",
     "next": "^16.2.4",
