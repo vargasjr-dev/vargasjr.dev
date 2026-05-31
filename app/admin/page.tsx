@@ -1,13 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 
-export default function AdminLoginPage() {
+export default function AdminPage() {
   const [token, setToken] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [authed, setAuthed] = useState(false);
+
+  useEffect(() => {
+    if (localStorage.getItem("admin_token")) {
+      setAuthed(true);
+    }
+  }, []);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -25,10 +31,37 @@ export default function AdminLoginPage() {
 
     if (data.valid) {
       localStorage.setItem("admin_token", token);
-      router.push("/admin/connect-bank");
+      setAuthed(true);
     } else {
       setError("Invalid token.");
     }
+  }
+
+  if (authed) {
+    return (
+      <main className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <div className="w-full max-w-sm p-8 text-center">
+          <h1 className="text-2xl font-bold text-[#3ba4dc] mb-2">⚔️ Admin</h1>
+          <p className="text-gray-400 text-sm mb-8">
+            Private area — VargasJR only
+          </p>
+          <div className="space-y-3">
+            <Link
+              href="/admin/assistant"
+              className="block w-full py-3 rounded-lg bg-[#3ba4dc] text-white font-semibold hover:bg-[#2990c5] transition-colors"
+            >
+              Assistant
+            </Link>
+            <Link
+              href="/admin/connect-bank"
+              className="block w-full py-3 rounded-lg bg-gray-800 text-gray-200 font-semibold hover:bg-gray-700 transition-colors"
+            >
+              Bank Info
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   return (
