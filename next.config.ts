@@ -22,6 +22,10 @@ const nextConfig: NextConfig = {
       { source: "/v1/:path*", destination: `${apiUrl}/v1/:path*` },
       { source: "/_allauth/:path*", destination: `${apiUrl}/_allauth/:path*` },
       { source: "/accounts/:path*", destination: `${apiUrl}/accounts/:path*` },
+      {
+        source: "/assistant/__local/:path*",
+        destination: `${apiUrl}/assistant/__local/:path*`,
+      },
     ];
   },
 
