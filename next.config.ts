@@ -17,11 +17,32 @@ const nextConfig: NextConfig = {
   // ngrok tunnel or local address where the Vellum daemon is running).
   async rewrites() {
     const apiUrl = process.env.VELLUM_API_URL;
-    if (!apiUrl) return [];
+    const external = apiUrl
+      ? [
+          { source: "/v1/:path*", destination: `${apiUrl}/v1/:path*` },
+          {
+            source: "/_allauth/:path*",
+            destination: `${apiUrl}/_allauth/:path*`,
+          },
+          {
+            source: "/accounts/:path*",
+            destination: `${apiUrl}/accounts/:path*`,
+          },
+        ]
+      : [];
+
+    // Next.js treats __ folders as private (excluded from routing), so we
+    // map the SPA's __local paths to our real API routes via internal rewrites.
     return [
-      { source: "/v1/:path*", destination: `${apiUrl}/v1/:path*` },
-      { source: "/_allauth/:path*", destination: `${apiUrl}/_allauth/:path*` },
-      { source: "/accounts/:path*", destination: `${apiUrl}/accounts/:path*` },
+      ...external,
+      {
+        source: "/assistant/__local/lockfile",
+        destination: "/api/vellum-local/lockfile",
+      },
+      {
+        source: "/assistant/__local/guardian-token/:assistantId",
+        destination: "/api/vellum-local/guardian-token/:assistantId",
+      },
     ];
   },
 
