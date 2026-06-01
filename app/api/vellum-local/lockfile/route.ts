@@ -10,6 +10,9 @@ export async function GET(request: NextRequest) {
   const token = process.env.VELLUM_ACCESS_TOKEN;
   if (!token) return new NextResponse(null, { status: 404 });
 
+  const assistantId = process.env.VELLUM_ASSISTANT_ID;
+  if (!assistantId) return new NextResponse(null, { status: 404 });
+
   // Use the request origin so the SPA talks back through vargasjr.dev's
   // proxy rewrites (/v1/*, /_allauth/*, /accounts/*) rather than directly
   // to the backend. VELLUM_API_URL is for the proxy destination only.
@@ -18,11 +21,11 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     assistants: [
       {
-        assistantId: "vargasjr",
+        assistantId,
         cloud: "docker",
       },
     ],
-    activeAssistant: "vargasjr",
+    activeAssistant: assistantId,
     url: origin,
     token,
   });
