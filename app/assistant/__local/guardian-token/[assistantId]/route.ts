@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 export async function GET() {
+  const cookieStore = await cookies();
+  if (!cookieStore.get("admin_session")?.value) {
+    return new NextResponse(null, { status: 401 });
+  }
+
   const token = process.env.VELLUM_ACCESS_TOKEN;
   if (!token) return new NextResponse(null, { status: 404 });
 
