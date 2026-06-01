@@ -10,8 +10,12 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (WATCHED_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    const authHeader = request.headers.get("authorization");
+    const authSummary = authHeader
+      ? `auth=${authHeader.slice(0, 12)}...`
+      : "NO AUTH HEADER";
     console.log(
-      `[assistant-proxy] ${request.method} ${pathname} — ${new Date().toISOString()}`,
+      `[assistant-proxy] ${request.method} ${pathname} — ${authSummary} — ${new Date().toISOString()}`,
     );
   }
 
