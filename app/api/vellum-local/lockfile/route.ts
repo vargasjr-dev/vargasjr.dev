@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     assistants: [
       {
         assistantId: "vargasjr",
-        cloud: "vellum",
+        cloud: "docker",
       },
     ],
     activeAssistant: "vargasjr",
