@@ -37,6 +37,12 @@ export default function AdminPage() {
     }
   }
 
+  async function handleLogout() {
+    await fetch("/api/admin/logout", { method: "POST" });
+    localStorage.removeItem("admin_token");
+    setAuthed(false);
+  }
+
   if (authed) {
     return (
       <main className="min-h-screen bg-gray-950 flex items-center justify-center">
@@ -58,6 +64,12 @@ export default function AdminPage() {
             >
               Bank Info
             </Link>
+            <button
+              onClick={handleLogout}
+              className="block w-full py-3 rounded-lg bg-transparent text-gray-500 text-sm hover:text-gray-300 transition-colors"
+            >
+              Log out
+            </button>
           </div>
         </div>
       </main>
