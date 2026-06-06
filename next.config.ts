@@ -49,6 +49,17 @@ const nextConfig: NextConfig = {
         source: "/assistant/__gateway/self-hosted/auth/token",
         destination: "/api/vellum-local/gateway-token",
       },
+      // After P() succeeds, K() sets b.url = origin + /assistant/__gateway/self-hosted.
+      // The SPA's fetch interceptor then prefixes ALL SDK calls with b.url, so every
+      // API call becomes /assistant/__gateway/self-hosted/v1/... — proxy them to ngrok.
+      ...(apiUrl
+        ? [
+            {
+              source: "/assistant/__gateway/self-hosted/:path*",
+              destination: `${apiUrl}/:path*`,
+            },
+          ]
+        : []),
     ];
   },
 
