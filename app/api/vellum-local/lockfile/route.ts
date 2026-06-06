@@ -23,6 +23,10 @@ export async function GET(request: NextRequest) {
       {
         assistantId,
         cloud: "docker",
+        // resources.gatewayPort must be non-null for the SPA's I() filter to
+        // include this assistant in the local list (D). Without it, D=[] and
+        // the auto-connect P() never fires, leaving the SPA on "Connecting…".
+        resources: { gatewayPort: "self-hosted" },
       },
     ],
     activeAssistant: assistantId,

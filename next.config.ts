@@ -43,6 +43,12 @@ const nextConfig: NextConfig = {
         source: "/assistant/__local/guardian-token/:assistantId",
         destination: "/api/vellum-local/guardian-token/:assistantId",
       },
+      // P() connect flow: gateway token exchange
+      // gatewayPort="self-hosted" → URL = /assistant/__gateway/self-hosted/auth/token
+      {
+        source: "/assistant/__gateway/self-hosted/auth/token",
+        destination: "/api/vellum-local/gateway-token",
+      },
     ];
   },
 
