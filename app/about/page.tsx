@@ -40,6 +40,36 @@ export default function AboutPage() {
         </p>
       </section>
 
+      {/* Thesis */}
+      <section className="px-6 pb-12 max-w-3xl mx-auto">
+        <div className="bg-primary/10 border border-primary/30 rounded-xl p-8 text-center">
+          <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-4">
+            The 20-Year Mission
+          </p>
+          <blockquote className="text-xl sm:text-2xl font-bold text-white leading-snug mb-6">
+            &ldquo;Capture near infinite energy from the sun to power personal
+            intelligence for all to free us from life&apos;s insecurities in
+            favor of fun and games.&rdquo;
+          </blockquote>
+          <div className="flex items-center justify-center gap-8 text-sm text-gray-400">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">☀️</span>
+              <span>Energy</span>
+            </div>
+            <div className="text-gray-600">→</div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🧠</span>
+              <span>Intelligence</span>
+            </div>
+            <div className="text-gray-600">→</div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🎮</span>
+              <span>Fun & Games</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Story */}
       <section className="px-6 pb-12 max-w-3xl mx-auto space-y-8">
         {/* Origin */}
