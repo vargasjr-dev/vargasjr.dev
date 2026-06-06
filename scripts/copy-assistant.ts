@@ -8,7 +8,7 @@
  * After copying, applies patches to the SPA bundle so self-hosted
  * (docker/cloud) mode works without a gateway port.
  */
-import { cp, mkdir, readFile, rm, writeFile } from "fs/promises";
+import { cp, mkdir, readFile, readdir, rm, writeFile } from "fs/promises";
 import { join } from "path";
 
 const srcDir = join(process.cwd(), "node_modules/@vellumai/web/dist");
@@ -20,46 +20,64 @@ await cp(srcDir, destDir, { recursive: true });
 console.log("✅ Copied @vellumai/web/dist → public/assistant/");
 
 // Patch the SPA bundle for self-hosted mode.
-// Vercel uses a custom buildCommand (vercel.json) that bypasses package.json
-// build scripts, so patches must be applied here after copying.
+// vercel.json overrides buildCommand, bypassing package.json build scripts,
+// so patches must be applied here after copying.
+//
+// Files use content-hash names (e.g. local-mode-DTyhlxIJ.js) — find by prefix.
+const assetsDir = join(destDir, "assets");
+const assetFiles = await readdir(assetsDir);
+
+function findAsset(prefix: string): string | null {
+  const match = assetFiles.find(
+    (f) => f.startsWith(prefix) && f.endsWith(".js")
+  );
+  return match ? join(assetsDir, match) : null;
+}
+
 const patches: Array<{
-  file: string;
+  filePrefix: string;
   description: string;
   from: string;
   to: string;
 }> = [
   {
-    file: "assets/local-mode-DTyhlxIJ.js",
+    filePrefix: "local-mode-",
     description:
-      "K() falls back to lockfile url+token when no gatewayPort, so YX() interceptor gets a token to inject as Authorization header",
+      "K() falls back to lockfile url+token when no gatewayPort, so the fetch interceptor gets a token to inject as Authorization header",
     from: "async function K(){let e=v();if(!e)return;",
     to: "async function K(){let e=v();if(!e){let lf=j();lf.url&&lf.token&&x({url:lf.url,token:lf.token});return}",
   },
   {
-    file: "assets/auth-store-B6yNvrw4.js",
+    filePrefix: "auth-store-",
     description:
-      "In self-hosted docker branch (m()&&!v()), call g() to set b.url/b.token from lockfile before any API requests; remove allauth fire-and-forget that always 401s",
+      "In self-hosted docker branch (m()&&!v()), call g() to load lockfile token before any API requests; remove allauth fire-and-forget that always 401s in self-hosted mode",
     from: "if(m()&&!v()){e({isLoggedIn:!0,isLoading:!1,user:Y}),a().then(t=>{t.ok&&t.data.user&&e({hasPlatformSession:!0,user:K(t.data.user)})}).catch(()=>{});return}",
     to: "if(m()&&!v()){try{await g()}catch{}e({isLoggedIn:!0,isLoading:!1,user:Y});return}",
   },
 ];
 
-for (const { file, description, from, to } of patches) {
-  const filePath = join(destDir, file);
+for (const { filePrefix, description, from, to } of patches) {
+  const filePath = findAsset(filePrefix);
+
+  if (!filePath) {
+    console.warn(`⚠️  No file matching ${filePrefix}*.js found — skipping patch`);
+    continue;
+  }
+
   const content = await readFile(filePath, "utf-8");
 
   if (content.includes(to)) {
-    console.log(`⏭️  Already patched: ${file}`);
+    console.log(`⏭️  Already patched: ${filePrefix}*.js`);
     continue;
   }
 
   if (!content.includes(from)) {
-    console.warn(`⚠️  Patch target not found in ${file} — skipping`);
+    console.warn(`⚠️  Patch target not found in ${filePrefix}*.js — skipping`);
     console.warn(`    ${description}`);
     continue;
   }
 
   await writeFile(filePath, content.replace(from, to));
-  console.log(`🩹 Patched: ${file}`);
+  console.log(`🩹 Patched: ${filePrefix}*.js`);
   console.log(`    ${description}`);
 }
