@@ -19,7 +19,7 @@
     "setup:local": "npx tsx scripts/setup-local.ts",
     "healthcheck": "npx tsx scripts/healthcheck.ts",
     "connect": "npx tsx scripts/ssh-connect.ts",
-    "postinstall": "patch -p0 < patches/@vellumai+web+0.8.6.patch || true"
+    "postinstall": "patch -p1 < patches/@vellumai+web+0.8.6.patch || true"
   },
   "dependencies": {
     "@vellumai/web": "^0.8.6",
