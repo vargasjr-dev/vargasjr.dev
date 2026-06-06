@@ -56,22 +56,6 @@ const patches: Array<{
     from: "if(m()&&!v()){e({isLoggedIn:!0,isLoading:!1,user:Y}),a().then(t=>{t.ok&&t.data.user&&e({hasPlatformSession:!0,user:K(t.data.user)})}).catch(()=>{});return}",
     to: "if(m()&&!v()){try{await g()}catch{}e({isLoggedIn:!0,isLoading:!1,user:Y});return}",
   },
-  // TEST: strip Authorization header entirely to diagnose 429s from daemon.
-  // LU() is used by SDK calls; the fetch interceptor covers raw fetch.
-  {
-    filePrefix: "index-",
-    description:
-      "TEST: remove Authorization header injection from LU() and fetch interceptor",
-    from: "function LU(e){let t={...e??{}},n=yt();if(n)return t.Authorization=`Bearer ${n}`,t;let r=Ft();return r&&(t[`Vellum-Organization-Id`]=r),t}",
-    to: "function LU(e){let t={...e??{}};let r=Ft();return r&&(t[`Vellum-Organization-Id`]=r),t}",
-  },
-  {
-    filePrefix: "index-",
-    description:
-      "TEST: nullify token in raw fetch interceptor so Authorization header is deleted",
-    from: "let s=yt();s?o.set(`Authorization`,`Bearer ${s}`):o.delete(`Authorization`)",
-    to: "let s=null;s?o.set(`Authorization`,`Bearer ${s}`):o.delete(`Authorization`)",
-  },
 ];
 
 for (const { filePrefix, description, from, to } of patches) {
