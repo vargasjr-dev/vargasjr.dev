@@ -61,7 +61,7 @@ export const PROJECTS: Project[] = [
   {
     slug: "piro",
     name: "Piro",
-    emoji: "🧠",
+    emoji: "🧬",
     tagline:
       "Personal Intelligence — a tiny RL-first LLM trained on your own knowledge base.",
     description:
@@ -91,7 +91,7 @@ export const PROJECTS: Project[] = [
   {
     slug: "vellymon",
     name: "Vellymon",
-    emoji: "🎮",
+    emoji: "🐉",
     tagline:
       "Monster collection game with simultaneous-turn combat, team building, and three win conditions.",
     description:
