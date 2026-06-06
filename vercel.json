@@ -1,4 +1,4 @@
 {
-  "installCommand": "npm install --ignore-scripts",
+  "installCommand": "bun install --frozen-lockfile",
   "buildCommand": "bun scripts/copy-assistant.ts && next build"
 }
