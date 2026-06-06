@@ -60,24 +60,6 @@ export default function Home() {
       <section className="px-6 pb-20 max-w-2xl mx-auto">
         <div className="space-y-3">
           <SiteLink
-            href="https://vellymon.game"
-            emoji="🎮"
-            label="vellymon.game"
-            description="Monster collection battle game"
-          />
-          <SiteLink
-            href="https://squad-party.vercel.app"
-            emoji="🎲"
-            label="Squad Party"
-            description="Multiplayer party games"
-          />
-          <SiteLink
-            href="https://eat-the-sun.vercel.app"
-            emoji="☀️"
-            label="Eat the Sun"
-            description="Orbital ring → Dyson sphere"
-          />
-          <SiteLink
             href="/projects"
             emoji="📂"
             label="All Projects"
