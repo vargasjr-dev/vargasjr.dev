@@ -6,7 +6,7 @@
     "setup": "npx tsx scripts/setup.ts",
     "dev": "npx tsx scripts/dev.ts",
     "prebuild": "bun scripts/copy-assistant.ts",
-    "build": "next build",
+    "build": "patch -p1 < patches/@vellumai+web+0.8.6.patch || true && next build",
     "start": "next start",
     "lint": "next . lint && POSTGRES_URL=postgresql://dummy:dummy@localhost:5432/dummy knip",
     "format:check": "prettier --check .",
