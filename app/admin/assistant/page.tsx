@@ -45,7 +45,7 @@ export default function AssistantPage() {
   }
 
   return (
-    <main className="h-screen w-screen overflow-hidden">
+    <main className="h-dvh w-screen overflow-hidden">
       <iframe
         src="/assistant/"
         className="w-full h-full border-0"
