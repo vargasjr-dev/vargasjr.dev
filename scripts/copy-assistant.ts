@@ -29,7 +29,7 @@ const assetFiles = await readdir(assetsDir);
 
 function findAsset(prefix: string): string | null {
   const match = assetFiles.find(
-    (f) => f.startsWith(prefix) && f.endsWith(".js")
+    (f) => f.startsWith(prefix) && f.endsWith(".js"),
   );
   return match ? join(assetsDir, match) : null;
 }
@@ -45,7 +45,9 @@ const patches: Array<{
     description:
       "K() falls back to lockfile url+token when no gatewayPort, so the fetch interceptor gets a token to inject as Authorization header",
     from: "async function K(){let e=v();if(!e)return;",
-    to: "async function K(){let e=v();if(!e){let lf=j();lf.url&&lf.token&&x({url:lf.url,token:lf.token});return}",
+    // Use A() (live fetch) not j() (stale cache) so the lockfile is always
+    // fresh and resources.gatewayPort is present for the I() filter in R().
+    to: "async function K(){let e=v();if(!e){let lf=await A();lf.url&&lf.token&&x({url:lf.url,token:lf.token});return}",
   },
   {
     filePrefix: "auth-store-",
@@ -60,7 +62,9 @@ for (const { filePrefix, description, from, to } of patches) {
   const filePath = findAsset(filePrefix);
 
   if (!filePath) {
-    console.warn(`⚠️  No file matching ${filePrefix}*.js found — skipping patch`);
+    console.warn(
+      `⚠️  No file matching ${filePrefix}*.js found — skipping patch`,
+    );
     continue;
   }
 
