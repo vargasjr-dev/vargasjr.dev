@@ -108,3 +108,19 @@ if (indexFile) {
 } else {
   console.warn("patch-vellum: [sidebar] index-*.js not found in assets dir");
 }
+
+// ── 4. nav sections — hide Scheduled and Background ─────────────────────────
+// The $C array defines all system sidebar groups. Strip the two noise sections
+// so only Pinned and Recents appear in the nav.
+if (indexFile) {
+  patchFile(
+    `node_modules/@vellumai/web/dist/assets/${indexFile}`,
+    [
+      [
+        `$C=[{id:\`system:pinned\`,name:\`Pinned\`},{id:\`system:scheduled\`,name:\`Scheduled\`},{id:\`system:background\`,name:\`Background\`},{id:\`system:all\`,name:\`Recents\`}]`,
+        `$C=[{id:\`system:pinned\`,name:\`Pinned\`},{id:\`system:all\`,name:\`Recents\`}]`,
+      ],
+    ],
+    "nav-sections",
+  );
+}

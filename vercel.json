@@ -1,4 +1,4 @@
 {
   "installCommand": "bun install --frozen-lockfile",
-  "buildCommand": "bun scripts/copy-assistant.ts && next build"
+  "buildCommand": "bun scripts/patch-vellum.js && bun scripts/copy-assistant.ts && next build"
 }
