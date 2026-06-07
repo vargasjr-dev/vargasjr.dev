@@ -1,4 +1,7 @@
-#!/usr/bin/env node
+import { existsSync, readFileSync, writeFileSync } from "fs";
+import { join, dirname, basename } from "path";
+import { fileURLToPath } from "url";
+
 /**
  * Patches @vellumai/web sidebar conversation limit from 5 → 16.
  *
@@ -9,22 +12,19 @@
  * Run automatically via postinstall / build.
  */
 
-const fs = require("fs");
-const path = require("path");
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const TARGET = path.join(
+const TARGET = join(
   __dirname,
   "../node_modules/@vellumai/web/dist/assets/index-DUwiZuxe.js",
 );
 
-if (!fs.existsSync(TARGET)) {
-  console.log(
-    `patch-vellum-sidebar: ${path.basename(TARGET)} not found, skipping`,
-  );
+if (!existsSync(TARGET)) {
+  console.log(`patch-vellum-sidebar: ${basename(TARGET)} not found, skipping`);
   process.exit(0);
 }
 
-let content = fs.readFileSync(TARGET, "utf8");
+let content = readFileSync(TARGET, "utf8");
 
 const replacements = [
   // Command palette recent conversations list
@@ -64,7 +64,7 @@ for (const [from, to] of replacements) {
   }
 }
 
-fs.writeFileSync(TARGET, content, "utf8");
+writeFileSync(TARGET, content, "utf8");
 console.log(
-  `patch-vellum-sidebar: applied ${applied}/${replacements.length} replacements to ${path.basename(TARGET)}`,
+  `patch-vellum-sidebar: applied ${applied}/${replacements.length} replacements to ${basename(TARGET)}`,
 );

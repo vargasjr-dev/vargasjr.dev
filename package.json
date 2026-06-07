@@ -6,7 +6,7 @@
     "setup": "npx tsx scripts/setup.ts",
     "dev": "npx tsx scripts/dev.ts",
     "prebuild": "bun scripts/copy-assistant.ts",
-    "build": "patch -p1 < patches/@vellumai+web+0.8.8.patch || true && patch -p1 < patches/@vellumai+web+0.8.8-auth-store.patch || true && node scripts/patch-vellum-sidebar.js && next build",
+    "build": "patch -p1 < patches/@vellumai+web+0.8.8.patch || true && patch -p1 < patches/@vellumai+web+0.8.8-auth-store.patch || true && bun scripts/patch-vellum-sidebar.js && next build",
     "start": "next start",
     "lint": "next . lint && POSTGRES_URL=postgresql://dummy:dummy@localhost:5432/dummy knip",
     "format:check": "prettier --check .",
@@ -19,7 +19,7 @@
     "setup:local": "npx tsx scripts/setup-local.ts",
     "healthcheck": "npx tsx scripts/healthcheck.ts",
     "connect": "npx tsx scripts/ssh-connect.ts",
-    "postinstall": "patch -p1 < patches/@vellumai+web+0.8.8.patch || true && patch -p1 < patches/@vellumai+web+0.8.8-auth-store.patch || true && node scripts/patch-vellum-sidebar.js"
+    "postinstall": "patch -p1 < patches/@vellumai+web+0.8.8.patch || true && patch -p1 < patches/@vellumai+web+0.8.8-auth-store.patch || true && bun scripts/patch-vellum-sidebar.js"
   },
   "dependencies": {
     "@vellumai/web": "^0.8.6",
