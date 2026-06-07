@@ -61,7 +61,7 @@ export const PROJECTS: Project[] = [
   {
     slug: "piro",
     name: "Piro",
-    emoji: "🧬",
+    emoji: "🔥",
     tagline:
       "Personal Intelligence — a tiny RL-first LLM trained on your own knowledge base.",
     description:
@@ -84,6 +84,21 @@ export const PROJECTS: Project[] = [
     repo: "https://github.com/vargasjr-dev/personal-os",
     tags: ["Rust", "OS Dev", "x86_64", "QEMU", "bare-metal"],
     status: "in-progress",
+    tier: "intelligence",
+  },
+
+  {
+    slug: "mac-falcon",
+    name: "Mac Falcon",
+    emoji: "🦅",
+    tagline:
+      "Give your AI a body. Robotics kits that put your Mac Mini on wheels.",
+    description:
+      "Lego Technic superstructure + robot base kits that mount a Mac Mini and let it roam untethered. Each kit ships with all the parts, hardware, and build instructions. Add cameras and arms when you're ready. Built for makers who want their AI to move.",
+    url: "https://mac-falcon.vercel.app",
+    repo: "https://github.com/vargasjr-dev/mac-falcon",
+    tags: ["Robotics", "Hardware", "Mac Mini", "Lego Technic", "Mobile AI"],
+    status: "live",
     tier: "intelligence",
   },
 
