@@ -56,6 +56,104 @@ const patches: Array<{
     from: "if(m()&&!v()){e({isLoggedIn:!0,isLoading:!1,user:Y}),a().then(t=>{t.ok&&t.data.user&&e({hasPlatformSession:!0,user:K(t.data.user)})}).catch(()=>{});return}",
     to: "if(m()&&!v()){try{await g()}catch{}e({isLoggedIn:!0,isLoading:!1,user:Y});return}",
   },
+
+  // ── Sidebar conversation limit 5 → 16 ────────────────────────────────────
+  // Two sets of patterns: the minifier assigns different variable names across
+  // @vellumai/web versions. Only one set will match; the other is a no-op.
+
+  // Version A  (local 0.8.8 — index-DUwiZuxe.js)
+  {
+    filePrefix: "index-",
+    description: "Sidebar useState init (vA)",
+    from: "useState)(5),[k,A]=(0,X.useState)(5)",
+    to: "useState)(16),[k,A]=(0,X.useState)(16)",
+  },
+  {
+    filePrefix: "index-",
+    description: "Sidebar showLess recents (vA)",
+    from: "showLess:D>5&&w.recents.length>5",
+    to: "showLess:D>16&&w.recents.length>16",
+  },
+  {
+    filePrefix: "index-",
+    description: "Sidebar onShowLess recents (vA)",
+    from: "onShowLess:()=>O(5)}},[w.recents",
+    to: "onShowLess:()=>O(16)}},[w.recents",
+  },
+  {
+    filePrefix: "index-",
+    description: "Sidebar showLess slack (vA)",
+    from: "showLess:k>5&&w.slack.length>5",
+    to: "showLess:k>16&&w.slack.length>16",
+  },
+  {
+    filePrefix: "index-",
+    description: "Sidebar onShowLess slack (vA)",
+    from: "onShowLess:()=>A(5)}},[w.slack",
+    to: "onShowLess:()=>A(16)}},[w.slack",
+  },
+  {
+    filePrefix: "index-",
+    description: "Sidebar conv palette slice (vA)",
+    from: "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:rm,",
+    to: "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:rm,",
+  },
+
+  // Version B  (Vercel-deployed — index-D6-nsIUa.js)
+  {
+    filePrefix: "index-",
+    description: "Sidebar useState init (vB)",
+    from: "[f,p]=(0,G.useState)(5),[m,h]=(0,G.useState)(5)",
+    to: "[f,p]=(0,G.useState)(16),[m,h]=(0,G.useState)(16)",
+  },
+  {
+    filePrefix: "index-",
+    description: "Sidebar showLess recents (vB)",
+    from: "showLess:f>5&&l.recents.length>5",
+    to: "showLess:f>16&&l.recents.length>16",
+  },
+  {
+    filePrefix: "index-",
+    description: "Sidebar onShowLess recents (vB)",
+    from: "onShowLess:()=>p(5)}},[l.recents",
+    to: "onShowLess:()=>p(16)}},[l.recents",
+  },
+  {
+    filePrefix: "index-",
+    description: "Sidebar showLess slack (vB)",
+    from: "showLess:m>5&&l.slack.length>5",
+    to: "showLess:m>16&&l.slack.length>16",
+  },
+  {
+    filePrefix: "index-",
+    description: "Sidebar onShowLess slack (vB)",
+    from: "onShowLess:()=>h(5)}},[l.slack",
+    to: "onShowLess:()=>h(16)}},[l.slack",
+  },
+  {
+    filePrefix: "index-",
+    description: "Sidebar conv palette slice (vB)",
+    from: "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:RA,",
+    to: "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:RA,",
+  },
+
+  // Version-agnostic (variable name not involved)
+  {
+    filePrefix: "index-",
+    description: "Sidebar command-palette Set slice 5→16",
+    from: "new Set(n.slice(0,5).map(e=>e.conversationId",
+    to: "new Set(n.slice(0,16).map(e=>e.conversationId",
+  },
+
+  // ── Hide Scheduled and Background nav sections ────────────────────────────
+  // The system groups array defines which sections appear in the sidebar nav.
+  // Pattern is version-agnostic (array content, not the variable name).
+  {
+    filePrefix: "index-",
+    description: "Hide Scheduled and Background from sidebar nav",
+    from: "[{id:`system:pinned`,name:`Pinned`},{id:`system:scheduled`,name:`Scheduled`},{id:`system:background`,name:`Background`},{id:`system:all`,name:`Recents`}]",
+    to: "[{id:`system:pinned`,name:`Pinned`},{id:`system:all`,name:`Recents`}]",
+  },
 ];
 
 for (const { filePrefix, description, from, to } of patches) {
