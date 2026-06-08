@@ -3,7 +3,7 @@ import type { Config } from "drizzle-kit";
 const databaseUrl = process.env.NEON_URL || process.env.POSTGRES_URL;
 
 if (!databaseUrl) {
-  throw new Error("POSTGRES_URL is not set");
+  throw new Error("NEON_URL or POSTGRES_URL is not set");
 }
 
 export default {

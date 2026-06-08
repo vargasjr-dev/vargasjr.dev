@@ -22,8 +22,10 @@
     "postinstall": "bun scripts/patch-vellum.js"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@vellumai/web": "^0.8.6",
     "@vercel/blob": "^0.23.4",
+    "drizzle-orm": "^0.45.2",
     "gray-matter": "^4.0.3",
     "next": "^16.2.4",
     "react": "^19.0.0",
