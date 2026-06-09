@@ -19,7 +19,8 @@
     "setup:local": "npx tsx scripts/setup-local.ts",
     "healthcheck": "npx tsx scripts/healthcheck.ts",
     "connect": "npx tsx scripts/ssh-connect.ts",
-    "postinstall": "bun scripts/patch-vellum.js"
+    "postinstall": "bun scripts/patch-vellum.js",
+    "db:push": "bunx drizzle-kit push"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
