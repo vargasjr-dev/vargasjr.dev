@@ -9,12 +9,6 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: bun install --no-save
       - name: Query emails table
-        run: |
-          bun -e "
-          const { neon } = await import('@neondatabase/serverless');
-          const sql = neon(process.env.POSTGRES_URL);
-          const rows = await sql\`SELECT id, \"to\", \"from\", subject, received_at FROM emails ORDER BY received_at DESC LIMIT 10\`;
-          console.log(JSON.stringify(rows, null, 2));
-          "
+        run: bun scripts/query-emails.ts
         env:
           POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
