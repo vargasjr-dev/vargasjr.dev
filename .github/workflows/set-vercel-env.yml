@@ -18,11 +18,11 @@ jobs:
 
       - name: Link to Vercel project
         run: vercel link --yes --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: team_bhY6xQNSaDzgiVpXhdFPXvZL
+
+      - name: Show project ID
+        run: cat .vercel/project.json
 
       - name: Set RESEND_WEBHOOK_SECRET
         run: echo "$SECRET" | vercel env add RESEND_WEBHOOK_SECRET production --token=${{ secrets.VERCEL_TOKEN }}
         env:
-          VERCEL_ORG_ID: team_bhY6xQNSaDzgiVpXhdFPXvZL
           SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
