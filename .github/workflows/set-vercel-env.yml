@@ -1,0 +1,28 @@
+name: Set Vercel Env Vars (one-time)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  set-env:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install Vercel CLI
+        run: bun install -g vercel
+
+      - name: Link to Vercel project
+        run: vercel link --yes --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: team_bhY6xQNSaDzgiVpXhdFPXvZL
+
+      - name: Set RESEND_WEBHOOK_SECRET
+        run: echo "$SECRET" | vercel env add RESEND_WEBHOOK_SECRET production --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: team_bhY6xQNSaDzgiVpXhdFPXvZL
+          SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
