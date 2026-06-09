@@ -40,28 +40,14 @@ const patches: Array<{
   from: string;
   to: string;
 }> = [
-  {
-    filePrefix: "local-mode-",
-    description:
-      "K() falls back to lockfile url+token when no gatewayPort, so the fetch interceptor gets a token to inject as Authorization header",
-    from: "async function K(){let e=v();if(!e)return;",
-    // Use A() (live fetch) not j() (stale cache) so the lockfile is always
-    // fresh and resources.gatewayPort is present for the I() filter in R().
-    to: "async function K(){let e=v();if(!e){let lf=await A();lf.url&&lf.token&&x({url:lf.url,token:lf.token});return}",
-  },
-  {
-    filePrefix: "auth-store-",
-    description:
-      "In self-hosted docker branch (m()&&!v()), call g() to load lockfile token before any API requests; remove allauth fire-and-forget that always 401s in self-hosted mode",
-    from: "if(m()&&!v()){e({isLoggedIn:!0,isLoading:!1,user:Y}),a().then(t=>{t.ok&&t.data.user&&e({hasPlatformSession:!0,user:K(t.data.user)})}).catch(()=>{});return}",
-    to: "if(m()&&!v()){try{await g()}catch{}e({isLoggedIn:!0,isLoading:!1,user:Y});return}",
-  },
-
   // ── Sidebar conversation limit 5 → 16 ────────────────────────────────────
-  // Two sets of patterns: the minifier assigns different variable names across
-  // @vellumai/web versions. Only one set will match; the other is a no-op.
+  // The minifier assigns different variable names across @vellumai/web versions.
+  // Only the matching version's pattern will apply; others are silent no-ops.
+  //
+  // NOTE: As of 0.8.10 the sidebar main component already ships with 16,
+  // so only the command-palette slice still needs patching.
 
-  // Version A  (local 0.8.8 — index-DUwiZuxe.js)
+  // Version A  (0.8.8 — index-DUwiZuxe.js)
   {
     filePrefix: "index-",
     description: "Sidebar useState init (vA)",
@@ -94,7 +80,7 @@ const patches: Array<{
   },
   {
     filePrefix: "index-",
-    description: "Sidebar conv palette slice (vA)",
+    description: "Sidebar conv palette slice (vA — icon:rm)",
     from: "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:rm,",
     to: "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:rm,",
   },
@@ -132,22 +118,23 @@ const patches: Array<{
   },
   {
     filePrefix: "index-",
-    description: "Sidebar conv palette slice (vB)",
+    description: "Sidebar conv palette slice (vB — icon:RA)",
     from: "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:RA,",
     to: "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:RA,",
   },
 
-  // Version-agnostic (variable name not involved)
+  // Version C  (0.8.10 — index-DGojzQtP.js)
+  // Sidebar main component already uses 16 natively; only palette slice needed.
   {
     filePrefix: "index-",
-    description: "Sidebar command-palette Set slice 5→16",
-    from: "new Set(n.slice(0,5).map(e=>e.conversationId",
-    to: "new Set(n.slice(0,16).map(e=>e.conversationId",
+    description: "Sidebar conv palette slice (vC — icon:pm)",
+    from: "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:pm,",
+    to: "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:pm,",
   },
 
   // ── Hide Scheduled and Background nav sections ────────────────────────────
   // The system groups array defines which sections appear in the sidebar nav.
-  // Pattern is version-agnostic (array content, not the variable name).
+  // Pattern is version-agnostic (matches array content, not the variable name).
   {
     filePrefix: "index-",
     description: "Hide Scheduled and Background from sidebar nav",

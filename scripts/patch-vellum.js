@@ -3,9 +3,8 @@
  * Runs via postinstall and build — works on Vercel and locally.
  *
  * Patches:
- *   1. gateway-session — fall back to runtimeUrl when no gateway URL
- *   2. auth-store      — try gateway session init in local-no-assistants path
- *   3. sidebar         — bump conversation limit from 5 → 16
+ *   1. auth-store      — skip allauth platform check in self-hosted mode
+ *   2. sidebar         — bump conversation limit from 5 → 16
  */
 
 import { existsSync, readFileSync, writeFileSync, readdirSync } from "fs";
@@ -41,38 +40,43 @@ function patchFile(relPath, patches, label) {
   return true;
 }
 
-// ── 1. gateway-session ──────────────────────────────────────────────────────
-// When no local gateway URL exists, fall back to runtimeUrl + stored token
-// from the active Vellum assistant entry in the lockfile.
-patchFile(
-  "node_modules/@vellumai/web/dist/assets/gateway-session-CaFk8wfN.js",
-  [
-    [
-      `}async function F(){let e=Q();if(!e)return;let t=A();`,
-      `}async function F(){let e=Q();if(!e){let active=A();active&&active.runtimeUrl&&Y()&&s({url:active.runtimeUrl,token:Y()});return}let t=A();`,
-    ],
-  ],
-  "gateway-session",
-);
-
-// ── 2. auth-store ───────────────────────────────────────────────────────────
-// In local mode with no registered assistants, attempt gateway session init
-// before marking the user as logged-in (drops background platform check).
-patchFile(
-  "node_modules/@vellumai/web/dist/assets/auth-store-CYbo7naZ.js",
-  [
-    [
-      `e(X());return}e(Y()),q?e({platformSession:\`absent\`}):We(e,{setUserOnSuccess:!0}),q=!1;return}`,
-      `e(X());return}try{await pe()}catch{}e(Y()),q=!1;return}`,
-    ],
-  ],
-  "auth-store",
-);
-
-// ── 3. sidebar conversation limit ───────────────────────────────────────────
-// Bump the initial visible count in the sidebar from 5 → 16.
-// The exact index-*.js filename is stable across installs (content hash).
 const assetsDir = join(root, "node_modules/@vellumai/web/dist/assets");
+
+// ── 1. auth-store ───────────────────────────────────────────────────────────
+// In local mode with no registered assistants, skip the platform session check
+// that always fires (and 401s) in self-hosted mode. Instead immediately set
+// platformSession absent and skip the background zn() call.
+//
+// NOTE: As of 0.8.10 the auth flow handles this gracefully without patching
+// (zn() fails silently, no clearOnFailure). This section is kept as a
+// best-effort hardening pass; missing patterns are non-fatal.
+const authStoreFile = existsSync(assetsDir)
+  ? readdirSync(assetsDir).find(
+      (f) => f.startsWith("auth-store-") && f.endsWith(".js"),
+    )
+  : null;
+
+if (authStoreFile) {
+  patchFile(
+    `node_modules/@vellumai/web/dist/assets/${authStoreFile}`,
+    [
+      // 0.8.10 self-hosted path: set platformSession absent immediately instead
+      // of fire-and-forget zn() platform check.
+      [
+        `e(Fn()),Nn?e({platformSession:\`absent\`}):zn(e,{setUserOnSuccess:!0}),Nn=!1;return`,
+        `e(Fn()),e({platformSession:\`absent\`}),Nn=!1;return`,
+      ],
+    ],
+    "auth-store",
+  );
+} else {
+  console.warn("patch-vellum: [auth-store] auth-store-*.js not found in assets dir");
+}
+
+// ── 2. sidebar conversation limit ───────────────────────────────────────────
+// Bump the initial visible count in the sidebar from 5 → 16.
+// As of 0.8.10 the main sidebar component already ships with 16; only the
+// command-palette conv slice (in $A / equivalent function) still needs patching.
 const indexFile = existsSync(assetsDir)
   ? readdirSync(assetsDir).find(
       (f) => f.startsWith("index-") && f.endsWith(".js") && f.length < 30,
@@ -83,14 +87,22 @@ if (indexFile) {
   patchFile(
     `node_modules/@vellumai/web/dist/assets/${indexFile}`,
     [
+      // vA (0.8.8 — icon:rm)
       [
         "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:rm,",
         "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:rm,",
       ],
+      // vB (earlier Vercel — icon:RA)
       [
-        "new Set(n.slice(0,5).map(e=>e.conversationId",
-        "new Set(n.slice(0,16).map(e=>e.conversationId",
+        "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:RA,",
+        "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:RA,",
       ],
+      // vC (0.8.10 — icon:pm)
+      [
+        "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:pm,",
+        "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:pm,",
+      ],
+      // vA main sidebar useState (0.8.8)
       [
         "useState)(5),[k,A]=(0,X.useState)(5)",
         "useState)(16),[k,A]=(0,X.useState)(16)",
@@ -109,16 +121,17 @@ if (indexFile) {
   console.warn("patch-vellum: [sidebar] index-*.js not found in assets dir");
 }
 
-// ── 4. nav sections — hide Scheduled and Background ─────────────────────────
-// The $C array defines all system sidebar groups. Strip the two noise sections
-// so only Pinned and Recents appear in the nav.
+// ── 3. nav sections — hide Scheduled and Background ─────────────────────────
+// The system groups array defines all system sidebar groups. Strip the two
+// noise sections so only Pinned and Recents appear in the nav.
+// Pattern is version-agnostic (matches array content, not the variable name).
 if (indexFile) {
   patchFile(
     `node_modules/@vellumai/web/dist/assets/${indexFile}`,
     [
       [
-        `$C=[{id:\`system:pinned\`,name:\`Pinned\`},{id:\`system:scheduled\`,name:\`Scheduled\`},{id:\`system:background\`,name:\`Background\`},{id:\`system:all\`,name:\`Recents\`}]`,
-        `$C=[{id:\`system:pinned\`,name:\`Pinned\`},{id:\`system:all\`,name:\`Recents\`}]`,
+        `[{id:\`system:pinned\`,name:\`Pinned\`},{id:\`system:scheduled\`,name:\`Scheduled\`},{id:\`system:background\`,name:\`Background\`},{id:\`system:all\`,name:\`Recents\`}]`,
+        `[{id:\`system:pinned\`,name:\`Pinned\`},{id:\`system:all\`,name:\`Recents\`}]`,
       ],
     ],
     "nav-sections",
