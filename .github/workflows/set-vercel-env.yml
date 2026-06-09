@@ -13,16 +13,22 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
 
-      - name: Install Vercel CLI
-        run: bun install -g vercel
+      - name: Set RESEND_WEBHOOK_SECRET via Vercel REST API
+        run: |
+          # Look up the project ID by name
+          PROJECT_ID=$(curl -s \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v9/projects/vargasjr.dev" \
+            | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
+          echo "Project ID: $PROJECT_ID"
 
-      - name: Link to Vercel project
-        run: vercel link --yes --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Show project ID
-        run: cat .vercel/project.json
-
-      - name: Set RESEND_WEBHOOK_SECRET
-        run: echo "$SECRET" | vercel env add RESEND_WEBHOOK_SECRET production --token=${{ secrets.VERCEL_TOKEN }}
+          # Add the env var (upsert)
+          curl -s -X POST \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.vercel.com/v10/projects/$PROJECT_ID/env" \
+            -d "{\"key\":\"RESEND_WEBHOOK_SECRET\",\"value\":\"$SECRET\",\"type\":\"encrypted\",\"target\":[\"production\",\"preview\"]}" \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); print('created:', d.get('key','?'), d.get('id','error:' + str(d)))"
         env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
