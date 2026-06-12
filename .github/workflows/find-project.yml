@@ -1,0 +1,33 @@
+name: Find Real Vercel Project (one-time)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/find-project.yml']
+env:
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+jobs:
+  find:
+    runs-on: ubuntu-latest
+    steps:
+      - name: List teams
+        run: |
+          echo "=== Teams ==="
+          curl -s -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v2/teams" \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); [print(t['id'],t['slug']) for t in d.get('teams',[])]"
+      - name: Projects on each team
+        run: |
+          echo "=== All projects (no team scope) ==="
+          curl -s -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v9/projects?limit=50" \
+            | python3 -c "import json,sys; [print(p['id'],p['name'],p.get('accountId','')) for p in json.load(sys.stdin).get('projects',[])]"
+      - name: Domains on vargasjr.dev project
+        run: |
+          echo "=== Domains for prj_iTErTbKE9stJyJbYQmTJNexAOYyo ==="
+          curl -s -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v9/projects/prj_iTErTbKE9stJyJbYQmTJNexAOYyo/domains" \
+            | python3 -c "import json,sys; [print(d['name'],d.get('redirect'),d.get('verification')) for d in json.load(sys.stdin).get('domains',[])]"
+          echo "=== Env vars for prj_iTErTbKE9stJyJbYQmTJNexAOYyo ==="
+          curl -s -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v10/projects/prj_iTErTbKE9stJyJbYQmTJNexAOYyo/env" \
+            | python3 -c "import json,sys; [print(e['key'],e['id']) for e in json.load(sys.stdin).get('envs',[])]"
