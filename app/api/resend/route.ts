@@ -4,21 +4,36 @@ import { db } from "@/db";
 import { emails } from "@/db/schema";
 import { createHmac, timingSafeEqual } from "crypto";
 
-// Resend signs inbound webhooks with HMAC-SHA256 using the signing secret.
-// https://resend.com/docs/dashboard/webhooks/introduction#securing-webhooks
+// Resend uses Svix for webhook signing.
+// Spec: https://docs.svix.com/receiving/verifying-payloads/how-manual
+// Signed content = "{svix-id}.{svix-timestamp}.{body}"
+// Key = base64-decode(secret after stripping "whsec_" prefix)
+// Signature = base64(HMAC-SHA256(key, signedContent))
+// Header format: "v1,<base64sig> [v1,<base64sig> ...]"
 function verifySignature(
   secret: string,
   payload: string,
-  sig: string,
+  svixId: string,
+  svixTimestamp: string,
+  svixSig: string,
 ): boolean {
-  const hmac = createHmac("sha256", secret);
-  hmac.update(payload);
-  const expected = hmac.digest("hex");
   try {
-    return timingSafeEqual(
-      Buffer.from(expected, "hex"),
-      Buffer.from(sig, "hex"),
-    );
+    const key = Buffer.from(secret.replace(/^whsec_/, ""), "base64");
+    const signedContent = `${svixId}.${svixTimestamp}.${payload}`;
+    const hmac = createHmac("sha256", key);
+    hmac.update(signedContent);
+    const expected = hmac.digest("base64");
+    const expectedBuf = Buffer.from(expected, "base64");
+
+    // svix-signature may contain multiple space-separated "v1,<base64>" entries
+    const sigs = svixSig.split(" ").map((s) => s.replace(/^v\d+,/, ""));
+    return sigs.some((s) => {
+      try {
+        return timingSafeEqual(expectedBuf, Buffer.from(s, "base64"));
+      } catch {
+        return false;
+      }
+    });
   } catch {
     return false;
   }
@@ -33,13 +48,12 @@ export async function POST(req: NextRequest) {
 
   const raw = await req.text();
 
-  const sig =
-    req.headers.get("svix-signature") ??
-    req.headers.get("resend-signature") ??
-    "";
+  const svixId = req.headers.get("svix-id") ?? "";
+  const svixTimestamp = req.headers.get("svix-timestamp") ?? "";
+  const svixSig = req.headers.get("svix-signature") ?? "";
   if (
     secret !== "dev" &&
-    !verifySignature(secret, raw, sig.replace(/^v1,/, ""))
+    !verifySignature(secret, raw, svixId, svixTimestamp, svixSig)
   ) {
     console.warn("[resend webhook] invalid signature");
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
