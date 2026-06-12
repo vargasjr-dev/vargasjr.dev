@@ -1,0 +1,41 @@
+name: Fix Vercel Domains (one-time)
+on:
+  workflow_dispatch:
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check current domain config
+        run: |
+          echo "=== Current domains ==="
+          curl -s -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v10/projects/prj_iTErTbKE9stJyJbYQmTJNexAOYyo/domains" \
+            | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+for dom in d.get('domains', []):
+    print(dom.get('name'), '| redirect:', dom.get('redirect'), '| primary:', dom.get('primary'))
+"
+      - name: Make vargasjr.dev the primary (remove www redirect)
+        run: |
+          echo "=== Patching www.vargasjr.dev to redirect to vargasjr.dev ==="
+          # Set www to redirect to apex
+          curl -s -X PATCH \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.vercel.com/v10/projects/prj_iTErTbKE9stJyJbYQmTJNexAOYyo/domains/www.vargasjr.dev" \
+            -d '{"redirect":"vargasjr.dev","redirectStatusCode":308}' \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); print('www patch:', d.get('name'), d.get('redirect'))"
+      - name: Verify final config
+        run: |
+          sleep 2
+          curl -s -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v10/projects/prj_iTErTbKE9stJyJbYQmTJNexAOYyo/domains" \
+            | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+for dom in d.get('domains', []):
+    print(dom.get('name'), '| redirect:', dom.get('redirect'), '| primary:', dom.get('primary'))
+"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
