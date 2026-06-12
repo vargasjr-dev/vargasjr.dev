@@ -9,25 +9,21 @@ jobs:
   find:
     runs-on: ubuntu-latest
     steps:
-      - name: List teams
+      - name: Check www domain and try vargas-jr team
         run: |
-          echo "=== Teams ==="
+          echo "=== www.vargasjr.dev domain info ==="
           curl -s -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v2/teams" \
-            | python3 -c "import json,sys; d=json.load(sys.stdin); [print(t['id'],t['slug']) for t in d.get('teams',[])]"
-      - name: Projects on each team
-        run: |
-          echo "=== All projects (no team scope) ==="
+            "https://api.vercel.com/v5/domains/www.vargasjr.dev" \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); print(d)"
+          echo "=== Try teamId vargas-jr ==="
           curl -s -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v9/projects?limit=50" \
-            | python3 -c "import json,sys; [print(p['id'],p['name'],p.get('accountId','')) for p in json.load(sys.stdin).get('projects',[])]"
-      - name: Domains on vargasjr.dev project
-        run: |
-          echo "=== Domains for prj_iTErTbKE9stJyJbYQmTJNexAOYyo ==="
+            "https://api.vercel.com/v9/projects?teamId=vargas-jr&limit=10" \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); [print(p['id'],p['name']) for p in d.get('projects',[])] if 'projects' in d else print(d)"
+          echo "=== Try all team_* IDs for projects ==="
           curl -s -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v9/projects/prj_iTErTbKE9stJyJbYQmTJNexAOYyo/domains" \
-            | python3 -c "import json,sys; [print(d['name'],d.get('redirect'),d.get('verification')) for d in json.load(sys.stdin).get('domains',[])]"
-          echo "=== Env vars for prj_iTErTbKE9stJyJbYQmTJNexAOYyo ==="
+            "https://api.vercel.com/v9/projects?limit=100" \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); [print(p['id'],p['name'],p.get('accountId')) for p in d.get('projects',[])]"
+          echo "=== Check user info ==="
           curl -s -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v10/projects/prj_iTErTbKE9stJyJbYQmTJNexAOYyo/env" \
-            | python3 -c "import json,sys; [print(e['key'],e['id']) for e in json.load(sys.stdin).get('envs',[])]"
+            "https://api.vercel.com/v2/user" \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); u=d.get('user',{}); print(u.get('name'),u.get('username'),u.get('id'))"
