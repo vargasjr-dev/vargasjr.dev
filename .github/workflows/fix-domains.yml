@@ -1,43 +1,47 @@
-name: Fix Vercel Domains (one-time)
+name: Fix Vercel Domains + Webhook Secret (one-time)
 on:
   push:
     branches: [main]
     paths: ['.github/workflows/fix-domains.yml']
+env:
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  PROJECT_ID: prj_iTErTbKE9stJyJbYQmTJNexAOYyo
+  NEW_WEBHOOK_SECRET: ${{ secrets.NEW_RESEND_WEBHOOK_SECRET }}
 jobs:
   fix:
     runs-on: ubuntu-latest
     steps:
-      - name: Check current domain config
+      - name: Show current domain config
         run: |
-          echo "=== Current domains ==="
           curl -s -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v10/projects/prj_iTErTbKE9stJyJbYQmTJNexAOYyo/domains" \
-            | python3 -c "
-import json, sys
-d = json.load(sys.stdin)
-for dom in d.get('domains', []):
-    print(dom.get('name'), '| redirect:', dom.get('redirect'), '| primary:', dom.get('primary'))
-"
-      - name: Make vargasjr.dev the primary (remove www redirect)
+            "https://api.vercel.com/v10/projects/$PROJECT_ID/domains" \
+            | python3 -c "import json,sys; [print(d['name'],'redirect->',d.get('redirect')) for d in json.load(sys.stdin).get('domains',[])]"
+
+      - name: Flip www to redirect to apex (not the other way)
         run: |
-          echo "=== Patching www.vargasjr.dev to redirect to vargasjr.dev ==="
-          # Set www to redirect to apex
           curl -s -X PATCH \
             -H "Authorization: Bearer $VERCEL_TOKEN" \
             -H "Content-Type: application/json" \
-            "https://api.vercel.com/v10/projects/prj_iTErTbKE9stJyJbYQmTJNexAOYyo/domains/www.vargasjr.dev" \
+            "https://api.vercel.com/v10/projects/$PROJECT_ID/domains/www.vargasjr.dev" \
             -d '{"redirect":"vargasjr.dev","redirectStatusCode":308}' \
-            | python3 -c "import json,sys; d=json.load(sys.stdin); print('www patch:', d.get('name'), d.get('redirect'))"
-      - name: Verify final config
+            | python3 -c "import json,sys; d=json.load(sys.stdin); print('patched www:', d.get('name'), '->', d.get('redirect'))"
+
+      - name: Update RESEND_WEBHOOK_SECRET on Vercel
+        run: |
+          curl -s -X DELETE \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v10/projects/$PROJECT_ID/env/RESEND_WEBHOOK_SECRET" \
+            > /dev/null || true
+          curl -s -X POST \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.vercel.com/v10/projects/$PROJECT_ID/env" \
+            -d "{\"key\":\"RESEND_WEBHOOK_SECRET\",\"value\":\"$NEW_WEBHOOK_SECRET\",\"type\":\"encrypted\",\"target\":[\"production\",\"preview\"]}" \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); print('env set:', list(d.get('created',{}).keys())[:3] if 'created' in d else d)"
+
+      - name: Verify domain config
         run: |
           sleep 2
           curl -s -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v10/projects/prj_iTErTbKE9stJyJbYQmTJNexAOYyo/domains" \
-            | python3 -c "
-import json, sys
-d = json.load(sys.stdin)
-for dom in d.get('domains', []):
-    print(dom.get('name'), '| redirect:', dom.get('redirect'), '| primary:', dom.get('primary'))
-"
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+            "https://api.vercel.com/v10/projects/$PROJECT_ID/domains" \
+            | python3 -c "import json,sys; [print(d['name'],'redirect->',d.get('redirect')) for d in json.load(sys.stdin).get('domains',[])]"
