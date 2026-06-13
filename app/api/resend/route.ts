@@ -17,15 +17,9 @@ async function forwardEmail(data: Record<string, unknown>): Promise<void> {
   const html = (data.html as string) ?? "";
   const plainText = (data.text as string) ?? (data.plain_text as string) ?? "";
 
-  const forwardedHeader = `<p style="border-left:3px solid #ccc;padding-left:8px;color:#666;margin-bottom:16px">
-    <b>---------- Forwarded message ----------</b><br>
-    <b>From:</b> ${originalFrom}<br>
-    <b>Subject:</b> ${subject}
-  </p>`;
-
-  const body = html
-    ? { html: forwardedHeader + html }
-    : { text: `---------- Forwarded message ----------\nFrom: ${originalFrom}\nSubject: ${subject}\n\n${plainText}` };
+  // Pass the body through as-is — no forwarding headers, no "Fwd:" prefix.
+  // reply_to points back to the original sender so replies go to them.
+  const body = html ? { html } : { text: plainText || " " };
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -36,7 +30,7 @@ async function forwardEmail(data: Record<string, unknown>): Promise<void> {
     body: JSON.stringify({
       from: VARGAS_ADDRESS,
       to: [FORWARD_TO],
-      subject: `Fwd: ${subject}`,
+      subject,
       reply_to: originalFrom,
       ...body,
     }),
