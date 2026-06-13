@@ -165,6 +165,22 @@ const patches: Array<{
   },
 ];
 
+// ── index.html: inject feature flag overrides ──────────────────────────────
+// Injects window.__VELLUM_FLAG_OVERRIDES__ before </head> so the flag is
+// baked in at build time and can't be reverted by server-side values.
+const indexHtmlPath = join(destDir, "index.html");
+const indexHtml = await readFile(indexHtmlPath, "utf-8");
+const flagScript = `<script>window.__VELLUM_FLAG_OVERRIDES__={"settings-developer-nav":true}</script>`;
+if (indexHtml.includes(flagScript)) {
+  console.log("⏭️  Already patched: index.html (feature flag overrides)");
+} else {
+  await writeFile(
+    indexHtmlPath,
+    indexHtml.replace("</head>", `${flagScript}</head>`),
+  );
+  console.log("🩹 Patched: index.html — injected __VELLUM_FLAG_OVERRIDES__");
+}
+
 for (const { filePrefix, description, from, to } of patches) {
   const filePath = findAsset(filePrefix);
 
