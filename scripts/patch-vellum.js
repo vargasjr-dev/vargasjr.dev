@@ -102,6 +102,11 @@ if (indexFile) {
         "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:pm,",
         "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:pm,",
       ],
+      // vD (0.8.12 — icon:Pm, capital P)
+      [
+        "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:Pm,",
+        "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:Pm,",
+      ],
       // vA main sidebar useState (0.8.8)
       [
         "useState)(5),[k,A]=(0,X.useState)(5)",
@@ -114,6 +119,16 @@ if (indexFile) {
       ["onShowLess:()=>O(5)}},[w.recents", "onShowLess:()=>O(16)}},[w.recents"],
       ["showLess:k>5&&w.slack.length>5", "showLess:k>16&&w.slack.length>16"],
       ["onShowLess:()=>A(5)}},[w.slack", "onShowLess:()=>A(16)}},[w.slack"],
+      // vD main sidebar useState (0.8.12 — [D,O]/[k,ee] vars)
+      [
+        "[D,O]=(0,Y.useState)(5),[k,ee]=(0,Y.useState)(5)",
+        "[D,O]=(0,Y.useState)(16),[k,ee]=(0,Y.useState)(16)",
+      ],
+      // vD slack onShowLess (recents already ships with 16 in 0.8.12)
+      [
+        "onShowLess:()=>ee(5)}},[w.slack,k,r]",
+        "onShowLess:()=>ee(16)}},[w.slack,k,r]",
+      ],
     ],
     "sidebar",
   );

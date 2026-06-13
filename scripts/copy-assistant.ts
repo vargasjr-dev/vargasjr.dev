@@ -132,6 +132,28 @@ const patches: Array<{
     to: "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:pm,",
   },
 
+  // Version D  (0.8.12 — index-87hTkD_v.js)
+  // Palette slice uses capital Pm. Main sidebar useState still inits to 5;
+  // recents showLess/onShowLess already ship with 16, but slack onShowLess doesn't.
+  {
+    filePrefix: "index-",
+    description: "Sidebar conv palette slice (vD — icon:Pm)",
+    from: "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:Pm,",
+    to: "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:Pm,",
+  },
+  {
+    filePrefix: "index-",
+    description: "Sidebar useState init (vD — [D,O]/[k,ee])",
+    from: "[D,O]=(0,Y.useState)(5),[k,ee]=(0,Y.useState)(5)",
+    to: "[D,O]=(0,Y.useState)(16),[k,ee]=(0,Y.useState)(16)",
+  },
+  {
+    filePrefix: "index-",
+    description: "Sidebar slack onShowLess (vD — ee)",
+    from: "onShowLess:()=>ee(5)}},[w.slack,k,r]",
+    to: "onShowLess:()=>ee(16)}},[w.slack,k,r]",
+  },
+
   // ── Hide Scheduled and Background nav sections ────────────────────────────
   // The system groups array defines which sections appear in the sidebar nav.
   // Pattern is version-agnostic (matches array content, not the variable name).
