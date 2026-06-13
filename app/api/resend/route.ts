@@ -4,6 +4,50 @@ import { db } from "@/db";
 import { emails } from "@/db/schema";
 import { createHmac, timingSafeEqual } from "crypto";
 
+const VARGAS_ADDRESS = "vargas@vargasjr.dev";
+const HELLO_ADDRESS = "hello@vargasjr.dev";
+const FORWARD_TO = "dvargasfuertes@gmail.com";
+
+async function forwardEmail(data: Record<string, unknown>): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error("RESEND_API_KEY not set");
+
+  const originalFrom = (data.from as string) ?? "";
+  const subject = (data.subject as string) ?? "(no subject)";
+  const html = (data.html as string) ?? "";
+  const plainText = (data.text as string) ?? (data.plain_text as string) ?? "";
+
+  const forwardedHeader = `<p style="border-left:3px solid #ccc;padding-left:8px;color:#666;margin-bottom:16px">
+    <b>---------- Forwarded message ----------</b><br>
+    <b>From:</b> ${originalFrom}<br>
+    <b>Subject:</b> ${subject}
+  </p>`;
+
+  const body = html
+    ? { html: forwardedHeader + html }
+    : { text: `---------- Forwarded message ----------\nFrom: ${originalFrom}\nSubject: ${subject}\n\n${plainText}` };
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: VARGAS_ADDRESS,
+      to: [FORWARD_TO],
+      subject: `Fwd: ${subject}`,
+      reply_to: originalFrom,
+      ...body,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Resend forward failed (${res.status}): ${err}`);
+  }
+}
+
 // Resend uses Svix for webhook signing.
 // Spec: https://docs.svix.com/receiving/verifying-payloads/how-manual
 // Signed content = "{svix-id}.{svix-timestamp}.{body}"
@@ -85,14 +129,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  // Store full payload in Blob
+  // ── Routing ──────────────────────────────────────────────────────────────
+  // vargas@ → forward to personal Gmail
+  // hello@  → store in DB (webhook inbox)
+  // other   → drop
+  if (to === VARGAS_ADDRESS) {
+    await forwardEmail(data);
+    console.log(`[resend webhook] forwarded ${messageId} from ${from} → ${FORWARD_TO}`);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (to !== HELLO_ADDRESS) {
+    console.log(`[resend webhook] dropping email to ${to} (not a handled address)`);
+    return NextResponse.json({ ok: true });
+  }
+
+  // hello@ — store full payload in Blob + metadata in DB
   const blobKey = `emails/${to.split("@")[0]}/${receivedAt.toISOString()}-${messageId}.json`;
   await put(blobKey, JSON.stringify({ ...data, raw_event: event }), {
     access: "public",
     contentType: "application/json",
   });
 
-  // Store metadata in DB
   await db
     .insert(emails)
     .values({
