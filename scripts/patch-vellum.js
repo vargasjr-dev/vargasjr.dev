@@ -70,7 +70,9 @@ if (authStoreFile) {
     "auth-store",
   );
 } else {
-  console.warn("patch-vellum: [auth-store] auth-store-*.js not found in assets dir");
+  console.warn(
+    "patch-vellum: [auth-store] auth-store-*.js not found in assets dir",
+  );
 }
 
 // ── 2. sidebar conversation limit ───────────────────────────────────────────
@@ -136,7 +138,23 @@ if (indexFile) {
   console.warn("patch-vellum: [sidebar] index-*.js not found in assets dir");
 }
 
-// ── 3. nav sections — hide Scheduled and Background ─────────────────────────
+// ── 3. staff check — always return true for inspect/developer features ───────
+// OO(user) gates Inspect (message + conversation) behind isStaff or @vellum.ai
+// email. Make it always return true so Inspect is available to everyone.
+if (indexFile) {
+  patchFile(
+    `node_modules/@vellumai/web/dist/assets/${indexFile}`,
+    [
+      [
+        "function OO(e){return e?.isStaff===!0||e?.email?.toLowerCase().endsWith(`@vellum.ai`)===!0}",
+        "function OO(e){return!0}",
+      ],
+    ],
+    "staff-check",
+  );
+}
+
+// ── 4. nav sections — hide Scheduled and Background ─────────────────────────
 // The system groups array defines all system sidebar groups. Strip the two
 // noise sections so only Pinned and Recents appear in the nav.
 // Pattern is version-agnostic (matches array content, not the variable name).
