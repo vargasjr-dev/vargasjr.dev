@@ -170,7 +170,7 @@ const patches: Array<{
 // baked in at build time and can't be reverted by server-side values.
 const indexHtmlPath = join(destDir, "index.html");
 const indexHtml = await readFile(indexHtmlPath, "utf-8");
-const flagScript = `<script>window.__VELLUM_FLAG_OVERRIDES__={"settings-developer-nav":true}</script>`;
+const flagScript = `<script>window.__VELLUM_FLAG_OVERRIDES__={"settings-developer-nav":true,"developer-menu-items":true}</script>`;
 if (indexHtml.includes(flagScript)) {
   console.log("⏭️  Already patched: index.html (feature flag overrides)");
 } else {
