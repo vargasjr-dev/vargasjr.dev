@@ -3,8 +3,10 @@
  * Runs via postinstall and build — works on Vercel and locally.
  *
  * Patches:
- *   1. auth-store      — skip allauth platform check in self-hosted mode
+ *   1. auth-store      — skip allauth platform check in self-hosted mode (no-op in 0.10.x — pattern removed upstream)
  *   2. sidebar         — bump conversation limit from 5 → 16
+ *   3. staff-check     — always return true for inspect/developer features
+ *   4. nav-sections    — hide Scheduled and Background (no-op in 0.10.x — sections hidden by default upstream)
  */
 
 import { existsSync, readFileSync, writeFileSync, readdirSync } from "fs";
@@ -48,8 +50,11 @@ const assetsDir = join(root, "node_modules/@vellumai/web/dist/assets");
 // platformSession absent and skip the background zn() call.
 //
 // NOTE: As of 0.8.10 the auth flow handles this gracefully without patching
-// (zn() fails silently, no clearOnFailure). This section is kept as a
-// best-effort hardening pass; missing patterns are non-fatal.
+// (zn() fails silently, no clearOnFailure). As of 0.10.x the upstream auth
+// flow was refactored entirely — `zn()` is no longer the auth-store helper
+// (it's now a utility used elsewhere) and the `Nn?e({...}):zn(...)` pattern
+// no longer exists in the bundle. This section is kept as a best-effort
+// hardening pass; missing patterns are non-fatal.
 const authStoreFile = existsSync(assetsDir)
   ? readdirSync(assetsDir).find(
       (f) => f.startsWith("auth-store-") && f.endsWith(".js"),
@@ -61,7 +66,7 @@ if (authStoreFile) {
     `node_modules/@vellumai/web/dist/assets/${authStoreFile}`,
     [
       // 0.8.10 self-hosted path: set platformSession absent immediately instead
-      // of fire-and-forget zn() platform check.
+      // of fire-and-forget zn() platform check. Pattern was removed in 0.10.x.
       [
         `e(Fn()),Nn?e({platformSession:\`absent\`}):zn(e,{setUserOnSuccess:!0}),Nn=!1;return`,
         `e(Fn()),e({platformSession:\`absent\`}),Nn=!1;return`,
@@ -79,6 +84,8 @@ if (authStoreFile) {
 // Bump the initial visible count in the sidebar from 5 → 16.
 // As of 0.8.10 the main sidebar component already ships with 16; only the
 // command-palette conv slice (in $A / equivalent function) still needs patching.
+// In 0.10.x the sidebar was refactored — module renamed (Y→W), variables
+// renamed ([D,O]/[k,ee] → [E,D]/[O,ee]), and the conv-slice icon is now `t_`.
 const indexFile = existsSync(assetsDir)
   ? readdirSync(assetsDir).find(
       (f) => f.startsWith("index-") && f.endsWith(".js") && f.length < 30,
@@ -109,6 +116,11 @@ if (indexFile) {
         "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:Pm,",
         "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:Pm,",
       ],
+      // vE (0.10.x — icon:t_)
+      [
+        "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:t_,",
+        "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:t_,",
+      ],
       // vA main sidebar useState (0.8.8)
       [
         "useState)(5),[k,A]=(0,X.useState)(5)",
@@ -131,6 +143,13 @@ if (indexFile) {
         "onShowLess:()=>ee(5)}},[w.slack,k,r]",
         "onShowLess:()=>ee(16)}},[w.slack,k,r]",
       ],
+      // vE main sidebar useState (0.10.x — module W, vars [E,D]/[O,ee], no slack state)
+      [
+        "[E,D]=(0,W.useState)(5),[O,ee]=(0,W.useState)({})",
+        "[E,D]=(0,W.useState)(16),[O,ee]=(0,W.useState)({})",
+      ],
+      // vE showLess (0.10.x — single `t>5&&e.length>5` shape, no w.recents/slack split)
+      ["showLess:t>5&&e.length>5", "showLess:t>16&&e.length>16"],
     ],
     "sidebar",
   );
@@ -139,15 +158,26 @@ if (indexFile) {
 }
 
 // ── 3. staff check — always return true for inspect/developer features ───────
-// OO(user) gates Inspect (message + conversation) behind isStaff or @vellum.ai
-// email. Make it always return true so Inspect is available to everyone.
+// OO(user) / CA(user, _) gates Inspect (message + conversation) behind
+// isStaff or @vellum.ai email. Make it always return true so Inspect is
+// available to everyone.
+//
+// 0.10.x renamed the wrapper from `OO(e)` to `CA(e, t)` and added a `t`
+// short-circuit argument. The `return t || ...` chain is otherwise identical
+// to the 0.8.x body.
 if (indexFile) {
   patchFile(
     `node_modules/@vellumai/web/dist/assets/${indexFile}`,
     [
+      // vA (0.8.x — function OO(e))
       [
         "function OO(e){return e?.isStaff===!0||e?.email?.toLowerCase().endsWith(`@vellum.ai`)===!0}",
         "function OO(e){return!0}",
+      ],
+      // vE (0.10.x — function CA(e, t), t short-circuits the gate)
+      [
+        "function CA(e,t){return t||e?.isStaff===!0||e?.email?.toLowerCase().endsWith(`@vellum.ai`)===!0}",
+        "function CA(e,t){return!0}",
       ],
     ],
     "staff-check",
@@ -157,7 +187,12 @@ if (indexFile) {
 // ── 4. nav sections — hide Scheduled and Background ─────────────────────────
 // The system groups array defines all system sidebar groups. Strip the two
 // noise sections so only Pinned and Recents appear in the nav.
-// Pattern is version-agnostic (matches array content, not the variable name).
+//
+// 0.10.x removed this literal entirely — the sidebar now uses
+// `backgroundActivated` / `scheduledActivated` flags that default to false
+// (off), so Scheduled and Background are hidden by default without patching.
+// The patch below remains as a fallback for any 0.8.x → 0.9.x intermediate
+// that still shipped the literal. Missing patterns are non-fatal.
 if (indexFile) {
   patchFile(
     `node_modules/@vellumai/web/dist/assets/${indexFile}`,
