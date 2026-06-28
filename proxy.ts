@@ -8,7 +8,7 @@ const WATCHED_PREFIXES = [
   "/v1/",
 ];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
   // Proxy /v1/* and /assistant/__gateway/7830/v1/* directly to the daemon so
