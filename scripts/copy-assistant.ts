@@ -214,6 +214,36 @@ const patches: Array<{
                                 to: "function X(){return us().mode===`remote-gateway`||!!(ge&&ge.url)}",
                               },
 
+                              // ── Make de() (cached gateway-token getter) fall through to local-mode cache ──
+                              // After my X() patch above, de() (exported as `nt`) enters its
+                              // remote-gateway branch in LOCAL mode too (because X() now returns true
+                              // when ge.url is set). In that branch it checks `g` (remote-gateway token
+                              // cache) — which is always null in local mode — and short-circuits to
+                              // return null, blowing away the local-mode token cache (`m`).
+                              //
+                              // The downstream effect is brutal: return-to-ByvaXBKr.js's C() calls
+                              // de() (= t()) and returns `!t() || p<=0 || ...`; if de() returns null,
+                              // C() returns true and the SPA fires `F()` — a raw fetch() to
+                              // /v1/guardian/refresh with NO Authorization header (raw fetch bypasses
+                              // all our T5/E5/C5 interceptors). The daemon 401s, and we see a bare
+                              // 401 on the network tab.
+                              //
+                              // Fix: only return `g` from the remote-gateway branch when it actually
+                              // exists. Otherwise fall through to the local-mode token cache + localStorage
+                              // branch (which is what the original code did in local mode anyway). This
+                              // makes de() correctly return the local-mode token in local mode, so t()
+                              // is truthy, C() returns false, and F() never fires.
+                              //
+                              // Remote mode unchanged: when g is populated and not expired, we still
+                              // return it. Only edge case is stale remote token → falls through to local
+                              // cache, which is empty in remote mode → returns null (same as old behavior).
+                              {
+                                filePrefix: "local-mode-",
+                                description: "de() falls through to local-mode token cache when remote-gateway cache (g) is empty",
+                                from: "if(X())return g&&!ce(ae)?g:(g=null,ae=0,null);",
+                                to: "if(X()&&g&&!ce(ae))return g;",
+                              },
+
                               // ── Make T5 (local-mode interceptor) fall through to C5() like E5 does ──
                               // w5() is the main interceptor factory. It tries S5() first (allowlist-based
                               // Authorization for paths in `b5`), then falls through. With default flags
