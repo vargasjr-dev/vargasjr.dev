@@ -208,12 +208,47 @@ const patches: Array<{
               // (`X() || ps() && As() != null`) — adding truthiness to `X()` doesn't
               // break anything downstream.
               {
-                filePrefix: "local-mode-",
-                description: "Patch X() to also return true when ge.url is set, so C5() injects Authorization in local mode",
-                from: "function X(){return us().mode===`remote-gateway`}",
-                to: "function X(){return us().mode===`remote-gateway`||!!(ge&&ge.url)}",
-              },
-    ];
+                                filePrefix: "local-mode-",
+                                description: "Patch X() to also return true when ge.url is set, so C5() injects Authorization in local mode",
+                                from: "function X(){return us().mode===`remote-gateway`}",
+                                to: "function X(){return us().mode===`remote-gateway`||!!(ge&&ge.url)}",
+                              },
+
+                              // ── Make T5 (local-mode interceptor) fall through to C5() like E5 does ──
+                              // w5() is the main interceptor factory. It tries S5() first (allowlist-based
+                              // Authorization for paths in `b5`), then falls through. With default flags
+                              // (T5 = w5()), w5() never calls C5() — only E5 = w5({allowRemoteGatewayDirect:!0})
+                              // does. In local mode the SDK uses T5, so requests like /v1/guardian/refresh
+                              // (NOT in the b5 allowlist) go through with NO Authorization.
+                              //
+                              // Fix: change T5 to also pass allowRemoteGatewayDirect:!0 so w5() calls C5()
+                              // as a fallback after S5() bails. C5() (with my next patch) then adds
+                              // Authorization to any /v1/* request that doesn't match the gateway prefix.
+                              {
+                                filePrefix: "index-",
+                                description: "T5 = w5() → T5 = w5({allowRemoteGatewayDirect:!0}) so C5() runs as fallback after S5() bails on non-allowlisted paths",
+                                from: "var T5=w5(),E5=w5({skipSegmentAllowlist:!0,allowRemoteGatewayDirect:!0})",
+                                to: "var T5=w5({allowRemoteGatewayDirect:!0}),E5=w5({skipSegmentAllowlist:!0,allowRemoteGatewayDirect:!0})",
+                              },
+
+                              // ── Patch C5() pathname check to accept /v1/* (local-mode relative paths) ──
+                              // C5() originally required pathname to start with `${ge.url.pathname}/v1/`
+                              // (i.e., /assistant/__gateway/7830/v1/*) — which only matches in REMOTE mode
+                              // where requests use absolute gateway URLs. In LOCAL mode, the SDK uses
+                              // RELATIVE paths (/v1/guardian/refresh) that Next.js rewrites to ngrok, so
+                              // the prefix check fails and C5() returns null.
+                              //
+                              // Fix: also accept paths starting with /v1/ — the local-mode relative form.
+                              // Origin check (n.origin !== r.origin) still guards against adding
+                              // Authorization to requests going to vellum.ai (only gateway-origin requests
+                              // get auth, matching the original security model).
+                              {
+                                filePrefix: "index-",
+                                description: "C5() pathname check accepts /v1/* paths (not just ${i}/v1/*) so local-mode relative URLs get Authorization",
+                                from: "!n.pathname.startsWith(`${i}/v1/`)",
+                                to: "!(n.pathname.startsWith(`${i}/v1/`)||n.pathname.startsWith('/v1/'))",
+                              },
+                    ];
 
 // ── index.html: inject feature flag overrides ──────────────────────────────
 // Injects window.__VELLUM_FLAG_OVERRIDES__ before </head> so the flag is
