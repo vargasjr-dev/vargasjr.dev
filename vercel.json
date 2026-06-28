@@ -1,14 +1,4 @@
 {
   "installCommand": "bun install --frozen-lockfile",
-  "buildCommand": "bun scripts/patch-vellum.js && bun scripts/copy-assistant.ts && next build",
-  "rewrites": [
-    {
-      "source": "/v1/:path*",
-      "destination": "$VELLUM_API_URL/v1/:path*"
-    },
-    {
-      "source": "/assistant/__gateway/7830/:path*",
-      "destination": "$VELLUM_API_URL/:path*"
-    }
-  ]
+  "buildCommand": "bun scripts/patch-vellum.js && bun scripts/copy-assistant.ts && next build"
 }
