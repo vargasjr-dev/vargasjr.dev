@@ -193,6 +193,26 @@ const patches: Array<{
                 from: "var ge={url:null,token:null}",
                 to: "var ge=(function(){try{var lf=localStorage.getItem(`vellum:local:lockfile`);var tk=localStorage.getItem(`vellum:gw:token`)||localStorage.getItem(`gw:token`);var ex=localStorage.getItem(`vellum:gw:expiresAt`)||localStorage.getItem(`gw:expiresAt`);var url=null;if(lf){try{var p=JSON.parse(lf);var id=p&&p.activeAssistant;var arr=p&&p.assistants;var a=Array.isArray(arr)&&arr.find(function(x){return x&&x.assistantId===id});if(a&&a.resources&&a.resources.gatewayPort!=null)url=window.location.origin+`/assistant/__gateway/`+a.resources.gatewayPort}catch(_){};}if(tk){if(ex&&Date.now()/1000>=Number(ex)){console.warn(`[vellum-debug] gw:token expired (expiresAt=${ex}, now=${Math.floor(Date.now()/1000)}), using anyway`)}return{url:url,token:tk}}}catch(_){};return{url:null,token:null};})()",
               },
+              // ── Make `X()` (remote-gateway-mode check) also true when `ge.url` is set ──
+              // `X()` is exported as `h`, imported into the main bundle as `Kn`.
+              // Main bundle's `C5()` Authorization interceptor returns null when `!Kn()` —
+              // which means in LOCAL mode, no `Authorization: Bearer <token>` header is
+              // injected on `/v1/*` requests, and the ngrok-proxied daemon 401s them.
+              //
+              // The intended semantic of `X()` is "is the gateway-URL routing active?"
+              // — true when `__VELLUM_CONFIG__.mode === 'remote-gateway'`. In local mode
+              // this is false, but the gateway IS active anyway (lockfile has a
+              // `gatewayPort`, my IIFE above populates `ge.url`). So patching `X()` to
+              // also return true when `ge.url` is set makes `C5()` correctly fire in
+              // both modes. `oe()` (local-mode-ready) keeps working via its OR clause
+              // (`X() || ps() && As() != null`) — adding truthiness to `X()` doesn't
+              // break anything downstream.
+              {
+                filePrefix: "local-mode-",
+                description: "Patch X() to also return true when ge.url is set, so C5() injects Authorization in local mode",
+                from: "function X(){return us().mode===`remote-gateway`}",
+                to: "function X(){return us().mode===`remote-gateway`||!!(ge&&ge.url)}",
+              },
     ];
 
 // ── index.html: inject feature flag overrides ──────────────────────────────
