@@ -193,58 +193,7 @@ const patches: Array<{
                 from: "var ge={url:null,token:null}",
                 to: "var ge=(function(){try{var lf=localStorage.getItem(`vellum:local:lockfile`);var tk=localStorage.getItem(`vellum:gw:token`)||localStorage.getItem(`gw:token`);var ex=localStorage.getItem(`vellum:gw:expiresAt`)||localStorage.getItem(`gw:expiresAt`);var url=null;if(lf){try{var p=JSON.parse(lf);var id=p&&p.activeAssistant;var arr=p&&p.assistants;var a=Array.isArray(arr)&&arr.find(function(x){return x&&x.assistantId===id});if(a&&a.resources&&a.resources.gatewayPort!=null)url=window.location.origin+`/assistant/__gateway/`+a.resources.gatewayPort}catch(_){};}if(tk){if(ex&&Date.now()/1000>=Number(ex)){console.warn(`[vellum-debug] gw:token expired (expiresAt=${ex}, now=${Math.floor(Date.now()/1000)}), using anyway`)}return{url:url,token:tk}}}catch(_){};return{url:null,token:null};})()",
               },
-              // ── Make `X()` (remote-gateway-mode check) also true when `ge.url` is set ──
-              // `X()` is exported as `h`, imported into the main bundle as `Kn`.
-              // Main bundle's `C5()` Authorization interceptor returns null when `!Kn()` —
-              // which means in LOCAL mode, no `Authorization: Bearer <token>` header is
-              // injected on `/v1/*` requests, and the ngrok-proxied daemon 401s them.
-              //
-              // The intended semantic of `X()` is "is the gateway-URL routing active?"
-              // — true when `__VELLUM_CONFIG__.mode === 'remote-gateway'`. In local mode
-              // this is false, but the gateway IS active anyway (lockfile has a
-              // `gatewayPort`, my IIFE above populates `ge.url`). So patching `X()` to
-              // also return true when `ge.url` is set makes `C5()` correctly fire in
-              // both modes. `oe()` (local-mode-ready) keeps working via its OR clause
-              // (`X() || ps() && As() != null`) — adding truthiness to `X()` doesn't
-              // break anything downstream.
-              {
-                                filePrefix: "local-mode-",
-                                description: "Patch X() to also return true when ge.url is set, so C5() injects Authorization in local mode",
-                                from: "function X(){return us().mode===`remote-gateway`}",
-                                to: "function X(){return us().mode===`remote-gateway`||!!(ge&&ge.url)}",
-                              },
-
-                              // ── Make de() (cached gateway-token getter) fall through to local-mode cache ──
-                              // After my X() patch above, de() (exported as `nt`) enters its
-                              // remote-gateway branch in LOCAL mode too (because X() now returns true
-                              // when ge.url is set). In that branch it checks `g` (remote-gateway token
-                              // cache) — which is always null in local mode — and short-circuits to
-                              // return null, blowing away the local-mode token cache (`m`).
-                              //
-                              // The downstream effect is brutal: return-to-ByvaXBKr.js's C() calls
-                              // de() (= t()) and returns `!t() || p<=0 || ...`; if de() returns null,
-                              // C() returns true and the SPA fires `F()` — a raw fetch() to
-                              // /v1/guardian/refresh with NO Authorization header (raw fetch bypasses
-                              // all our T5/E5/C5 interceptors). The daemon 401s, and we see a bare
-                              // 401 on the network tab.
-                              //
-                              // Fix: only return `g` from the remote-gateway branch when it actually
-                              // exists. Otherwise fall through to the local-mode token cache + localStorage
-                              // branch (which is what the original code did in local mode anyway). This
-                              // makes de() correctly return the local-mode token in local mode, so t()
-                              // is truthy, C() returns false, and F() never fires.
-                              //
-                              // Remote mode unchanged: when g is populated and not expired, we still
-                              // return it. Only edge case is stale remote token → falls through to local
-                              // cache, which is empty in remote mode → returns null (same as old behavior).
-                              {
-                                filePrefix: "local-mode-",
-                                description: "de() falls through to local-mode token cache when remote-gateway cache (g) is empty",
-                                from: "if(X())return g&&!ce(ae)?g:(g=null,ae=0,null);",
-                                to: "if(X()&&g&&!ce(ae))return g;",
-                              },
-
-                              // ── Make T5 (local-mode interceptor) fall through to C5() like E5 does ──
+              // ── Make T5 (local-mode interceptor) fall through to C5() like E5 does ──
                               // w5() is the main interceptor factory. It tries S5() first (allowlist-based
                               // Authorization for paths in `b5`), then falls through. With default flags
                               // (T5 = w5()), w5() never calls C5() — only E5 = w5({allowRemoteGatewayDirect:!0})
@@ -262,23 +211,81 @@ const patches: Array<{
                               },
 
                               // ── Patch C5() pathname check to accept /v1/* (local-mode relative paths) ──
-                              // C5() originally required pathname to start with `${ge.url.pathname}/v1/`
-                              // (i.e., /assistant/__gateway/7830/v1/*) — which only matches in REMOTE mode
-                              // where requests use absolute gateway URLs. In LOCAL mode, the SDK uses
-                              // RELATIVE paths (/v1/guardian/refresh) that Next.js rewrites to ngrok, so
-                              // the prefix check fails and C5() returns null.
-                              //
-                              // Fix: also accept paths starting with /v1/ — the local-mode relative form.
-                              // Origin check (n.origin !== r.origin) still guards against adding
-                              // Authorization to requests going to vellum.ai (only gateway-origin requests
-                              // get auth, matching the original security model).
-                              {
-                                filePrefix: "index-",
-                                description: "C5() pathname check accepts /v1/* paths (not just ${i}/v1/*) so local-mode relative URLs get Authorization",
-                                from: "!n.pathname.startsWith(`${i}/v1/`)",
-                                to: "!(n.pathname.startsWith(`${i}/v1/`)||n.pathname.startsWith('/v1/'))",
-                              },
-                    ];
+                                                              // C5() originally required pathname to start with `${ge.url.pathname}/v1/`
+                                                              // (i.e., /assistant/__gateway/7830/v1/*) — which only matches in REMOTE mode
+                                                              // where requests use absolute gateway URLs. In LOCAL mode, the SDK uses
+                                                              // RELATIVE paths (/v1/guardian/refresh) that Next.js rewrites to ngrok, so
+                                                              // the prefix check fails and C5() returns null.
+                                                              //
+                                                              // Fix: also accept paths starting with /v1/ — the local-mode relative form.
+                                                              // Origin check (n.origin !== r.origin) still guards against adding
+                                                              // Authorization to requests going to vellum.ai (only gateway-origin requests
+                                                              // get auth, matching the original security model).
+                                              {
+                                                filePrefix: "index-",
+                                                description: "C5() pathname check accepts /v1/* paths (not just ${i}/v1/*) so local-mode relative URLs get Authorization",
+                                                from: "!n.pathname.startsWith(`${i}/v1/`)",
+                                                to: "!(n.pathname.startsWith(`${i}/v1/`)||n.pathname.startsWith('/v1/'))",
+                                              },
+
+                                                              // ── Make C5() fire when gateway URL is set, not just in remote-gateway mode ──
+                                                              // Previously we patched X() to return true when ge.url is set, but that
+                                                              // broke `shouldRefreshRemoteGatewaySession` (which uses X() to decide
+                                                              // whether to run — see next two patches). Instead, make C5() depend on
+                                                              // `ge.url` (In()) directly. In() returns the gateway URL — true in BOTH
+                                                              // remote mode AND local mode (when our IIFE above populates ge.url from
+                                                              // the lockfile). Kn() (X()) is only true in remote mode, so the old check
+                                                              // `if(!Kn())return null` was too restrictive — local mode was excluded.
+                                                              //
+                                                              // The new check `if(!Kn()&&!In())return null` fires C5() whenever EITHER
+                                                              // we're in remote mode OR a gateway URL is configured (local mode). The
+                                                              // remaining `let t=In();if(!t)return null` below still gates on the URL
+                                                              // existing — defense in depth.
+                                              {
+                                                filePrefix: "index-",
+                                                description: "C5() Authorization interceptor fires when gateway URL is set (local mode) or remote-gateway mode",
+                                                from: "if(!Kn())return null;",
+                                                to: "if(!Kn()&&!In())return null;",
+                                              },
+
+                                                              // ── Import X() (remote-gateway-mode check) into return-to bundle ──
+                                                              // The next patch adds a short-circuit to shouldRefreshRemoteGatewaySession
+                                                              // that depends on knowing whether we're in remote-gateway mode. X() is
+                                                              // exported from local-mode-*.js as `h`. The return-to bundle currently
+                                                              // only imports `$ as e,nt as t,st as n` from local-mode — extend it to
+                                                              // also bring in `h as X` so the short-circuit can call X().
+                                              {
+                                                filePrefix: "return-to-",
+                                                description: "Import X() (remote-gateway mode check, exported as `h` from local-mode) into return-to bundle",
+                                                from: "import{$ as e,nt as t,st as n}from\"./local-mode-CvrNMtPF.js\"",
+                                                to: "import{$ as e,nt as t,st as n,h as X}from\"./local-mode-CvrNMtPF.js\"",
+                                              },
+
+                                                              // ── Short-circuit shouldRefreshRemoteGatewaySession when not in remote-gateway mode ──
+                                                              // shouldRefreshRemoteGatewaySession (bundled as C()) is the gate that decides
+                                                              // whether refreshRemoteGatewaySessionOnce (bundled as F()) should fire its
+                                                              // raw fetch() to /v1/guardian/refresh. The source's intent is clear:
+                                                              // this refresh is only for the remote-web pairing flow. In local mode we
+                                                              // have a local-mode token cached in localStorage and DON'T need to
+                                                              // refresh anything — but in the bundled code, C() only checks time-based
+                                                              // conditions, so it can incorrectly return true in local mode (when no
+                                                              // cached token exists yet on first visit) and F() fires its raw fetch()
+                                                              // with no Authorization header → 401.
+                                                              //
+                                                              // Fix: prepend `if(!X())return!1` so C() returns false (refresh not
+                                                              // needed) when we're not in remote-gateway mode. The short-circuit
+                                                              // `if(!C())return!0` in F() then fires, no fetch is made, no 401. Local
+                                                              // mode never tries to refresh the (non-existent) remote-gateway session.
+                                                              //
+                                                              // Remote mode unchanged: X()=true so the short-circuit doesn't fire and
+                                                              // the existing time-based logic runs.
+                                              {
+                                                filePrefix: "return-to-",
+                                                description: "C() (= shouldRefreshRemoteGatewaySession) short-circuits to false when not in remote-gateway mode (local mode skips the refresh entirely)",
+                                                from: "function C(){return!t()||p<=0?!0:Date.now()>=p-s}",
+                                                to: "function C(){if(!X())return!1;return!t()||p<=0?!0:Date.now()>=p-s}",
+                                              },
+                                    ];
 
 // ── index.html: inject feature flag overrides ──────────────────────────────
 // Injects window.__VELLUM_FLAG_OVERRIDES__ before </head> so the flag is
