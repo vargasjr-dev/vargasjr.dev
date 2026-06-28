@@ -11,6 +11,9 @@ const WATCHED_PREFIXES = [
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
+  // DEBUG: Log that proxy ran
+  console.error(`[proxy-debug] ENTERED: ${request.method} ${pathname}${search}`);
+
   // Proxy /v1/* and /assistant/__gateway/7830/v1/* directly to the daemon so
   // the original path (including trailing slashes) is forwarded as-is. The
   // SPA's SDK is FastAPI-generated and emits paths like `/v1/assistants/` and
@@ -27,11 +30,13 @@ export function proxy(request: NextRequest) {
   // /api/vellum-local/gateway-token route.
   if (apiUrl) {
     if (pathname.startsWith("/v1/")) {
+      console.error(`[proxy-debug] REWRITING /v1/* to daemon: ${pathname}${search}`);
       const daemonUrl = new URL(pathname + search, apiUrl).toString();
       return NextResponse.rewrite(daemonUrl);
     }
     if (pathname.startsWith("/assistant/__gateway/7830/v1/")) {
       const restPath = pathname.slice("/assistant/__gateway/7830".length);
+      console.error(`[proxy-debug] REWRITING gateway to daemon: ${restPath}${search}`);
       const daemonUrl = new URL(restPath + search, apiUrl).toString();
       return NextResponse.rewrite(daemonUrl);
     }
