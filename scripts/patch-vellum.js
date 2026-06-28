@@ -7,6 +7,11 @@
  *   2. sidebar         — bump conversation limit from 5 → 16
  *   3. staff-check     — always return true for inspect/developer features
  *   4. nav-sections    — hide Scheduled and Background (no-op in 0.10.x — sections hidden by default upstream)
+ *
+ * NOTE: The lockfile-preload that makes local-mode handshake fire on startup
+ * lives in scripts/copy-assistant.ts (it injects a sync <script> into
+ * index.html that writes the lockfile to localStorage before the SPA module
+ * loads). See the bottom of that file.
  */
 
 import { existsSync, readFileSync, writeFileSync, readdirSync } from "fs";

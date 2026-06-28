@@ -181,6 +181,56 @@ if (indexHtml.includes(flagScript)) {
   console.log("🩹 Patched: index.html — injected __VELLUM_FLAG_OVERRIDES__");
 }
 
+// ── index.html: preload lockfile into localStorage so local-mode handshake fires ──
+// In 0.8.x AND 0.10.x, the SPA never fetches /assistant/__local/lockfile on
+// startup — `Q()` (0.10.x) / `G()` (0.8.x) only reads localStorage and falls
+// back to the empty default. The local-mode handshake (`oe()` → `Ms()` →
+// `pe()` → `fe()` POSTs `/auth/token`) only fires when the lockfile is
+// already in localStorage. With no lockfile, `oe()` returns false,
+// `initSession` skips the local-mode branch, and SDK calls 401.
+//
+// Fix: inject a synchronous IIFE into <head> that writes the lockfile to
+// `localStorage['vellum:local:lockfile']` BEFORE the SPA module loads.
+// Synchronous matters here — the SPA module is `defer`-loaded by default,
+// so our IIFE runs first and populates localStorage before `initSession`
+// ever fires.
+//
+// We omit `cloud` from the assistant (matches the route's intentional
+// omission); `Vo()` in local-mode.js derives it to `'local'` via `Lo()`.
+// We omit `url` and `token` too — after handshake, `_e()` sets
+// `url = origin + As(t)` and `token = de()` (freshly-fetched gateway token),
+// so lockfile `url`/`token` aren't needed.
+//
+// Idempotent: skip if lockfile already in localStorage (preserves any
+// runtime updates the SPA made).
+const assistantId = process.env.VELLUM_ASSISTANT_ID;
+if (!assistantId) {
+  console.warn(
+    "⚠️  VELLUM_ASSISTANT_ID not set — skipping lockfile preload (SPA will fall through to platform auth)",
+  );
+} else {
+  const lockfilePayload = JSON.stringify({
+    assistants: [
+      {
+        assistantId,
+        resources: { gatewayPort: 7830, daemonPort: 7830 },
+      },
+    ],
+    activeAssistant: assistantId,
+  });
+  const lockfileScript = `<script>(function(){try{localStorage.setItem("vellum:local:lockfile",${JSON.stringify(lockfilePayload)})}catch(e){}})();</script>`;
+
+  if (indexHtml.includes(lockfileScript)) {
+    console.log("⏭️  Already patched: index.html (lockfile preload)");
+  } else {
+    await writeFile(
+      indexHtmlPath,
+      indexHtml.replace("</head>", `${flagScript}${lockfileScript}</head>`),
+    );
+    console.log("🩹 Patched: index.html — preloaded lockfile into localStorage");
+  }
+}
+
 for (const { filePrefix, description, from, to } of patches) {
   const filePath = findAsset(filePrefix);
 
