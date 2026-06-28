@@ -155,15 +155,38 @@ const patches: Array<{
   },
 
   // ── Hide Scheduled and Background nav sections ────────────────────────────
-  // The system groups array defines which sections appear in the sidebar nav.
-  // Pattern is version-agnostic (matches array content, not the variable name).
-  {
-    filePrefix: "index-",
-    description: "Hide Scheduled and Background from sidebar nav",
-    from: "[{id:`system:pinned`,name:`Pinned`},{id:`system:scheduled`,name:`Scheduled`},{id:`system:background`,name:`Background`},{id:`system:all`,name:`Recents`}]",
-    to: "[{id:`system:pinned`,name:`Pinned`},{id:`system:all`,name:`Recents`}]",
-  },
-];
+      // The system groups array defines which sections appear in the sidebar nav.
+      // Pattern is version-agnostic (matches array content, not the variable name).
+      {
+        filePrefix: "index-",
+        description: "Hide Scheduled and Background from sidebar nav",
+        from: "[{id:`system:pinned`,name:`Pinned`},{id:`system:scheduled`,name:`Scheduled`},{id:`system:background`,name:`Background`},{id:`system:all`,name:`Recents`}]",
+        to: "[{id:`system:pinned`,name:`Pinned`},{id:`system:all`,name:`Recents`}]",
+      },
+
+      // ── Bootstrap `ge` (in-memory {url,token} state) from localStorage ───────
+      // The fetch interceptor S5() in index-* reads ge.url (In()) and ge.token
+      // (Rn()) before injecting Authorization. Both start as {url:null,token:null}
+      // and only get populated by _e({url,token}) inside Ms() AFTER the handshake
+      // completes. When pe() short-circuits (de() returns truthy because a cached
+      // token is in localStorage), _e() never runs, ge.token stays null, and S5()
+      // deletes the Authorization header — every SDK call 401s.
+      //
+      // Fix: replace the bare var ge initialization with an IIFE that reads the
+      // lockfile + cached token from localStorage synchronously at module load.
+      // S5() then sees valid {url,token} on its first call. The handshake can
+      // still run and overwrite ge with fresh data via _e() — bootstrap is just
+      // the fallback that lets the SDK work even when the handshake never fires.
+      //
+      // 0.8.x: this exact pattern lives in local-mode-*.js but with different
+      //        var names (Ds/Es etc.) — no patch (the 0.10.x upgrade refreshes).
+      {
+        filePrefix: "local-mode-",
+        description: "Bootstrap `ge` (gateway url+token) from localStorage at module load",
+        from: "var ge={url:null,token:null}",
+        to: "var ge=(function(){try{var lf=localStorage.getItem(`vellum:local:lockfile`);var tk=localStorage.getItem(`vellum:gw:token`)||localStorage.getItem(`gw:token`);var ex=localStorage.getItem(`vellum:gw:expiresAt`)||localStorage.getItem(`gw:expiresAt`);var url=null;if(lf){try{var p=JSON.parse(lf);var id=p&&p.activeAssistant;var arr=p&&p.assistants;var a=Array.isArray(arr)&&arr.find(function(x){return x&&x.assistantId===id});if(a&&a.resources&&a.resources.gatewayPort!=null)url=window.location.origin+`/assistant/__gateway/`+a.resources.gatewayPort}catch(_){}}if(tk&&ex&&Date.now()/1000<Number(ex))return{url:url,token:tk}}catch(_){}return{url:null,token:null}})()",
+      },
+    ];
 
 // ── index.html: inject feature flag overrides ──────────────────────────────
 // Injects window.__VELLUM_FLAG_OVERRIDES__ before </head> so the flag is
