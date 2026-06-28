@@ -165,27 +165,34 @@ const patches: Array<{
       },
 
       // ── Bootstrap `ge` (in-memory {url,token} state) from localStorage ───────
-      // The fetch interceptor S5() in index-* reads ge.url (In()) and ge.token
-      // (Rn()) before injecting Authorization. Both start as {url:null,token:null}
-      // and only get populated by _e({url,token}) inside Ms() AFTER the handshake
-      // completes. When pe() short-circuits (de() returns truthy because a cached
-      // token is in localStorage), _e() never runs, ge.token stays null, and S5()
-      // deletes the Authorization header — every SDK call 401s.
-      //
-      // Fix: replace the bare var ge initialization with an IIFE that reads the
-      // lockfile + cached token from localStorage synchronously at module load.
-      // S5() then sees valid {url,token} on its first call. The handshake can
-      // still run and overwrite ge with fresh data via _e() — bootstrap is just
-      // the fallback that lets the SDK work even when the handshake never fires.
-      //
-      // 0.8.x: this exact pattern lives in local-mode-*.js but with different
-      //        var names (Ds/Es etc.) — no patch (the 0.10.x upgrade refreshes).
-      {
-        filePrefix: "local-mode-",
-        description: "Bootstrap `ge` (gateway url+token) from localStorage at module load",
-        from: "var ge={url:null,token:null}",
-        to: "var ge=(function(){try{var lf=localStorage.getItem(`vellum:local:lockfile`);var tk=localStorage.getItem(`vellum:gw:token`)||localStorage.getItem(`gw:token`);var ex=localStorage.getItem(`vellum:gw:expiresAt`)||localStorage.getItem(`gw:expiresAt`);var url=null;if(lf){try{var p=JSON.parse(lf);var id=p&&p.activeAssistant;var arr=p&&p.assistants;var a=Array.isArray(arr)&&arr.find(function(x){return x&&x.assistantId===id});if(a&&a.resources&&a.resources.gatewayPort!=null)url=window.location.origin+`/assistant/__gateway/`+a.resources.gatewayPort}catch(_){}}if(tk&&ex&&Date.now()/1000<Number(ex))return{url:url,token:tk}}catch(_){}return{url:null,token:null}})()",
-      },
+              // The fetch interceptor S5() in index-* reads ge.url (In()) and ge.token
+              // (Rn()) before injecting Authorization. Both start as {url:null,token:null}
+              // and only get populated by _e({url,token}) inside Ms() AFTER the handshake
+              // completes. When pe() short-circuits (de() returns truthy because a cached
+              // token is in localStorage), _e() never runs, ge.token stays null, and S5()
+              // deletes the Authorization header — every SDK call 401s.
+              //
+              // Fix: replace the bare var ge initialization with an IIFE that reads the
+              // lockfile + cached token from localStorage synchronously at module load.
+              // S5() then sees valid {url,token} on its first call. The handshake can
+              // still run and overwrite ge with fresh data via _e() — bootstrap is just
+              // the fallback that lets the SDK work even when the handshake never fires.
+              //
+              // DEBUG (Jun 28 2026): the localStorage expiresAt timestamp is treated as
+              // authoritative and rejected expired tokens. In our deploy the cached
+              // expiresAt is stale (token still works server-side), so we ignore expiry
+              // and console.warn instead. If the server actually does reject the expired
+              // token, S5() will still 401 — but at least we'll know the header was set
+              // and the problem is server-side rejection, not client-side non-injection.
+              //
+              // 0.8.x: this exact pattern lives in local-mode-*.js but with different
+              //        var names (Ds/Es etc.) — no patch (the 0.10.x upgrade refreshes).
+              {
+                filePrefix: "local-mode-",
+                description: "Bootstrap `ge` (gateway url+token) from localStorage at module load (warn on expired, but still use)",
+                from: "var ge={url:null,token:null}",
+                to: "var ge=(function(){try{var lf=localStorage.getItem(`vellum:local:lockfile`);var tk=localStorage.getItem(`vellum:gw:token`)||localStorage.getItem(`gw:token`);var ex=localStorage.getItem(`vellum:gw:expiresAt`)||localStorage.getItem(`gw:expiresAt`);var url=null;if(lf){try{var p=JSON.parse(lf);var id=p&&p.activeAssistant;var arr=p&&p.assistants;var a=Array.isArray(arr)&&arr.find(function(x){return x&&x.assistantId===id});if(a&&a.resources&&a.resources.gatewayPort!=null)url=window.location.origin+`/assistant/__gateway/`+a.resources.gatewayPort}catch(_){}}if(tk){if(ex&&Date.now()/1000>=Number(ex))console.warn(`[vellum-debug] gw:token expired (expiresAt=${ex}, now=${Math.floor(Date.now()/1000)}), using anyway`);return{url:url,token:tk}}catch(_){}return{url:null,token:null}})()",
+              },
     ];
 
 // ── index.html: inject feature flag overrides ──────────────────────────────
