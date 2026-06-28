@@ -43,19 +43,20 @@ const nextConfig: NextConfig = {
         source: "/assistant/__local/guardian-token/:assistantId",
         destination: "/api/vellum-local/guardian-token/:assistantId",
       },
-      // P() connect flow: gateway token exchange
-      // gatewayPort="self-hosted" → URL = /assistant/__gateway/self-hosted/auth/token
+      // P() connect flow: gateway token exchange.
+      // gatewayPort=7830 → URL = /assistant/__gateway/7830/auth/token.
+      // 0.10.x requires numeric gatewayPort; see comment in lockfile route.
       {
-        source: "/assistant/__gateway/self-hosted/auth/token",
+        source: "/assistant/__gateway/7830/auth/token",
         destination: "/api/vellum-local/gateway-token",
       },
-      // After P() succeeds, K() sets b.url = origin + /assistant/__gateway/self-hosted.
-      // The SPA's fetch interceptor then prefixes ALL SDK calls with b.url, so every
-      // API call becomes /assistant/__gateway/self-hosted/v1/... — proxy them to ngrok.
+      // After the connect succeeds, b.url = origin + /assistant/__gateway/7830.
+      // The SPA's fetch interceptor prefixes ALL SDK calls with b.url, so every
+      // API call becomes /assistant/__gateway/7830/v1/... — proxy them to ngrok.
       ...(apiUrl
         ? [
             {
-              source: "/assistant/__gateway/self-hosted/:path*",
+              source: "/assistant/__gateway/7830/:path*",
               destination: `${apiUrl}/:path*`,
             },
           ]

@@ -18,15 +18,32 @@ export async function GET(request: NextRequest) {
   // to the backend. VELLUM_API_URL is for the proxy destination only.
   const origin = new URL(request.url).origin;
 
+  // @vellumai/web 0.10.x changed two things that affect this lockfile:
+  //
+  // 1. Local-mode cloud check is `cloud === 'local'` (was `cloud !== 'vellum'`).
+  //    Omitting `cloud` lets `Lo()` in local-mode.js derive it as `'local'`
+  //    (fallback chain: cloud → project/gcp → sshUser/custom → 'local').
+  //    Setting `cloud: "docker"` (as we did in 0.8.x) makes `xs()` return false,
+  //    which fails `ks()` (can-connect), which makes `As()` return null, which
+  //    makes `oe()` (local-mode-ready) return false — so initSession never
+  //    tries the local-mode connect and falls through to platform allauth.
+  //
+  // 2. The resources schema (Ro) in 0.10.0 uses a Zod `ZodNumber` validator
+  //    for `gatewayPort` + `daemonPort`. If we send a string sentinel like
+  //    `"self-hosted"`, Ro.safeParse() fails and `Vo()` silently drops the
+  //    entire `resources` field — leaving the assistant with no gatewayPort,
+  //    breaking `As()` again. Numeric values pass validation and become the
+  //    URL path segment `/assistant/__gateway/${gatewayPort}`.
+  //
+  // Using `7830` (the Vellum gateway port the ngrok tunnel forwards to) lets
+  // the SPA build `/assistant/__gateway/7830/v1/...` and the rewrite in
+  // next.config.ts proxies that path to ${VELLUM_API_URL}/v1/... → ngrok.
   return NextResponse.json({
     assistants: [
       {
         assistantId,
-        cloud: "docker",
-        // resources.gatewayPort must be non-null for the SPA's I() filter to
-        // include this assistant in the local list (D). Without it, D=[] and
-        // the auto-connect P() never fires, leaving the SPA on "Connecting…".
-        resources: { gatewayPort: "self-hosted" },
+        // cloud omitted on purpose — see comment above
+        resources: { gatewayPort: 7830, daemonPort: 7830 },
       },
     ],
     activeAssistant: assistantId,

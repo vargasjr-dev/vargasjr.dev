@@ -4,13 +4,16 @@ import { cookies } from "next/headers";
 /**
  * Gateway token exchange endpoint.
  *
- * The SPA's P() connect flow calls:
- *   POST /assistant/__gateway/self-hosted/auth/token
+ * The SPA's connect flow calls:
+ *   POST /assistant/__gateway/7830/auth/token
  *     Authorization: Bearer <guardianToken>
  *
  * which is rewritten here. We return the Vellum access token as the
- * "gateway token" so the SPA caches it via h() and subsequent API calls
+ * "gateway token" so the SPA caches it via de() and subsequent API calls
  * carry Authorization: Bearer <token>.
+ *
+ * (0.10.x requires numeric gatewayPort in the lockfile, so the path is
+ * /assistant/__gateway/7830/... instead of /assistant/__gateway/self-hosted/...)
  */
 export async function POST() {
   const cookieStore = await cookies();
