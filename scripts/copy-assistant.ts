@@ -303,7 +303,7 @@ if (indexHtml.includes(flagScript)) {
   console.log("🩹 Patched: index.html — injected __VELLUM_FLAG_OVERRIDES__");
 }
 
-// ── index.html: preload lockfile into localStorage so local-mode handshake fires ──
+// ── index.html: preload lockfile + token into localStorage so local-mode handshake fires ──
 // In 0.8.x AND 0.10.x, the SPA never fetches /assistant/__local/lockfile on
 // startup — `Q()` (0.10.x) / `G()` (0.8.x) only reads localStorage and falls
 // back to the empty default. The local-mode handshake (`oe()` → `Ms()` →
@@ -317,21 +317,31 @@ if (indexHtml.includes(flagScript)) {
 // so our IIFE runs first and populates localStorage before `initSession`
 // ever fires.
 //
+// We ALSO write `localStorage['vellum:gw:token']` so the ge-bootstrap IIFE
+// in local-mode.js picks up the token at module load — without this, the
+// auth-store fires `/v1/conversations/` etc. BEFORE the handshake
+// (`fe()` → POST `/auth/token` → `_e()`) completes, so `Rn()` (= Ln) returns
+// null when C5() runs → Authorization header gets DELETED → 401 from daemon.
+//
+// Embedding the token in HTML is intentional — the lockfile route already
+// returns it as a JSON field, and the SPA needs it to sign local-mode API
+// calls. Long-lived Vellum actor tokens; we use a far-future expiresAt
+// (year 2099) since the token rotation happens server-side, not via this
+// expiresAt (which is just a localStorage cache hint).
+//
 // We omit `cloud` from the assistant (matches the route's intentional
 // omission); `Vo()` in local-mode.js derives it to `'local'` via `Lo()`.
-// We omit `url` and `token` too — after handshake, `_e()` sets
-// `url = origin + As(t)` and `token = de()` (freshly-fetched gateway token),
-// so lockfile `url`/`token` aren't needed.
 //
 // Idempotent: skip if lockfile already in localStorage (preserves any
 // runtime updates the SPA made).
 const assistantId = process.env.VELLUM_ASSISTANT_ID;
+const accessToken = process.env.VELLUM_ACCESS_TOKEN;
 if (!assistantId) {
   console.warn(
     "⚠️  VELLUM_ASSISTANT_ID not set — skipping lockfile preload (SPA will fall through to platform auth)",
   );
 } else {
-  const lockfilePayload = JSON.stringify({
+  const lockfilePayload: Record<string, unknown> = {
     assistants: [
       {
         assistantId,
@@ -339,8 +349,18 @@ if (!assistantId) {
       },
     ],
     activeAssistant: assistantId,
-  });
-  const lockfileScript = `<script>(function(){try{localStorage.setItem("vellum:local:lockfile",${JSON.stringify(lockfilePayload)})}catch(e){}})();</script>`;
+  };
+  // Include token in payload so the IIFE can write it to vellum:gw:token too.
+  // Only when the token is available — otherwise we still preload the lockfile
+  // and the handshake (Ms() → fe()) will populate the token normally.
+  if (accessToken) {
+    lockfilePayload.token = accessToken;
+  }
+  // Far-future expiresAt (year 2099 = ~4070908800 seconds since epoch). The
+  // ge-bootstrap IIFE treats expiresAt as a hint and warns if expired, but
+  // still uses the token. Real token rotation happens server-side via the
+  // handshake endpoint (which sets a fresh 2-hour expiresAt).
+  const lockfileScript = `<script>(function(){try{var p=${JSON.stringify(lockfilePayload)};localStorage.setItem("vellum:local:lockfile",JSON.stringify(p));if(p.token){localStorage.setItem("vellum:gw:token",p.token);localStorage.setItem("vellum:gw:expiresAt","4070908800")}}catch(e){}})();</script>`;
 
   if (indexHtml.includes(lockfileScript)) {
     console.log("⏭️  Already patched: index.html (lockfile preload)");
@@ -349,7 +369,7 @@ if (!assistantId) {
       indexHtmlPath,
       indexHtml.replace("</head>", `${flagScript}${lockfileScript}</head>`),
     );
-    console.log("🩹 Patched: index.html — preloaded lockfile into localStorage");
+    console.log("🩹 Patched: index.html — preloaded lockfile + token into localStorage");
   }
 }
 
