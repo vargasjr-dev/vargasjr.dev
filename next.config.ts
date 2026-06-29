@@ -45,6 +45,21 @@ const nextConfig: NextConfig = {
     // Next.js treats __ folders as private (excluded from routing), so we
     // map the SPA's __local paths to our real API routes via internal rewrites.
     return [
+      // Short-circuit mocks for endpoints the SPA fires early in its bootstrap
+      // that the daemon doesn't implement (or that 404 and break local-mode
+      // startup). These must come BEFORE the generic `/v1/:path*` rewrite so
+      // they take precedence.
+      //
+      // See app/api/v1/feature-flags/client-flag-values/route.ts for rationale.
+      {
+        source: "/v1/feature-flags/client-flag-values/",
+        destination: "/api/v1/feature-flags/client-flag-values",
+      },
+      // See app/api/v1/assistants/route.ts for rationale.
+      {
+        source: "/v1/assistants/",
+        destination: "/api/v1/assistants",
+      },
       ...external,
       {
         source: "/assistant/__local/lockfile",
