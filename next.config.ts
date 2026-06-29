@@ -60,6 +60,11 @@ const nextConfig: NextConfig = {
         source: "/v1/assistants/",
         destination: "/api/v1/assistants",
       },
+      // See app/api/v1/user/consent/route.ts for rationale.
+      {
+        source: "/v1/user/consent/",
+        destination: "/api/v1/user/consent",
+      },
       ...external,
       {
         source: "/assistant/__local/lockfile",

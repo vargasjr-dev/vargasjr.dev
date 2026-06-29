@@ -290,9 +290,17 @@ const patches: Array<{
 // ── index.html: inject feature flag overrides ──────────────────────────────
 // Injects window.__VELLUM_FLAG_OVERRIDES__ before </head> so the flag is
 // baked in at build time and can't be reverted by server-side values.
+//
+// `self-hosted-assistant` (defaultEnabled: false in feature-flag-catalog):
+// enables self-hosted assistant support in the web client. Without this,
+// the chat page renders "Conversations for self-hosted assistants aren't
+// available from the web yet" because the flag-gate short-circuits to the
+// "not supported" UI. Toggling it tells the SPA to treat self-hosted mode
+// as a first-class citizen and use the conversations API for self-hosted
+// assistants (not the desktop-app-only fallback).
 const indexHtmlPath = join(destDir, "index.html");
 const indexHtml = await readFile(indexHtmlPath, "utf-8");
-const flagScript = `<script>window.__VELLUM_FLAG_OVERRIDES__={"settings-developer-nav":true,"developer-menu-items":true}</script>`;
+const flagScript = `<script>window.__VELLUM_FLAG_OVERRIDES__={"settings-developer-nav":true,"developer-menu-items":true,"self-hosted-assistant":true}</script>`;
 if (indexHtml.includes(flagScript)) {
   console.log("⏭️  Already patched: index.html (feature flag overrides)");
 } else {
