@@ -69,6 +69,13 @@ const nextConfig: NextConfig = {
         source: "/assistant/__local/guardian-token/:assistantId",
         destination: "/api/vellum-local/guardian-token/:assistantId",
       },
+      // Local assistant status check — SPA's auth-store fires
+      // `re(assistantId)` (= `ts(e)` in local-mode.js) to determine if the
+      // local host is reachable. See app/api/vellum-local/status/[assistantId]/route.ts.
+      {
+        source: "/assistant/__local/status/:assistantId",
+        destination: "/api/vellum-local/status/:assistantId",
+      },
       // P() connect flow: gateway token exchange.
       // gatewayPort=7830 → URL = /assistant/__gateway/7830/auth/token.
       // 0.10.x requires numeric gatewayPort; see comment in lockfile route.
