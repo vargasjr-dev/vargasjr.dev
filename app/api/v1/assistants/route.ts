@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 /**
  * Short-circuit interceptor for GET /v1/assistants
@@ -10,9 +10,38 @@ import { NextResponse } from "next/server";
  * bootstrap even though local mode should work fine without any platform
  * assistants.
  *
- * Mocking with `{ results: [] }` lets the SPA proceed to the `hosting=local`
- * branch (and ultimately to the locally-cached assistant from localStorage).
+ * Mocking based on `hosting`:
+ *   - `hosting=platform` → empty results, so x() falls through to local
+ *   - `hosting=local`    → the local assistant, so x() returns it and the
+ *                          SPA can fire the rest of the bootstrap API calls
+ *                          (platform/status, permissions, contacts, etc.)
+ *
+ * The assistant ID must match VELLUM_ASSISTANT_ID — that's the ID the SPA
+ * stored in localStorage from the lockfile, and it uses it as the path
+ * segment for all subsequent `/v1/assistants/{id}/...` calls.
  */
-export async function GET() {
-  return NextResponse.json({ results: [] });
+export async function GET(request: NextRequest) {
+  const hosting = request.nextUrl.searchParams.get("hosting");
+
+  if (hosting !== "local") {
+    return NextResponse.json({ results: [] });
+  }
+
+  const assistantId = process.env.VELLUM_ASSISTANT_ID;
+  if (!assistantId) {
+    return NextResponse.json({ results: [] });
+  }
+
+  return NextResponse.json({
+    results: [
+      {
+        id: assistantId,
+        assistantId,
+        name: "VargasJR",
+        status: "active",
+        is_local: true,
+        created: "2026-01-01T00:00:00Z",
+      },
+    ],
+  });
 }
