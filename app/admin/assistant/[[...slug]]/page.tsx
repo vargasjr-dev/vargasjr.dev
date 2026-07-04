@@ -171,16 +171,19 @@ export default function AssistantPage() {
     };
   }, [ready]);
 
-  if (!ready) {
-    return (
-      <main className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <p className="text-gray-500 text-sm">Loading...</p>
-      </main>
-    );
-  }
-
+  // Always render the iframe so the SPA's self-hosted handshake starts
+  // immediately — in parallel with the admin token validation — rather than
+  // waiting for auth to complete first. The SPA is hidden via CSS until auth
+  // passes; if auth fails the user is redirected to /admin before the SPA
+  // ever becomes visible. This eliminates the "stuck loading" skeleton caused
+  // by the SPA spending its handshake window waiting for auth to finish.
   return (
     <main className="h-dvh w-screen overflow-hidden">
+      {!ready && (
+        <div className="absolute inset-0 bg-gray-950 flex items-center justify-center z-10">
+          <p className="text-gray-500 text-sm">Loading...</p>
+        </div>
+      )}
       <iframe
         ref={iframeRef}
         src={iframeSrc}
