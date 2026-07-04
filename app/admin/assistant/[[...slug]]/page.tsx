@@ -69,12 +69,20 @@ function fullUrl(): string {
 
 export default function AssistantPage() {
   const [ready, setReady] = useState(false);
-  const [iframeSrc, setIframeSrc] = useState<string>(SPA_PREFIX + "/");
   const router = useRouter();
   const pathname = usePathname();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   // Suppresses the message-listener update when WE drove the iframe (back/fwd).
   const suppressSync = useRef(false);
+
+  // Compute the initial iframe src directly from pathname so the iframe is
+  // only ever mounted once at the correct URL. Using useState(initializer) so
+  // this runs synchronously on the first render — before the iframe mounts —
+  // avoiding a double-load where the iframe first boots at /assistant/ and then
+  // immediately gets a new src pointing at the actual conversation.
+  const [iframeSrc, setIframeSrc] = useState<string>(() =>
+    parentToSpa(pathname ?? PARENT_PREFIX),
+  );
 
   // ── Auth gate ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -103,13 +111,6 @@ export default function AssistantPage() {
         router.replace("/admin");
       });
   }, [router]);
-
-  // ── Derive initial iframe src from the parent URL (deep-link support) ────
-  useEffect(() => {
-    if (!ready || !pathname) return;
-    const spaPath = parentToSpa(pathname);
-    setIframeSrc(spaPath);
-  }, [ready, pathname]);
 
   // ── SPA → parent URL sync + parent → SPA back/forward ───────────────────
   useEffect(() => {
