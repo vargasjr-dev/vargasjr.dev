@@ -129,6 +129,9 @@ export default function Home() {
         <p className="text-xs text-gray-600 mt-1">
           © {new Date().getFullYear()} VargasJR.dev
         </p>
+        <p className="text-xs text-gray-600 mt-1">
+          © {new Date().getFullYear()} VargasJR LLC. All rights reserved.
+        </p>
       </footer>
     </div>
   );
