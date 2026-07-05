@@ -343,8 +343,11 @@ if (indexHtml.includes(flagScript)) {
 // (year 2099) since the token rotation happens server-side, not via this
 // expiresAt (which is just a localStorage cache hint).
 //
-// We omit `cloud` from the assistant (matches the route's intentional
-// omission); `Vo()` in local-mode.js derives it to `'local'` via `Lo()`.
+// `cloud: "local"` is required — xs() in local-mode.js checks
+// `e.cloud === 'local' || e.cloud === 'docker'` before treating an assistant
+// as locally-hosted. Without it, xs() returns false → ks() returns false →
+// As() returns undefined → oe() returns false → the handshake never fires
+// and assistantState stays 'initializing' forever (stuck skeleton).
 //
 // Idempotent: skip if lockfile already in localStorage (preserves any
 // runtime updates the SPA made).
@@ -359,6 +362,7 @@ if (!assistantId) {
     assistants: [
       {
         assistantId,
+        cloud: "local",
         resources: { gatewayPort: 7830, daemonPort: 7830 },
       },
     ],

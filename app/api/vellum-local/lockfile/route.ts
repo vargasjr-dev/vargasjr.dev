@@ -71,7 +71,9 @@ export async function GET(request: NextRequest) {
     assistants: [
       {
         assistantId,
-        // cloud omitted on purpose — see comment above
+        // cloud: "local" required — xs() in local-mode.js checks this field.
+        // Without it, ks() returns false and the handshake never fires.
+        cloud: "local",
         resources: { gatewayPort: 7830, daemonPort: 7830 },
       },
     ],
