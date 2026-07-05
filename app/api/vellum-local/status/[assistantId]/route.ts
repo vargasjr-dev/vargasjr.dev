@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { logHandshake } from "@/lib/handshake-log";
 
 /**
  * Local assistant status check.
@@ -37,6 +38,12 @@ export async function GET(
 ) {
   const cookieStore = await cookies();
   if (!cookieStore.get("admin_session")?.value) {
+    logHandshake({
+      route: "status",
+      method: "GET",
+      status: 401,
+      detail: "no admin_session cookie",
+    });
     return new NextResponse(null, { status: 401 });
   }
 
@@ -47,6 +54,12 @@ export async function GET(
   // return ok:false so the SPA can fall through to other state checks
   // (and so we don't pretend to host a different assistant).
   if (!expectedId || assistantId !== expectedId) {
+    logHandshake({
+      route: "status",
+      method: "GET",
+      status: 200,
+      detail: `ok=false assistantId=${assistantId} expectedId=${expectedId ?? "unset"}`,
+    });
     return NextResponse.json({
       ok: false,
       status: 404,
@@ -54,6 +67,12 @@ export async function GET(
     });
   }
 
+  logHandshake({
+    route: "status",
+    method: "GET",
+    status: 200,
+    detail: `ok=true state=healthy assistantId=${assistantId}`,
+  });
   return NextResponse.json({
     ok: true,
     state: "healthy",

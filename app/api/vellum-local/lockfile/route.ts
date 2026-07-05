@@ -1,17 +1,40 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { logHandshake } from "@/lib/handshake-log";
 
 export async function GET(request: NextRequest) {
   const cookieStore = await cookies();
   if (!cookieStore.get("admin_session")?.value) {
+    logHandshake({
+      route: "lockfile",
+      method: "GET",
+      status: 401,
+      detail: "no admin_session cookie",
+    });
     return new NextResponse(null, { status: 401 });
   }
 
   const token = process.env.VELLUM_ACCESS_TOKEN;
-  if (!token) return new NextResponse(null, { status: 404 });
+  if (!token) {
+    logHandshake({
+      route: "lockfile",
+      method: "GET",
+      status: 404,
+      detail: "VELLUM_ACCESS_TOKEN not set",
+    });
+    return new NextResponse(null, { status: 404 });
+  }
 
   const assistantId = process.env.VELLUM_ASSISTANT_ID;
-  if (!assistantId) return new NextResponse(null, { status: 404 });
+  if (!assistantId) {
+    logHandshake({
+      route: "lockfile",
+      method: "GET",
+      status: 404,
+      detail: "VELLUM_ASSISTANT_ID not set",
+    });
+    return new NextResponse(null, { status: 404 });
+  }
 
   // Use the request origin so the SPA talks back through vargasjr.dev's
   // proxy rewrites (/v1/*, /_allauth/*, /accounts/*) rather than directly
@@ -38,6 +61,12 @@ export async function GET(request: NextRequest) {
   // Using `7830` (the Vellum gateway port the ngrok tunnel forwards to) lets
   // the SPA build `/assistant/__gateway/7830/v1/...` and the rewrite in
   // next.config.ts proxies that path to ${VELLUM_API_URL}/v1/... → ngrok.
+  logHandshake({
+    route: "lockfile",
+    method: "GET",
+    status: 200,
+    detail: `assistantId=${assistantId} origin=${origin} tokenPresent=${!!token}`,
+  });
   return NextResponse.json({
     assistants: [
       {
