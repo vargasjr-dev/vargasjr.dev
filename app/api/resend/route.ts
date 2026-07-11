@@ -116,7 +116,6 @@ export async function POST(req: NextRequest) {
   const subject = (data.subject as string) ?? "";
   const receivedAt = new Date((data.created_at as string) ?? Date.now());
   const plainText = (data.text as string) ?? (data.plain_text as string) ?? "";
-  const html = (data.html as string) ?? "";
 
   if (!messageId || !to) {
     console.warn("[resend webhook] missing id or to field", { messageId, to });
@@ -129,12 +128,16 @@ export async function POST(req: NextRequest) {
   // other   → drop
   if (to === VARGAS_ADDRESS) {
     await forwardEmail(data);
-    console.log(`[resend webhook] forwarded ${messageId} from ${from} → ${FORWARD_TO}`);
+    console.log(
+      `[resend webhook] forwarded ${messageId} from ${from} → ${FORWARD_TO}`,
+    );
     return NextResponse.json({ ok: true });
   }
 
   if (to !== HELLO_ADDRESS) {
-    console.log(`[resend webhook] dropping email to ${to} (not a handled address)`);
+    console.log(
+      `[resend webhook] dropping email to ${to} (not a handled address)`,
+    );
     return NextResponse.json({ ok: true });
   }
 

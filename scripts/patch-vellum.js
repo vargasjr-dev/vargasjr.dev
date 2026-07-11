@@ -7,6 +7,7 @@
  *   2. sidebar         — bump conversation limit from 5 → 16
  *   3. staff-check     — always return true for inspect/developer features
  *   4. nav-sections    — hide Scheduled and Background (no-op in 0.10.x — sections hidden by default upstream)
+ *   5. message-poll    — make the post-send fallback a single history check instead of a 120-second poll loop
  *
  * NOTE: The lockfile-preload that makes local-mode handshake fire on startup
  * lives in scripts/copy-assistant.ts (it injects a sync <script> into
@@ -208,5 +209,38 @@ if (indexFile) {
       ],
     ],
     "nav-sections",
+  );
+}
+
+// ── 5. message polling ──────────────────────────────────────────────────────
+// The fallback used after a non-streaming send polls the entire conversation
+// history every second for up to two minutes while waiting for the assistant
+// message. The backend's stream/reconciliation path owns delivery now, so this
+// client-side loop is both redundant and unnecessarily expensive. Keep one
+// immediate history check as a compatibility fallback, but never schedule a
+// timer or repeat the full-history request.
+const messagesFile = existsSync(assetsDir)
+  ? readdirSync(assetsDir).find(
+      (f) => f.startsWith("messages-") && f.endsWith(".js"),
+    )
+  : null;
+
+if (messagesFile) {
+  patchFile(
+    `node_modules/@vellumai/web/dist/assets/${messagesFile}`,
+    [
+      // @vellumai/web 0.10.8: async function H is exported as the polling
+      // helper (the `i` export). Preserve the response lookup, but remove the
+      // deadline loop and setTimeout retry.
+      [
+        "async function H(e,t,n){let r=Date.now()+B;for(;Date.now()<r;){let{data:r,error:i,response:o}=await a({path:{assistant_id:e},query:{conversationId:n},throwOnError:!1});if(d(o,i,`Failed to poll for messages`),!o.ok){let e=f(i,o,`Failed to poll for messages`);throw Error(e)}let s=r?.messages??[],c=s.findIndex(e=>e.id===t);if(c>=0){let e=s.slice(c+1).find(e=>e.role===`assistant`);if(e)return e}await new Promise(e=>setTimeout(e,z))}return null}",
+        "async function H(e,t,n){let{data:r,error:i,response:o}=await a({path:{assistant_id:e},query:{conversationId:n},throwOnError:!1});if(d(o,i,`Failed to fetch fallback message`),!o.ok){let e=f(i,o,`Failed to fetch fallback message`);throw Error(e)}let s=r?.messages??[],c=s.findIndex(e=>e.id===t);return c<0?null:s.slice(c+1).find(e=>e.role===`assistant`)??null}",
+      ],
+    ],
+    "message-poll",
+  );
+} else {
+  console.warn(
+    "patch-vellum: [message-poll] messages-*.js not found in assets dir",
   );
 }
