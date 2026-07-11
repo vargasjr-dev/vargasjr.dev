@@ -40,11 +40,11 @@ const patches: Array<{
   from: string;
   to: string;
 }> = [
-  // ── Sidebar conversation limit 5 → 16 ────────────────────────────────────
+  // ── Sidebar conversation limit 5 → 20 ────────────────────────────────────
   // The minifier assigns different variable names across @vellumai/web versions.
   // Only the matching version's pattern will apply; others are silent no-ops.
   //
-  // NOTE: As of 0.8.10 the sidebar main component already ships with 16,
+  // NOTE: As of 0.8.10 the sidebar main component already ships with 20,
   // so only the command-palette slice still needs patching.
 
   // Version A  (0.8.8 — index-DUwiZuxe.js)
@@ -52,37 +52,37 @@ const patches: Array<{
     filePrefix: "index-",
     description: "Sidebar useState init (vA)",
     from: "useState)(5),[k,A]=(0,X.useState)(5)",
-    to: "useState)(16),[k,A]=(0,X.useState)(16)",
+    to: "useState)(20),[k,A]=(0,X.useState)(20)",
   },
   {
     filePrefix: "index-",
     description: "Sidebar showLess recents (vA)",
     from: "showLess:D>5&&w.recents.length>5",
-    to: "showLess:D>16&&w.recents.length>16",
+    to: "showLess:D>20&&w.recents.length>20",
   },
   {
     filePrefix: "index-",
     description: "Sidebar onShowLess recents (vA)",
     from: "onShowLess:()=>O(5)}},[w.recents",
-    to: "onShowLess:()=>O(16)}},[w.recents",
+    to: "onShowLess:()=>O(20)}},[w.recents",
   },
   {
     filePrefix: "index-",
     description: "Sidebar showLess slack (vA)",
     from: "showLess:k>5&&w.slack.length>5",
-    to: "showLess:k>16&&w.slack.length>16",
+    to: "showLess:k>20&&w.slack.length>20",
   },
   {
     filePrefix: "index-",
     description: "Sidebar onShowLess slack (vA)",
     from: "onShowLess:()=>A(5)}},[w.slack",
-    to: "onShowLess:()=>A(16)}},[w.slack",
+    to: "onShowLess:()=>A(20)}},[w.slack",
   },
   {
     filePrefix: "index-",
     description: "Sidebar conv palette slice (vA — icon:rm)",
     from: "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:rm,",
-    to: "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:rm,",
+    to: "e.slice(0,20).map(e=>({id:`conv-${e.conversationId}`,icon:rm,",
   },
 
   // Version B  (Vercel-deployed — index-D6-nsIUa.js)
@@ -90,68 +90,101 @@ const patches: Array<{
     filePrefix: "index-",
     description: "Sidebar useState init (vB)",
     from: "[f,p]=(0,G.useState)(5),[m,h]=(0,G.useState)(5)",
-    to: "[f,p]=(0,G.useState)(16),[m,h]=(0,G.useState)(16)",
+    to: "[f,p]=(0,G.useState)(20),[m,h]=(0,G.useState)(20)",
   },
   {
     filePrefix: "index-",
     description: "Sidebar showLess recents (vB)",
     from: "showLess:f>5&&l.recents.length>5",
-    to: "showLess:f>16&&l.recents.length>16",
+    to: "showLess:f>20&&l.recents.length>20",
   },
   {
     filePrefix: "index-",
     description: "Sidebar onShowLess recents (vB)",
     from: "onShowLess:()=>p(5)}},[l.recents",
-    to: "onShowLess:()=>p(16)}},[l.recents",
+    to: "onShowLess:()=>p(20)}},[l.recents",
   },
   {
     filePrefix: "index-",
     description: "Sidebar showLess slack (vB)",
     from: "showLess:m>5&&l.slack.length>5",
-    to: "showLess:m>16&&l.slack.length>16",
+    to: "showLess:m>20&&l.slack.length>20",
   },
   {
     filePrefix: "index-",
     description: "Sidebar onShowLess slack (vB)",
     from: "onShowLess:()=>h(5)}},[l.slack",
-    to: "onShowLess:()=>h(16)}},[l.slack",
+    to: "onShowLess:()=>h(20)}},[l.slack",
   },
   {
     filePrefix: "index-",
     description: "Sidebar conv palette slice (vB — icon:RA)",
     from: "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:RA,",
-    to: "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:RA,",
+    to: "e.slice(0,20).map(e=>({id:`conv-${e.conversationId}`,icon:RA,",
   },
 
   // Version C  (0.8.10 — index-DGojzQtP.js)
-  // Sidebar main component already uses 16 natively; only palette slice needed.
+  // Sidebar main component already uses 20 natively; only palette slice needed.
   {
     filePrefix: "index-",
     description: "Sidebar conv palette slice (vC — icon:pm)",
     from: "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:pm,",
-    to: "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:pm,",
+    to: "e.slice(0,20).map(e=>({id:`conv-${e.conversationId}`,icon:pm,",
   },
 
   // Version D  (0.8.12 — index-87hTkD_v.js)
   // Palette slice uses capital Pm. Main sidebar useState still inits to 5;
-  // recents showLess/onShowLess already ship with 16, but slack onShowLess doesn't.
+  // recents showLess/onShowLess already ship with 20, but slack onShowLess doesn't.
   {
     filePrefix: "index-",
     description: "Sidebar conv palette slice (vD — icon:Pm)",
     from: "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:Pm,",
-    to: "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:Pm,",
+    to: "e.slice(0,20).map(e=>({id:`conv-${e.conversationId}`,icon:Pm,",
   },
   {
     filePrefix: "index-",
     description: "Sidebar useState init (vD — [D,O]/[k,ee])",
     from: "[D,O]=(0,Y.useState)(5),[k,ee]=(0,Y.useState)(5)",
-    to: "[D,O]=(0,Y.useState)(16),[k,ee]=(0,Y.useState)(16)",
+    to: "[D,O]=(0,Y.useState)(20),[k,ee]=(0,Y.useState)(20)",
   },
   {
     filePrefix: "index-",
     description: "Sidebar slack onShowLess (vD — ee)",
     from: "onShowLess:()=>ee(5)}},[w.slack,k,r]",
-    to: "onShowLess:()=>ee(16)}},[w.slack,k,r]",
+    to: "onShowLess:()=>ee(20)}},[w.slack,k,r]",
+  },
+
+  // @vellumai/web 0.10.8 sidebar helper (nP/DP): expand recents,
+  // channel sections, and the command palette to 20 items.
+  {
+    filePrefix: "index-",
+    description: "Sidebar nP showLess threshold (0.10.8)",
+    from: "showLess:!o&&t>5&&e.length>5",
+    to: "showLess:!o&&t>20&&e.length>20",
+  },
+  {
+    filePrefix: "index-",
+    description: "Sidebar nP reset threshold (0.10.8)",
+    from: "onShowLess:()=>n(()=>5)",
+    to: "onShowLess:()=>n(()=>20)",
+  },
+  {
+    filePrefix: "index-",
+    description: "Sidebar recents initial threshold (0.10.8)",
+    from: "[E,D]=(0,Z.useState)(5),[O,k]=(0,Z.useState)({})",
+    to: "[E,D]=(0,Z.useState)(20),[O,k]=(0,Z.useState)({})",
+  },
+  {
+    filePrefix: "index-",
+    description: "Sidebar channel default threshold (0.10.8)",
+    from: "O[e.channelId]??5",
+    to: "O[e.channelId]??20",
+  },
+  {
+    filePrefix: "index-",
+    description: "Sidebar command palette slice (0.10.8)",
+    from: "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:Hv,",
+    to: "e.slice(0,20).map(e=>({id:`conv-${e.conversationId}`,icon:Hv,",
   },
 
   // ── Hide Scheduled and Background nav sections ────────────────────────────
