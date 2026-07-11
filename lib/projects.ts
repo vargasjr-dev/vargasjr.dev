@@ -43,15 +43,15 @@ export const TIERS: {
 export const PROJECTS: Project[] = [
   // ── Energy ──────────────────────────────────────────────────────────────────
   {
-    slug: "eat-the-sun",
-    name: "eat-the-sun",
+    slug: "infinite-vibes",
+    name: "Infinite Vibes",
     emoji: "☀️",
     tagline:
       "Engineering roadmap for orbital ring and Dyson sphere construction. Real math, real materials.",
     description:
       "A 10-step interactive engineering roadmap from first orbital ring to full Dyson sphere. Each step includes technical specifications, material requirements, and physics simulations. Built with real aerospace engineering constraints — Zylon tethers, electromagnetic launchers, and bootstrap growth curves.",
-    url: "https://eat-the-sun.vercel.app",
-    repo: "https://github.com/vargasjr-dev/eat-the-sun",
+    url: "https://infinitevibes.solar",
+    repo: "https://github.com/vargasjr-dev/infinitevibes.solar",
     tags: ["Next.js", "Engineering", "Physics Simulation", "Space Tech"],
     status: "live",
     tier: "energy",
@@ -67,7 +67,14 @@ export const PROJECTS: Project[] = [
       "The first AI inference chip designed for orbit, not Earth. Every accelerator in space today was built for a data center — when it dies, it stays dead. durium makes the tradeoffs that are wrong for Earth but right for space: triple mode redundancy, no HBM, deliberate 5–7nm node selection, and chiplet graceful degradation with hot spares. The result: 10× better annual chip mortality, satellite life extended from 5 to 10–12 years, and the 18× orbital compute cost gap collapsed. Combined with eat-the-sun's launch economics, orbital compute crosses below terrestrial a decade ahead of any existing model.",
     url: "https://durium.vercel.app",
     repo: "https://github.com/vargasjr-dev/durium",
-    tags: ["Silicon", "Space Tech", "AI Inference", "RHBD", "Chiplet", "Next.js"],
+    tags: [
+      "Silicon",
+      "Space Tech",
+      "AI Inference",
+      "RHBD",
+      "Chiplet",
+      "Next.js",
+    ],
     status: "in-progress",
     tier: "energy",
   },
