@@ -158,6 +158,10 @@ if (indexFile) {
       // recents and channel sections, plus DP() for the command palette.
       ["showLess:!o&&t>5&&e.length>5", "showLess:!o&&t>20&&e.length>20"],
       ["onShowLess:()=>n(()=>5)", "onShowLess:()=>n(()=>20)"],
+      [
+        "onShowMore:()=>n(t=>Math.min(e.length,Math.max(t,a)+5))",
+        "onShowMore:()=>n(t=>Math.min(e.length,Math.max(t,a)+20))",
+      ],
       ["O[e.channelId]??5", "O[e.channelId]??20"],
       [
         "[E,D]=(0,Z.useState)(5),[O,k]=(0,Z.useState)({})",

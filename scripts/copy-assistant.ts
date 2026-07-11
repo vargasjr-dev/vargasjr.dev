@@ -170,6 +170,12 @@ const patches: Array<{
   },
   {
     filePrefix: "index-",
+    description: "Sidebar nP Show More increment (0.10.8)",
+    from: "onShowMore:()=>n(t=>Math.min(e.length,Math.max(t,a)+5))",
+    to: "onShowMore:()=>n(t=>Math.min(e.length,Math.max(t,a)+20))",
+  },
+  {
+    filePrefix: "index-",
     description: "Sidebar recents initial threshold (0.10.8)",
     from: "[E,D]=(0,Z.useState)(5),[O,k]=(0,Z.useState)({})",
     to: "[E,D]=(0,Z.useState)(20),[O,k]=(0,Z.useState)({})",
