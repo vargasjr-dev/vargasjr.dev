@@ -12,16 +12,11 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
   },
 
-  // The SPA's FastAPI-generated SDK emits paths with literal trailing slashes
-  // (e.g., `/v1/assistants/`, `/v1/feature-flags/client-flag-values/`), and
-  // the daemon expects the trailing slash. The default `trailingSlash: false`
-  // 308-redirects those to the slash-stripped form, causing 404s. Setting
-  // this to true reverses the redirect direction — the SDK's slash form works
-  // directly, and any no-slash form gets a 308 to the slash form.
-  //
-  // Static files (with extensions) and `.well-known/` paths are exempt, so
-  // the assistant SPA bundles under `/assistant/` are unaffected.
+  // Let proxy.ts normalize assistant API paths internally. Without this,
+  // Next/Vercel emits a browser-visible 308 before the API rewrite runs.
+  // proxy.ts preserves the trailing-slash convention for normal pages.
   trailingSlash: true,
+  skipTrailingSlashRedirect: true,
 
   // Proxy Vellum assistant API calls to the daemon.
   // Set VELLUM_API_URL to the base URL of your Vellum backend (e.g. the
