@@ -57,6 +57,21 @@ export const PROJECTS: Project[] = [
     tier: "energy",
   },
 
+  {
+    slug: "durium",
+    name: "durium",
+    emoji: "⬡",
+    tagline:
+      "Space-native AI inference chip. Designed from first principles for orbital compute — trade FLOPS for lifetime.",
+    description:
+      "The first AI inference chip designed for orbit, not Earth. Every accelerator in space today was built for a data center — when it dies, it stays dead. durium makes the tradeoffs that are wrong for Earth but right for space: triple mode redundancy, no HBM, deliberate 5–7nm node selection, and chiplet graceful degradation with hot spares. The result: 10× better annual chip mortality, satellite life extended from 5 to 10–12 years, and the 18× orbital compute cost gap collapsed. Combined with eat-the-sun's launch economics, orbital compute crosses below terrestrial a decade ahead of any existing model.",
+    url: "https://durium.vercel.app",
+    repo: "https://github.com/vargasjr-dev/durium",
+    tags: ["Silicon", "Space Tech", "AI Inference", "RHBD", "Chiplet", "Next.js"],
+    status: "in-progress",
+    tier: "energy",
+  },
+
   // ── Intelligence ─────────────────────────────────────────────────────────────
   {
     slug: "piro",
