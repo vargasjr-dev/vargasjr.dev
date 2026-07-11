@@ -4,7 +4,7 @@
  *
  * Patches:
  *   1. auth-store      — skip allauth platform check in self-hosted mode (no-op in 0.10.x — pattern removed upstream)
- *   2. sidebar         — bump conversation limit from 5 → 16
+ *   2. sidebar         — bump conversation limit from 5 → 20
  *   3. staff-check     — always return true for inspect/developer features
  *   4. nav-sections    — hide Scheduled and Background (no-op in 0.10.x — sections hidden by default upstream)
  *   5. message-poll    — make the post-send fallback a single history check instead of a 120-second poll loop
@@ -87,8 +87,8 @@ if (authStoreFile) {
 }
 
 // ── 2. sidebar conversation limit ───────────────────────────────────────────
-// Bump the initial visible count in the sidebar from 5 → 16.
-// As of 0.8.10 the main sidebar component already ships with 16; only the
+// Bump the initial visible count in the sidebar from 5 → 20.
+// As of 0.8.10 the main sidebar component already ships with 20; only the
 // command-palette conv slice (in $A / equivalent function) still needs patching.
 // In 0.10.x the sidebar was refactored — module renamed (Y→W), variables
 // renamed ([D,O]/[k,ee] → [E,D]/[O,ee]), and the conv-slice icon is now `t_`.
@@ -105,57 +105,78 @@ if (indexFile) {
       // vA (0.8.8 — icon:rm)
       [
         "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:rm,",
-        "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:rm,",
+        "e.slice(0,20).map(e=>({id:`conv-${e.conversationId}`,icon:rm,",
       ],
       // vB (earlier Vercel — icon:RA)
       [
         "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:RA,",
-        "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:RA,",
+        "e.slice(0,20).map(e=>({id:`conv-${e.conversationId}`,icon:RA,",
       ],
       // vC (0.8.10 — icon:pm)
       [
         "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:pm,",
-        "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:pm,",
+        "e.slice(0,20).map(e=>({id:`conv-${e.conversationId}`,icon:pm,",
       ],
       // vD (0.8.12 — icon:Pm, capital P)
       [
         "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:Pm,",
-        "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:Pm,",
+        "e.slice(0,20).map(e=>({id:`conv-${e.conversationId}`,icon:Pm,",
       ],
       // vE (0.10.x — icon:t_)
       [
         "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:t_,",
-        "e.slice(0,16).map(e=>({id:`conv-${e.conversationId}`,icon:t_,",
+        "e.slice(0,20).map(e=>({id:`conv-${e.conversationId}`,icon:t_,",
       ],
       // vA main sidebar useState (0.8.8)
       [
         "useState)(5),[k,A]=(0,X.useState)(5)",
-        "useState)(16),[k,A]=(0,X.useState)(16)",
+        "useState)(20),[k,A]=(0,X.useState)(20)",
       ],
       [
         "showLess:D>5&&w.recents.length>5",
-        "showLess:D>16&&w.recents.length>16",
+        "showLess:D>20&&w.recents.length>20",
       ],
-      ["onShowLess:()=>O(5)}},[w.recents", "onShowLess:()=>O(16)}},[w.recents"],
-      ["showLess:k>5&&w.slack.length>5", "showLess:k>16&&w.slack.length>16"],
-      ["onShowLess:()=>A(5)}},[w.slack", "onShowLess:()=>A(16)}},[w.slack"],
+      ["onShowLess:()=>O(5)}},[w.recents", "onShowLess:()=>O(20)}},[w.recents"],
+      ["showLess:k>5&&w.slack.length>5", "showLess:k>20&&w.slack.length>20"],
+      ["onShowLess:()=>A(5)}},[w.slack", "onShowLess:()=>A(20)}},[w.slack"],
       // vD main sidebar useState (0.8.12 — [D,O]/[k,ee] vars)
       [
         "[D,O]=(0,Y.useState)(5),[k,ee]=(0,Y.useState)(5)",
-        "[D,O]=(0,Y.useState)(16),[k,ee]=(0,Y.useState)(16)",
+        "[D,O]=(0,Y.useState)(20),[k,ee]=(0,Y.useState)(20)",
       ],
-      // vD slack onShowLess (recents already ships with 16 in 0.8.12)
+      // vD slack onShowLess (recents already ships with 20 in 0.8.12)
       [
         "onShowLess:()=>ee(5)}},[w.slack,k,r]",
-        "onShowLess:()=>ee(16)}},[w.slack,k,r]",
+        "onShowLess:()=>ee(20)}},[w.slack,k,r]",
       ],
       // vE main sidebar useState (0.10.x — module W, vars [E,D]/[O,ee], no slack state)
       [
         "[E,D]=(0,W.useState)(5),[O,ee]=(0,W.useState)({})",
-        "[E,D]=(0,W.useState)(16),[O,ee]=(0,W.useState)({})",
+        "[E,D]=(0,W.useState)(20),[O,ee]=(0,W.useState)({})",
       ],
-      // vE showLess (0.10.x — single `t>5&&e.length>5` shape, no w.recents/slack split)
-      ["showLess:t>5&&e.length>5", "showLess:t>16&&e.length>16"],
+      // vE 0.10.x sidebar helper: the 0.10.8 bundle uses nP() for both
+      // recents and channel sections, plus DP() for the command palette.
+      ["showLess:!o&&t>5&&e.length>5", "showLess:!o&&t>20&&e.length>20"],
+      ["onShowLess:()=>n(()=>5)", "onShowLess:()=>n(()=>20)"],
+      [
+        "onShowMore:()=>n(t=>Math.min(e.length,Math.max(t,a)+5))",
+        "onShowMore:()=>n(t=>Math.min(e.length,Math.max(t,a)+20))",
+      ],
+      ["O[e.channelId]??5", "O[e.channelId]??20"],
+      [
+        "[E,D]=(0,Z.useState)(5),[O,k]=(0,Z.useState)({})",
+        "[E,D]=(0,Z.useState)(20),[O,k]=(0,Z.useState)({})",
+      ],
+      [
+        "n[e.channelId]??5)})),r)})),[C.channelSections,O,r]",
+        "n[e.channelId]??20)})),r)})),[C.channelSections,O,r]",
+      ],
+      [
+        "e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`,icon:Hv,",
+        "e.slice(0,20).map(e=>({id:`conv-${e.conversationId}`,icon:Hv,",
+      ],
+      // Older 0.10.x variants retained the previous helper shape.
+      ["showLess:t>5&&e.length>5", "showLess:t>20&&e.length>20"],
     ],
     "sidebar",
   );
