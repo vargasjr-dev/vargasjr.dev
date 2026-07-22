@@ -1,6 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { logHandshake } from "@/lib/handshake-log";
+import { NextResponse } from "next/server";
 
 /**
  * Local assistant status check.
@@ -30,49 +28,11 @@ import { logHandshake } from "@/lib/handshake-log";
  * `window.vellum.localMode.status(assistantId)` contract from the bundled
  * local-mode.js.
  *
- * Auth: admin_session cookie (same as /assistant/__local/lockfile).
+ * This is intentionally public and local to the web deployment for now.
+ * TODO: Remove this shim when the upstream Vellum local-mode health flow is
+ * made efficient and no longer requires this browser-side probe.
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ assistantId: string }> },
-) {
-  const cookieStore = await cookies();
-  if (!cookieStore.get("admin_session")?.value) {
-    logHandshake({
-      route: "status",
-      method: "GET",
-      status: 401,
-      detail: "no admin_session cookie",
-    });
-    return new NextResponse(null, { status: 401 });
-  }
-
-  const { assistantId } = await params;
-  const expectedId = process.env.VELLUM_ASSISTANT_ID;
-
-  // If the URL's assistantId doesn't match the configured local assistant,
-  // return ok:false so the SPA can fall through to other state checks
-  // (and so we don't pretend to host a different assistant).
-  if (!expectedId || assistantId !== expectedId) {
-    logHandshake({
-      route: "status",
-      method: "GET",
-      status: 200,
-      detail: `ok=false assistantId=${assistantId} expectedId=${expectedId ?? "unset"}`,
-    });
-    return NextResponse.json({
-      ok: false,
-      status: 404,
-      error: "Assistant not found",
-    });
-  }
-
-  logHandshake({
-    route: "status",
-    method: "GET",
-    status: 200,
-    detail: `ok=true state=healthy assistantId=${assistantId}`,
-  });
+export async function GET() {
   return NextResponse.json({
     ok: true,
     state: "healthy",

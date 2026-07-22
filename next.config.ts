@@ -76,6 +76,13 @@ const nextConfig: NextConfig = {
         source: "/assistant/__local/status/:assistantId",
         destination: "/api/vellum-local/status/:assistantId",
       },
+      // Temporary web-local health short-circuit. Keep this before the generic
+      // gateway proxy so the heartbeat does not reach the assistant backend.
+      // TODO: Remove when the upstream Vellum heartbeat is made efficient.
+      {
+        source: "/assistant/__gateway/7830/v1/assistants/:assistantId/healthz",
+        destination: "/api/vellum-local/healthz/:assistantId",
+      },
       // P() connect flow: gateway token exchange.
       // gatewayPort=7830 → URL = /assistant/__gateway/7830/auth/token.
       // 0.10.x requires numeric gatewayPort; see comment in lockfile route.
