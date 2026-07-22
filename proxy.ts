@@ -45,8 +45,21 @@ function isAssistantApiPath(pathname: string): boolean {
   );
 }
 
+const HEALTH_PATH =
+  /^\/assistant\/__gateway\/7830\/v1\/assistants\/[^/]+\/healthz\/?$/;
+const STATUS_PATH = /^\/assistant\/__local\/status\/[^/]+\/?$/;
+
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+
+  // Temporary web-local responses for the SPA's reachability probes. These
+  // must run before the generic assistant routing below.
+  if (STATUS_PATH.test(pathname)) {
+    return NextResponse.json({ ok: true, state: "healthy" });
+  }
+  if (HEALTH_PATH.test(pathname)) {
+    return NextResponse.json({ status: "ok" });
+  }
 
   // skipTrailingSlashRedirect is global, so preserve the old site-wide
   // trailing-slash convention here for ordinary page requests. Assistant API
