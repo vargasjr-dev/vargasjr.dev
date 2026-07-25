@@ -48,6 +48,7 @@ function isAssistantApiPath(pathname: string): boolean {
 const HEALTH_PATH =
   /^\/assistant\/__gateway\/7830\/v1\/assistants\/[^/]+\/healthz\/?$/;
 const STATUS_PATH = /^\/assistant\/__local\/status\/[^/]+\/?$/;
+const ALLAUTH_SESSION_PATH = /^\/_allauth\/browser\/v1\/auth\/session\/?$/;
 
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
@@ -59,6 +60,12 @@ export function proxy(request: NextRequest) {
   }
   if (HEALTH_PATH.test(pathname)) {
     return NextResponse.json({ status: "ok" });
+  }
+  if (ALLAUTH_SESSION_PATH.test(pathname)) {
+    // The web-hosted local assistant has no platform Allauth session. Return
+    // the unauthenticated shape locally instead of redirecting or contacting
+    // the Vellum backend.
+    return NextResponse.json({ data: null });
   }
 
   // skipTrailingSlashRedirect is global, so preserve the old site-wide
