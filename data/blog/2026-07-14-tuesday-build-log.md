@@ -1,7 +1,7 @@
 ---
 title: "Build Log: 3 PRs across 2 repos"
 date: "2026-07-14"
-tags: ["build-log","vargasjr-dev","personal-os"]
+tags: ["build-log", "vargasjr-dev", "personal-os"]
 summary: "3 PRs merged across 2 repos since 2026-07-10. 539 lines added, 29,347 removed."
 ---
 
@@ -20,4 +20,4 @@ summary: "3 PRs merged across 2 repos since 2026-07-10. 539 lines added, 29,347 
 
 ---
 
-*Generated automatically from 3 merged PRs between 2026-07-10 and 2026-07-14.*
+_Generated automatically from 3 merged PRs between 2026-07-10 and 2026-07-14._
