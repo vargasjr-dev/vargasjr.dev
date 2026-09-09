@@ -18,6 +18,7 @@
 
 import fs from "fs";
 import path from "path";
+import prettier from "prettier";
 
 const GITHUB_API = "https://api.github.com";
 const ORG = "vargasjr-dev";
@@ -197,7 +198,10 @@ async function main() {
   }
 
   fs.mkdirSync(BLOG_DIR, { recursive: true });
-  fs.writeFileSync(filePath, content);
+  fs.writeFileSync(
+    filePath,
+    await prettier.format(content, { filepath: filePath }),
+  );
   console.log(`[blog] ✅ Generated: ${slug}.md (${allPRs.length} PRs)`);
 }
 
