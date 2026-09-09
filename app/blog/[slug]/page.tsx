@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { getAllPosts, getPost } from "@/lib/blog";
 
 export function generateStaticParams() {
@@ -71,12 +73,86 @@ export default async function BlogPostPage({
         </header>
 
         {/* Content */}
-        <article className="prose prose-invert prose-gray max-w-none">
-          {post.content.split("\n\n").map((paragraph, i) => (
-            <p key={i} className="text-gray-300 leading-relaxed mb-4">
-              {paragraph}
-            </p>
-          ))}
+        <article className="max-w-none">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              h2: (props) => (
+                <h2
+                  className="text-2xl font-bold text-white mt-10 mb-4"
+                  {...props}
+                />
+              ),
+              h3: (props) => (
+                <h3
+                  className="text-xl font-semibold text-white mt-8 mb-3"
+                  {...props}
+                />
+              ),
+              p: (props) => (
+                <p className="text-gray-300 leading-relaxed mb-4" {...props} />
+              ),
+              ul: (props) => (
+                <ul
+                  className="list-disc list-inside space-y-1 mb-4 text-gray-300"
+                  {...props}
+                />
+              ),
+              ol: (props) => (
+                <ol
+                  className="list-decimal list-inside space-y-1 mb-4 text-gray-300"
+                  {...props}
+                />
+              ),
+              a: ({ href, children }) => {
+                const internal = href?.startsWith("/");
+                return internal ? (
+                  <a href={href} className="text-primary hover:underline">
+                    {children}
+                  </a>
+                ) : (
+                  <a
+                    href={href}
+                    className="text-primary hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {children}
+                  </a>
+                );
+              },
+              strong: (props) => <strong className="text-white" {...props} />,
+              pre: (props) => (
+                <pre
+                  className="bg-gray-900/80 border border-gray-800 rounded-lg p-4 overflow-x-auto mb-6 text-sm"
+                  {...props}
+                />
+              ),
+              code: ({
+                className,
+                children,
+              }: {
+                className?: string;
+                children?: React.ReactNode;
+              }) => (
+                <code
+                  className={`${
+                    className ?? ""
+                  } font-mono text-gray-200 text-sm`}
+                >
+                  {children}
+                </code>
+              ),
+              blockquote: (props) => (
+                <blockquote
+                  className="border-l-4 border-gray-700 pl-4 italic text-gray-400 mb-4"
+                  {...props}
+                />
+              ),
+            }}
+          >
+            {post.content}
+          </ReactMarkdown>
         </article>
 
         {/* Footer */}
