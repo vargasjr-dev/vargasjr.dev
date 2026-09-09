@@ -1,7 +1,7 @@
 ---
 title: "Build Log: 1 PRs across 1 repos"
 date: "2026-09-08"
-tags: ["build-log","vargasjr-dev"]
+tags: ["build-log", "vargasjr-dev"]
 summary: "1 PRs merged across 1 repos since 2026-09-04. 60 lines added, 528 removed."
 ---
 
@@ -13,4 +13,4 @@ summary: "1 PRs merged across 1 repos since 2026-09-04. 60 lines added, 528 remo
 
 ---
 
-*Generated automatically from 1 merged PRs between 2026-09-04 and 2026-09-08.*
+_Generated automatically from 1 merged PRs between 2026-09-04 and 2026-09-08._
