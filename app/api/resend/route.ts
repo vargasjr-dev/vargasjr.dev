@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
   const from = (data.from as string) ?? "";
   const subject = (data.subject as string) ?? "";
   const receivedAt = new Date((data.created_at as string) ?? Date.now());
-  const plainText = (data.text as string) ?? (data.plain_text as string) ?? "";
+  let plainText = (data.text as string) ?? (data.plain_text as string) ?? "";
 
   if (!messageId || !to) {
     console.warn("[resend webhook] missing id or to field", { messageId, to });
@@ -141,7 +141,38 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  // hello@ — store full payload in Blob + metadata in DB
+  // hello@ — fetch full content from Resend's Receiving API (the webhook
+  // payload is metadata-only), store it in the table + payload in Blob.
+  let html: string | null = null;
+  let bodyText: string | null = null;
+  const fetchUrl = `https://api.resend.com/emails/receiving/${messageId}`;
+  try {
+    const contentRes = await fetch(fetchUrl, {
+      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
+    });
+    if (contentRes.ok) {
+      const content = (await contentRes.json()) as {
+        html?: string | null;
+        text?: string | null;
+      };
+      html = content.html ?? null;
+      bodyText = content.text ?? null;
+    } else {
+      console.warn(
+        `[resend webhook] receiving fetch failed (${contentRes.status}) for ${messageId}`,
+      );
+    }
+  } catch (err) {
+    console.warn(
+      `[resend webhook] receiving fetch error for ${messageId}:`,
+      err,
+    );
+  }
+
+  if (!plainText && bodyText) {
+    plainText = bodyText;
+  }
+
   const blobKey = `emails/${to.split("@")[0]}/${receivedAt.toISOString()}-${messageId}.json`;
   await put(blobKey, JSON.stringify({ ...data, raw_event: event }), {
     access: "public",
@@ -157,6 +188,8 @@ export async function POST(req: NextRequest) {
       subject,
       receivedAt,
       blobKey,
+      html,
+      body: bodyText,
       preview: plainText.slice(0, 200).replace(/\s+/g, " ").trim(),
     })
     .onConflictDoNothing();
