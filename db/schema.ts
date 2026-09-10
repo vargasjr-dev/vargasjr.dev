@@ -8,7 +8,10 @@ export const emails = pgTable(
     from: varchar("from", { length: 256 }).notNull(),
     subject: text("subject").notNull().default(""),
     receivedAt: timestamp("received_at", { withTimezone: true }).notNull(),
-    blobKey: varchar("blob_key", { length: 512 }).notNull(), // full body stored in Blob
+    blobKey: varchar("blob_key", { length: 512 }).notNull(), // webhook payload stored in Blob
+    // Full message content, fetched from Resend's Receiving API
+    html: text("html"),
+    body: text("body"), // plain text
     // Denormalized for quick display without blob fetch
     preview: text("preview").notNull().default(""), // first ~200 chars of plain text
   },
