@@ -10,7 +10,7 @@ export const GET = () => {
   const vcard = [
     "BEGIN:VCARD",
     "VERSION:3.0",
-    "N:JR;Vargas;;;",
+    "N:;Vargas JR;;;",
     "FN:Vargas JR",
     "ORG:VargasJR LLC",
     "TEL;TYPE=CELL:+18336597438",
