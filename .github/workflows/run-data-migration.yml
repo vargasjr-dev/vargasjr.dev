@@ -32,7 +32,6 @@ jobs:
   run:
     name: Run PR data operation
     runs-on: ubuntu-latest
-    environment: production-migrations
     steps:
       - name: Resolve and validate pull request
         id: pr

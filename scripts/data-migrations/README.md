@@ -16,7 +16,7 @@ Put one-time, narrowly scoped production data repairs or read-only analyses in t
    - the open PR number;
    - the script path, such as `scripts/data-migrations/backfill-email-bodies.ts`;
    - the credential set the script needs (`database` for `DATABASE_URL`, `resend` for `DATABASE_URL` + `RESEND_API_KEY`).
-5. Approve the protected `production-migrations` environment when GitHub requests approval.
+5. The workflow runs with repository Actions secrets only — no GitHub environment or approval gate.
 6. Review the workflow log and the script's before/after assertions.
 
 The workflow checks out the exact PR head SHA, serializes all production data-operation runs, and exposes only the selected credential set to the operation process. It does not merge the PR or apply schema changes.
