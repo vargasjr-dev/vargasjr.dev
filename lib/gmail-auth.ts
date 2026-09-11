@@ -201,7 +201,9 @@ async function gmailFetch(path: string, init?: RequestInit) {
     throw new Error(
       `gmail api ${path} failed: ${res.status} ${await res.text()}`,
     );
-  return res;
+  // 204 / empty bodies (e.g. forwarding addresses when none exist yet)
+  const text = await res.text();
+  return { json: () => (text.trim() ? JSON.parse(text) : {}) };
 }
 
 export async function listGmailFilters() {
