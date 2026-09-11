@@ -23,3 +23,18 @@ export const emails = pgTable(
 
 export type Email = typeof emails.$inferSelect;
 export type NewEmail = typeof emails.$inferInsert;
+
+// Single-row table holding the OAuth connection from Vargas's Google account.
+// Tokens are encrypted at rest (see lib/gmail-auth.ts).
+export const gmailConnection = pgTable("gmail_connection", {
+  id: varchar("id", { length: 32 }).primaryKey(), // always "google"
+  email: varchar("email", { length: 256 }).notNull(), // connected Google account
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  scope: text("scope").notNull().default(""),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type GmailConnection = typeof gmailConnection.$inferSelect;
+export type NewGmailConnection = typeof gmailConnection.$inferInsert;
