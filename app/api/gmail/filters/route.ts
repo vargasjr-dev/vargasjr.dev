@@ -55,6 +55,8 @@ export async function POST(request: Request) {
       },
       action: {
         ...(forwardTo ? { forwardTo } : {}),
+        // archive (remove from INBOX) + mark as read (remove UNREAD)
+        removeLabelIds: ["INBOX", "UNREAD"],
       },
     });
     return NextResponse.json({ filter });
