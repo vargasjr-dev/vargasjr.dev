@@ -64,6 +64,12 @@ export default function AdminPage() {
             >
               Bank Info
             </Link>
+            <Link
+              href="/admin/gmail"
+              className="block w-full py-3 rounded-lg bg-gray-800 text-gray-200 font-semibold hover:bg-gray-700 transition-colors"
+            >
+              Gmail Filters
+            </Link>
             <button
               onClick={handleLogout}
               className="block w-full py-3 rounded-lg bg-transparent text-gray-500 text-sm hover:text-gray-300 transition-colors"
