@@ -78,7 +78,7 @@ async function main() {
   const attempted = rows.filter((row) => !skipped.includes(row.id));
   const remaining = (await sql.query(
     `SELECT id FROM emails
-     WHERE html IS NULL AND body IS NULL AND id = ANY($1::uuid[])`,
+     WHERE html IS NULL AND body IS NULL AND id = ANY($1::text[])`,
     [attempted.map((row) => row.id)],
   )) as { id: string }[];
 
