@@ -18,7 +18,9 @@ export async function GET(request: Request) {
 
   const origin = process.env.NEXT_PUBLIC_SITE_URL || url.origin;
   const back = (msg: string, ok = false) =>
-    NextResponse.redirect(`${origin}/admin/gmail?${ok ? "connected=1" : "error=" + encodeURIComponent(msg)}`);
+    NextResponse.redirect(
+      `${origin}/admin/gmail?${ok ? "connected=1" : "error=" + encodeURIComponent(msg)}`,
+    );
 
   if (error) return back(`Google returned: ${error}`);
   if (!code) return back("missing code");
@@ -37,7 +39,9 @@ export async function GET(request: Request) {
         id: "google",
         email,
         accessToken: encryptToken(tok.access_token),
-        refreshToken: tok.refresh_token ? encryptToken(tok.refresh_token) : null,
+        refreshToken: tok.refresh_token
+          ? encryptToken(tok.refresh_token)
+          : null,
         expiresAt: new Date(Date.now() + tok.expires_in * 1000),
         scope: tok.scope ?? "",
         updatedAt: new Date(),
@@ -47,7 +51,9 @@ export async function GET(request: Request) {
         set: {
           email,
           accessToken: encryptToken(tok.access_token),
-          ...(tok.refresh_token ? { refreshToken: encryptToken(tok.refresh_token) } : {}),
+          ...(tok.refresh_token
+            ? { refreshToken: encryptToken(tok.refresh_token) }
+            : {}),
           expiresAt: new Date(Date.now() + tok.expires_in * 1000),
           scope: tok.scope ?? "",
           updatedAt: new Date(),
@@ -59,4 +65,3 @@ export async function GET(request: Request) {
     return back(e instanceof Error ? e.message : "token exchange failed");
   }
 }
-

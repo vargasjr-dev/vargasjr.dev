@@ -33,7 +33,9 @@ export const gmailConnection = pgTable("gmail_connection", {
   refreshToken: text("refresh_token"),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   scope: text("scope").notNull().default(""),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 export type GmailConnection = typeof gmailConnection.$inferSelect;

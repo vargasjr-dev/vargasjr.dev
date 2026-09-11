@@ -41,7 +41,10 @@ export async function POST(request: Request) {
       );
     }
     if (forwardTo && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(forwardTo)) {
-      return NextResponse.json({ error: "invalid forwardTo address" }, { status: 400 });
+      return NextResponse.json(
+        { error: "invalid forwardTo address" },
+        { status: 400 },
+      );
     }
 
     const filter = await createGmailFilter({

@@ -6,7 +6,11 @@ import Link from "next/link";
 type GmailFilter = {
   id: string;
   criteria: { from?: string; subject?: string; query?: string };
-  action: { forwardTo?: string; addLabelIds?: string[]; removeLabelIds?: string[] };
+  action: {
+    forwardTo?: string;
+    addLabelIds?: string[];
+    removeLabelIds?: string[];
+  };
 };
 
 type ForwardingAddress = {
@@ -15,12 +19,17 @@ type ForwardingAddress = {
 };
 
 function authHeaders(): HeadersInit {
-  return { Authorization: `Bearer ${localStorage.getItem("admin_token") ?? ""}` };
+  return {
+    Authorization: `Bearer ${localStorage.getItem("admin_token") ?? ""}`,
+  };
 }
 
 export default function GmailAdminPage() {
   const [authed, setAuthed] = useState(false);
-  const [status, setStatus] = useState<{ connected: boolean; email: string | null } | null>(null);
+  const [status, setStatus] = useState<{
+    connected: boolean;
+    email: string | null;
+  } | null>(null);
   const [filters, setFilters] = useState<GmailFilter[]>([]);
   const [forwarding, setForwarding] = useState<ForwardingAddress[]>([]);
   const [error, setError] = useState("");
@@ -36,12 +45,18 @@ export default function GmailAdminPage() {
   const refresh = useCallback(async () => {
     setError("");
     try {
-      const s = await fetch("/api/gmail/status", { headers: authHeaders() }).then((r) => r.json());
+      const s = await fetch("/api/gmail/status", {
+        headers: authHeaders(),
+      }).then((r) => r.json());
       setStatus(s);
       if (s.connected) {
         const [f, fw] = await Promise.all([
-          fetch("/api/gmail/filters", { headers: authHeaders() }).then((r) => r.json()),
-          fetch("/api/gmail/forwarding", { headers: authHeaders() }).then((r) => r.json()),
+          fetch("/api/gmail/filters", { headers: authHeaders() }).then((r) =>
+            r.json(),
+          ),
+          fetch("/api/gmail/forwarding", { headers: authHeaders() }).then((r) =>
+            r.json(),
+          ),
         ]);
         setFilters(f.filters ?? []);
         setForwarding(fw.forwardingAddresses ?? []);
@@ -138,16 +153,23 @@ export default function GmailAdminPage() {
       <div className="max-w-2xl mx-auto p-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Gmail Filters</h1>
-          <Link href="/admin" className="text-sm text-gray-500 hover:text-gray-300">
+          <Link
+            href="/admin"
+            className="text-sm text-gray-500 hover:text-gray-300"
+          >
             ← Admin
           </Link>
         </div>
 
         {error && (
-          <p className="mb-4 p-3 rounded-lg bg-red-900/40 border border-red-800 text-red-200 text-sm">{error}</p>
+          <p className="mb-4 p-3 rounded-lg bg-red-900/40 border border-red-800 text-red-200 text-sm">
+            {error}
+          </p>
         )}
         {notice && (
-          <p className="mb-4 p-3 rounded-lg bg-green-900/40 border border-green-800 text-green-200 text-sm">{notice}</p>
+          <p className="mb-4 p-3 rounded-lg bg-green-900/40 border border-green-800 text-green-200 text-sm">
+            {notice}
+          </p>
         )}
 
         {!status ? (
@@ -155,8 +177,9 @@ export default function GmailAdminPage() {
         ) : !status.connected ? (
           <div className="p-6 rounded-xl bg-gray-900 border border-gray-800 text-center">
             <p className="text-gray-300 text-sm mb-4">
-              Connect a Google account to manage its email filters. Access is limited to
-              Gmail <em>settings</em> (filters + forwarding) — no mail content, no sending.
+              Connect a Google account to manage its email filters. Access is
+              limited to Gmail <em>settings</em> (filters + forwarding) — no
+              mail content, no sending.
             </p>
             <a
               href="/api/gmail/connect"
@@ -169,7 +192,10 @@ export default function GmailAdminPage() {
           <>
             <div className="mb-6 p-4 rounded-xl bg-gray-900 border border-gray-800">
               <p className="text-sm text-gray-400">
-                Connected as <span className="text-gray-100 font-semibold">{status.email}</span>
+                Connected as{" "}
+                <span className="text-gray-100 font-semibold">
+                  {status.email}
+                </span>
               </p>
             </div>
 
@@ -188,9 +214,30 @@ export default function GmailAdminPage() {
                     >
                       <div className="text-sm min-w-0">
                         <p className="text-gray-200 break-words">
-                          {f.criteria.from && <>from: <code className="text-[#3ba4dc]">{f.criteria.from}</code> </>}
-                          {f.criteria.subject && <>subject: <code className="text-[#3ba4dc]">{f.criteria.subject}</code> </>}
-                          {f.criteria.query && <>query: <code className="text-[#3ba4dc]">{f.criteria.query}</code></>}
+                          {f.criteria.from && (
+                            <>
+                              from:{" "}
+                              <code className="text-[#3ba4dc]">
+                                {f.criteria.from}
+                              </code>{" "}
+                            </>
+                          )}
+                          {f.criteria.subject && (
+                            <>
+                              subject:{" "}
+                              <code className="text-[#3ba4dc]">
+                                {f.criteria.subject}
+                              </code>{" "}
+                            </>
+                          )}
+                          {f.criteria.query && (
+                            <>
+                              query:{" "}
+                              <code className="text-[#3ba4dc]">
+                                {f.criteria.query}
+                              </code>
+                            </>
+                          )}
                         </p>
                         <p className="text-gray-500 text-xs mt-1">
                           {f.action.forwardTo
@@ -215,7 +262,10 @@ export default function GmailAdminPage() {
               <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">
                 New filter
               </h2>
-              <form onSubmit={handleCreate} className="space-y-3 p-4 rounded-xl bg-gray-900 border border-gray-800">
+              <form
+                onSubmit={handleCreate}
+                className="space-y-3 p-4 rounded-xl bg-gray-900 border border-gray-800"
+              >
                 <input
                   value={from}
                   onChange={(e) => setFrom(e.target.value)}
@@ -258,8 +308,9 @@ export default function GmailAdminPage() {
                   </button>
                 </div>
                 <p className="text-xs text-gray-600">
-                  Forwarding requires a verified destination address — use the verification
-                  link once; VargasJR confirms it from the hello@ inbox.
+                  Forwarding requires a verified destination address — use the
+                  verification link once; VargasJR confirms it from the hello@
+                  inbox.
                 </p>
               </form>
             </section>
@@ -271,9 +322,18 @@ export default function GmailAdminPage() {
                 </h2>
                 <ul className="space-y-1 text-sm">
                   {forwarding.map((f) => (
-                    <li key={f.forwardingEmail} className="flex justify-between text-gray-300">
+                    <li
+                      key={f.forwardingEmail}
+                      className="flex justify-between text-gray-300"
+                    >
                       <span>{f.forwardingEmail}</span>
-                      <span className={f.verificationStatus === "accepted" ? "text-green-400" : "text-yellow-400"}>
+                      <span
+                        className={
+                          f.verificationStatus === "accepted"
+                            ? "text-green-400"
+                            : "text-yellow-400"
+                        }
+                      >
                         {f.verificationStatus}
                       </span>
                     </li>

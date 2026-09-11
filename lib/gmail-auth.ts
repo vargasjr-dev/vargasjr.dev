@@ -1,4 +1,9 @@
-import { createHash, createCipheriv, createDecipheriv, randomBytes } from "crypto";
+import {
+  createHash,
+  createCipheriv,
+  createDecipheriv,
+  randomBytes,
+} from "crypto";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { gmailConnection } from "@/db/schema";
@@ -27,9 +32,16 @@ export function encryptToken(plaintext: string): string {
 
 export function decryptToken(stored: string): string {
   const [ivB64, tagB64, encB64] = stored.split(":");
-  const decipher = createDecipheriv("aes-256-gcm", encryptionKey(), Buffer.from(ivB64, "base64"));
+  const decipher = createDecipheriv(
+    "aes-256-gcm",
+    encryptionKey(),
+    Buffer.from(ivB64, "base64"),
+  );
   decipher.setAuthTag(Buffer.from(tagB64, "base64"));
-  return Buffer.concat([decipher.update(Buffer.from(encB64, "base64")), decipher.final()]).toString("utf8");
+  return Buffer.concat([
+    decipher.update(Buffer.from(encB64, "base64")),
+    decipher.final(),
+  ]).toString("utf8");
 }
 
 // --- OAuth plumbing ---------------------------------------------------------
@@ -38,7 +50,9 @@ export function googleClientCredentials() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   if (!clientId || !clientSecret) {
-    throw new Error("GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are not configured");
+    throw new Error(
+      "GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are not configured",
+    );
   }
   return { clientId, clientSecret };
 }
@@ -71,7 +85,8 @@ export async function exchangeCodeForTokens(code: string, redirectUri: string) {
       grant_type: "authorization_code",
     }),
   });
-  if (!res.ok) throw new Error(`token exchange failed: ${res.status} ${await res.text()}`);
+  if (!res.ok)
+    throw new Error(`token exchange failed: ${res.status} ${await res.text()}`);
   return (await res.json()) as {
     access_token: string;
     refresh_token?: string;
@@ -84,7 +99,11 @@ export async function exchangeCodeForTokens(code: string, redirectUri: string) {
 // --- stored-connection helpers ----------------------------------------------
 
 export async function getStoredConnection() {
-  const rows = await db.select().from(gmailConnection).where(eq(gmailConnection.id, "google")).limit(1);
+  const rows = await db
+    .select()
+    .from(gmailConnection)
+    .where(eq(gmailConnection.id, "google"))
+    .limit(1);
   return rows[0] ?? null;
 }
 
@@ -101,7 +120,9 @@ async function persistTokens(params: {
       id: "google",
       email: params.email,
       accessToken: encryptToken(params.accessToken),
-      refreshToken: params.refreshToken ? encryptToken(params.refreshToken) : null,
+      refreshToken: params.refreshToken
+        ? encryptToken(params.refreshToken)
+        : null,
       expiresAt: params.expiresAt,
       scope: params.scope,
       updatedAt: new Date(),
@@ -111,7 +132,9 @@ async function persistTokens(params: {
       set: {
         email: params.email,
         accessToken: encryptToken(params.accessToken),
-        ...(params.refreshToken ? { refreshToken: encryptToken(params.refreshToken) } : {}),
+        ...(params.refreshToken
+          ? { refreshToken: encryptToken(params.refreshToken) }
+          : {}),
         expiresAt: params.expiresAt,
         scope: params.scope,
         updatedAt: new Date(),
@@ -128,7 +151,8 @@ export async function getValidAccessToken(): Promise<string> {
     return decryptToken(conn.accessToken);
   }
 
-  if (!conn.refreshToken) throw new Error("gmail connection has no refresh token");
+  if (!conn.refreshToken)
+    throw new Error("gmail connection has no refresh token");
   const { clientId, clientSecret } = googleClientCredentials();
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -140,8 +164,13 @@ export async function getValidAccessToken(): Promise<string> {
       grant_type: "refresh_token",
     }),
   });
-  if (!res.ok) throw new Error(`refresh failed: ${res.status} ${await res.text()}`);
-  const tok = (await res.json()) as { access_token: string; expires_in: number; scope?: string };
+  if (!res.ok)
+    throw new Error(`refresh failed: ${res.status} ${await res.text()}`);
+  const tok = (await res.json()) as {
+    access_token: string;
+    expires_in: number;
+    scope?: string;
+  };
 
   await persistTokens({
     email: conn.email,
@@ -157,15 +186,21 @@ export async function getValidAccessToken(): Promise<string> {
 
 async function gmailFetch(path: string, init?: RequestInit) {
   const token = await getValidAccessToken();
-  const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/${path}`, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      ...init?.headers,
+  const res = await fetch(
+    `https://gmail.googleapis.com/gmail/v1/users/me/${path}`,
+    {
+      ...init,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        ...init?.headers,
+      },
     },
-  });
-  if (!res.ok) throw new Error(`gmail api ${path} failed: ${res.status} ${await res.text()}`);
+  );
+  if (!res.ok)
+    throw new Error(
+      `gmail api ${path} failed: ${res.status} ${await res.text()}`,
+    );
   return res;
 }
 
@@ -174,8 +209,17 @@ export async function listGmailFilters() {
   const data = (await res.json()) as {
     filter?: Array<{
       id: string;
-      criteria: { from?: string; subject?: string; query?: string; hasAttachment?: boolean };
-      action: { addLabelIds?: string[]; removeLabelIds?: string[]; forwardTo?: string };
+      criteria: {
+        from?: string;
+        subject?: string;
+        query?: string;
+        hasAttachment?: boolean;
+      };
+      action: {
+        addLabelIds?: string[];
+        removeLabelIds?: string[];
+        forwardTo?: string;
+      };
     }>;
   };
   return data.filter ?? [];
@@ -183,7 +227,11 @@ export async function listGmailFilters() {
 
 export async function createGmailFilter(filter: {
   criteria: { from?: string; subject?: string; query?: string };
-  action: { forwardTo?: string; addLabelIds?: string[]; removeLabelIds?: string[] };
+  action: {
+    forwardTo?: string;
+    addLabelIds?: string[];
+    removeLabelIds?: string[];
+  };
 }) {
   const res = await gmailFetch("settings/filters", {
     method: "POST",
@@ -193,13 +241,18 @@ export async function createGmailFilter(filter: {
 }
 
 export async function deleteGmailFilter(id: string) {
-  await gmailFetch(`settings/filters/${encodeURIComponent(id)}`, { method: "DELETE" });
+  await gmailFetch(`settings/filters/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
 }
 
 export async function listForwardingAddresses() {
   const res = await gmailFetch("settings/forwardingAddresses");
   const data = (await res.json()) as {
-    forwardingAddresses?: Array<{ forwardingEmail: string; verificationStatus: string }>;
+    forwardingAddresses?: Array<{
+      forwardingEmail: string;
+      verificationStatus: string;
+    }>;
   };
   return data.forwardingAddresses ?? [];
 }
@@ -213,10 +266,14 @@ export async function createForwardingAddress(email: string) {
   return res.json();
 }
 
-export async function decodeGoogleIdEmail(idToken: string | undefined): Promise<string | null> {
+export async function decodeGoogleIdEmail(
+  idToken: string | undefined,
+): Promise<string | null> {
   if (!idToken) return null;
   try {
-    const payload = JSON.parse(Buffer.from(idToken.split(".")[1], "base64url").toString("utf8"));
+    const payload = JSON.parse(
+      Buffer.from(idToken.split(".")[1], "base64url").toString("utf8"),
+    );
     return typeof payload.email === "string" ? payload.email : null;
   } catch {
     return null;

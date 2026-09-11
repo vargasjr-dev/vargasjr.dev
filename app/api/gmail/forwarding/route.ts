@@ -16,10 +16,17 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   try {
-    return NextResponse.json({ forwardingAddresses: await listForwardingAddresses() });
+    return NextResponse.json({
+      forwardingAddresses: await listForwardingAddresses(),
+    });
   } catch (e) {
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "failed to list forwarding addresses" },
+      {
+        error:
+          e instanceof Error
+            ? e.message
+            : "failed to list forwarding addresses",
+      },
       { status: 502 },
     );
   }
@@ -32,7 +39,10 @@ export async function POST(request: Request) {
   }
   const { email } = await request.json().catch(() => ({}));
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-    return NextResponse.json({ error: "valid email required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "valid email required" },
+      { status: 400 },
+    );
   }
   try {
     await createForwardingAddress(email);
@@ -42,7 +52,12 @@ export async function POST(request: Request) {
     });
   } catch (e) {
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "failed to create forwarding address" },
+      {
+        error:
+          e instanceof Error
+            ? e.message
+            : "failed to create forwarding address",
+      },
       { status: 502 },
     );
   }
