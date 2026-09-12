@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   createGmailFilter,
   deleteGmailFilter,
+  findOrCreateVargasJrLabel,
   listGmailFilters,
 } from "@/lib/gmail-auth";
 
@@ -47,6 +48,17 @@ export async function POST(request: Request) {
       );
     }
 
+    // Attach the VargasJR label if the token has the labels scope; the
+    // filter still works (forward/archive/read) without it.
+    let labelWarning: string | null = null;
+    let labelId: string | null = null;
+    try {
+      labelId = await findOrCreateVargasJrLabel();
+    } catch {
+      labelWarning =
+        "label not attached — reconnect on /admin/gmail to grant the gmail.labels scope";
+    }
+
     const filter = await createGmailFilter({
       criteria: {
         ...(from ? { from } : {}),
@@ -55,9 +67,12 @@ export async function POST(request: Request) {
       },
       action: {
         ...(forwardTo ? { forwardTo } : {}),
+        ...(labelId ? { addLabelIds: [labelId] } : {}),
+        // archive (remove from INBOX) + mark as read (remove UNREAD)
+        removeLabelIds: ["INBOX", "UNREAD"],
       },
     });
-    return NextResponse.json({ filter });
+    return NextResponse.json({ filter, warning: labelWarning });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "failed to create filter" },

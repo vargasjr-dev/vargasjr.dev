@@ -38,9 +38,7 @@ export default function GmailAdminPage() {
 
   // create-filter form
   const [from, setFrom] = useState("");
-  const [subject, setSubject] = useState("");
-  const [query, setQuery] = useState("");
-  const [forwardTo, setForwardTo] = useState("hello@vargasjr.dev");
+  const FORWARD_TO = "hello@vargasjr.dev";
 
   const refresh = useCallback(async () => {
     setError("");
@@ -48,22 +46,26 @@ export default function GmailAdminPage() {
       const s = await fetch("/api/gmail/status", {
         headers: authHeaders(),
       }).then((r) => r.json());
+      if (s.error) {
+        setError(s.error);
+        return;
+      }
       setStatus(s);
       if (s.connected) {
         const [f, fw] = await Promise.all([
           fetch("/api/gmail/filters", { headers: authHeaders() }).then((r) =>
             r.json(),
           ),
-          fetch("/api/gmail/forwarding", { headers: authHeaders() }).then((r) =>
-            r.json(),
-          ),
+          fetch("/api/gmail/forwarding", { headers: authHeaders() })
+            .then((r) => r.json())
+            .catch(() => ({})),
         ]);
         setFilters(f.filters ?? []);
         setForwarding(fw.forwardingAddresses ?? []);
         if (f.error) setError(f.error);
       }
-    } catch {
-      setError("failed to load status");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "failed to load status");
     }
   }, []);
 
@@ -92,7 +94,7 @@ export default function GmailAdminPage() {
     const res = await fetch("/api/gmail/filters", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders() },
-      body: JSON.stringify({ from, subject, query, forwardTo }),
+      body: JSON.stringify({ from, forwardTo: FORWARD_TO }),
     });
     const data = await res.json();
     setBusy(false);
@@ -100,8 +102,6 @@ export default function GmailAdminPage() {
     else {
       setNotice("Filter created.");
       setFrom("");
-      setSubject("");
-      setQuery("");
       refresh();
     }
   }
@@ -124,7 +124,7 @@ export default function GmailAdminPage() {
     const res = await fetch("/api/gmail/forwarding", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders() },
-      body: JSON.stringify({ email: forwardTo }),
+      body: JSON.stringify({ email: FORWARD_TO }),
     });
     const data = await res.json();
     setBusy(false);
@@ -192,11 +192,17 @@ export default function GmailAdminPage() {
           <>
             <div className="mb-6 p-4 rounded-xl bg-gray-900 border border-gray-800">
               <p className="text-sm text-gray-400">
-                Connected as{" "}
-                <span className="text-gray-100 font-semibold">
-                  {status.email}
+                Connected{" "}
+                <span className="text-gray-600">
+                  · filters forward to {FORWARD_TO}
                 </span>
               </p>
+              <a
+                href="/api/gmail/connect"
+                className="mt-2 inline-block text-xs text-[#3ba4dc] hover:text-[#2990c5]"
+              >
+                Re-connect / update permissions →
+              </a>
             </div>
 
             <section className="mb-8">
@@ -269,31 +275,13 @@ export default function GmailAdminPage() {
                 <input
                   value={from}
                   onChange={(e) => setFrom(e.target.value)}
-                  placeholder="From contains (optional)"
-                  className="w-full p-2.5 rounded-lg bg-gray-950 border border-gray-800 text-sm focus:outline-none focus:border-[#3ba4dc]"
-                />
-                <input
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  placeholder="Subject contains (optional)"
-                  className="w-full p-2.5 rounded-lg bg-gray-950 border border-gray-800 text-sm focus:outline-none focus:border-[#3ba4dc]"
-                />
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Raw Gmail query, e.g. has:attachment (optional)"
-                  className="w-full p-2.5 rounded-lg bg-gray-950 border border-gray-800 text-sm focus:outline-none focus:border-[#3ba4dc]"
-                />
-                <input
-                  value={forwardTo}
-                  onChange={(e) => setForwardTo(e.target.value)}
-                  placeholder="Forward to (optional)"
+                  placeholder="From email address"
                   className="w-full p-2.5 rounded-lg bg-gray-950 border border-gray-800 text-sm focus:outline-none focus:border-[#3ba4dc]"
                 />
                 <div className="flex items-center justify-between gap-3">
                   <button
                     type="submit"
-                    disabled={busy || (!from && !subject && !query)}
+                    disabled={busy || !from}
                     className="px-4 py-2 rounded-lg bg-[#3ba4dc] text-white text-sm font-semibold hover:bg-[#2990c5] transition-colors disabled:opacity-50"
                   >
                     Create filter
@@ -301,16 +289,17 @@ export default function GmailAdminPage() {
                   <button
                     type="button"
                     onClick={handleVerifyAddress}
-                    disabled={busy || !forwardTo}
+                    disabled={busy}
                     className="text-xs text-gray-400 hover:text-gray-200 disabled:opacity-50"
                   >
                     Send forwarding verification email
                   </button>
                 </div>
                 <p className="text-xs text-gray-600">
-                  Forwarding requires a verified destination address — use the
-                  verification link once; VargasJR confirms it from the hello@
-                  inbox.
+                  Matching mail is forwarded to hello@vargasjr.dev, marked read,
+                  and archived. Forwarding requires a verified destination
+                  address — send the verification email once; VargasJR confirms
+                  it from the hello@ inbox.
                 </p>
               </form>
             </section>
