@@ -24,7 +24,9 @@ export interface BlogPost {
   summary: string;
   date: string;
   tags: string[];
-  /** Raw Markdown content (no frontmatter) */
+  /** Notion page id — when set, content resolves from Notion at request time */
+  notionId?: string;
+  /** Raw Markdown content (no frontmatter); empty for notion-resolved posts */
   content: string;
 }
 
@@ -49,6 +51,7 @@ function parsePost(filename: string): BlogPost | null {
       summary: data.summary,
       date: data.date,
       tags: Array.isArray(data.tags) ? data.tags : [],
+      notionId: typeof data.notion === "string" ? data.notion : undefined,
       content: content.trim(),
     };
   } catch (err) {

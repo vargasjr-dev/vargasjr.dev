@@ -3,9 +3,17 @@ import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { getAllPosts, getPost } from "@/lib/blog";
+import { resolveNotionPage } from "@/lib/notion";
+
+// notion-resolved posts render on demand and are cached by the CDN
+// (segment config must be a literal — keep in sync with NOTION_REVALIDATE_SECONDS)
+export const revalidate = 3600;
 
 export function generateStaticParams() {
-  return getAllPosts().map((p) => ({ slug: p.slug }));
+  // posts resolving from Notion are fetched at request time, not build time
+  return getAllPosts()
+    .filter((p) => !p.notionId)
+    .map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({
@@ -30,6 +38,9 @@ export default async function BlogPostPage({
   const { slug } = await params;
   const post = getPost(slug);
   if (!post) notFound();
+  const content = post.notionId
+    ? await resolveNotionPage(post.notionId)
+    : post.content;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 text-white">
@@ -151,7 +162,7 @@ export default async function BlogPostPage({
               ),
             }}
           >
-            {post.content}
+            {content}
           </ReactMarkdown>
         </article>
 
