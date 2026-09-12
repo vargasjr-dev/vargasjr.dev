@@ -8,6 +8,7 @@ type GmailFilter = {
   criteria: { from?: string; subject?: string; query?: string };
   action: {
     forwardTo?: string;
+    forward?: string;
     addLabelIds?: string[];
     removeLabelIds?: string[];
   };
@@ -246,8 +247,8 @@ export default function GmailAdminPage() {
                           )}
                         </p>
                         <p className="text-gray-500 text-xs mt-1">
-                          {f.action.forwardTo
-                            ? `forwards to ${f.action.forwardTo}`
+                          {f.action.forward || f.action.forwardTo
+                            ? `forwards to ${f.action.forward || f.action.forwardTo}`
                             : `labels: ${[...(f.action.addLabelIds ?? []), ...(f.action.removeLabelIds ?? [])].join(", ") || "none"}`}
                         </p>
                       </div>

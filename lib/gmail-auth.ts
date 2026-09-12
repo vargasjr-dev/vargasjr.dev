@@ -223,7 +223,9 @@ export async function listGmailFilters() {
       action: {
         addLabelIds?: string[];
         removeLabelIds?: string[];
-        forwardTo?: string;
+        // NB: the Gmail API reads/writes forwarding filters as `forward`,
+        // despite the docs calling it `forwardTo`
+        forward?: string;
       };
     }>;
   };
@@ -238,9 +240,12 @@ export async function createGmailFilter(filter: {
     removeLabelIds?: string[];
   };
 }) {
+  // the API silently ignores `forwardTo` — the real field is `forward`
+  const { forwardTo, ...rest } = filter.action;
+  const action = { ...rest, ...(forwardTo ? { forward: forwardTo } : {}) };
   const res = await gmailFetch("settings/filters", {
     method: "POST",
-    body: JSON.stringify(filter),
+    body: JSON.stringify({ ...filter, action }),
   });
   return res.json();
 }
