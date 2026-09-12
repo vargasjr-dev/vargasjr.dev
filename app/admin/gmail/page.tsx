@@ -197,6 +197,12 @@ export default function GmailAdminPage() {
                   · filters forward to {FORWARD_TO}
                 </span>
               </p>
+              <a
+                href="/api/gmail/connect"
+                className="mt-2 inline-block text-xs text-[#3ba4dc] hover:text-[#2990c5]"
+              >
+                Re-connect / update permissions →
+              </a>
             </div>
 
             <section className="mb-8">

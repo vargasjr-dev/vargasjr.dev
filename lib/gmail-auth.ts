@@ -11,7 +11,10 @@ import { gmailConnection } from "@/db/schema";
 export const GMAIL_SETTINGS_SCOPES = [
   "https://www.googleapis.com/auth/gmail.settings.basic",
   "https://www.googleapis.com/auth/gmail.settings.sharing",
+  "https://www.googleapis.com/auth/gmail.labels", // list/create labels (no message content)
 ];
+
+export const VARGASJR_LABEL_NAME = "VargasJR";
 
 // --- token encryption -------------------------------------------------------
 
@@ -280,4 +283,34 @@ export async function decodeGoogleIdEmail(
   } catch {
     return null;
   }
+}
+
+// --- labels -------------------------------------------------------------------
+
+type GmailLabel = { id: string; name: string; type: string };
+
+export async function listGmailLabels(): Promise<GmailLabel[]> {
+  const res = await gmailFetch("labels");
+  const data = (await res.json()) as { labels?: GmailLabel[] };
+  return data.labels ?? [];
+}
+
+/** Finds the VargasJR label, creating it if it doesn't exist yet. */
+export async function findOrCreateVargasJrLabel(): Promise<string> {
+  const labels = await listGmailLabels();
+  const existing = labels.find(
+    (l) => l.type === "user" && l.name === VARGASJR_LABEL_NAME,
+  );
+  if (existing) return existing.id;
+
+  const res = await gmailFetch("labels", {
+    method: "POST",
+    body: JSON.stringify({
+      name: VARGASJR_LABEL_NAME,
+      labelListVisibility: "labelShow",
+      messageListVisibility: "show",
+    }),
+  });
+  const created = (await res.json()) as GmailLabel;
+  return created.id;
 }
