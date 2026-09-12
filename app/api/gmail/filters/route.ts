@@ -6,6 +6,14 @@ import {
   listGmailFilters,
 } from "@/lib/gmail-auth";
 
+/** All filters we manage forward to this address — anything else belongs to
+ *  Vargas's personal Gmail and must never be shown or touched from here. */
+const MANAGED_FORWARD_TO = "hello@vargasjr.dev";
+
+function isManaged(filter: { action?: { forwardTo?: string } }): boolean {
+  return filter.action?.forwardTo?.toLowerCase() === MANAGED_FORWARD_TO;
+}
+
 function isAdmin(request: Request): boolean {
   const cookie = request.headers.get("cookie") ?? "";
   if (cookie.includes("admin_session=1")) return true;
@@ -18,7 +26,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   try {
-    return NextResponse.json({ filters: await listGmailFilters() });
+    const all = await listGmailFilters();
+    return NextResponse.json({ filters: all.filter(isManaged) });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "failed to list filters" },
@@ -88,6 +97,14 @@ export async function DELETE(request: Request) {
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
   try {
+    const all = await listGmailFilters();
+    const target = all.find((f) => f.id === id);
+    if (!target || !isManaged(target)) {
+      return NextResponse.json(
+        { error: "not a VargasJR-managed filter" },
+        { status: 403 },
+      );
+    }
     await deleteGmailFilter(id);
     return NextResponse.json({ ok: true });
   } catch (e) {
