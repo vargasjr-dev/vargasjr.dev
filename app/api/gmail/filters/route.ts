@@ -126,10 +126,15 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ filter, warning: labelWarning });
   } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "failed to create filter" },
-      { status: 502 },
-    );
+    const msg = e instanceof Error ? e.message : "failed to create filter";
+    // Gmail rejects duplicate criteria with 400 "Filter already exists"
+    if (msg.includes("already exists")) {
+      return NextResponse.json(
+        { error: "A filter with these exact criteria already exists." },
+        { status: 409 },
+      );
+    }
+    return NextResponse.json({ error: msg }, { status: 502 });
   }
 }
 
