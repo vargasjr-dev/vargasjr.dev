@@ -10,8 +10,13 @@ import {
  *  Vargas's personal Gmail and must never be shown or touched from here. */
 const MANAGED_FORWARD_TO = "hello@vargasjr.dev";
 
-function isManaged(filter: { action?: { forwardTo?: string } }): boolean {
-  return filter.action?.forwardTo?.toLowerCase() === MANAGED_FORWARD_TO;
+function isManaged(filter: {
+  action?: { forward?: string; forwardTo?: string };
+}): boolean {
+  return (
+    filter.action?.forward?.toLowerCase() === MANAGED_FORWARD_TO ||
+    filter.action?.forwardTo?.toLowerCase() === MANAGED_FORWARD_TO
+  );
 }
 
 function isAdmin(request: Request): boolean {
