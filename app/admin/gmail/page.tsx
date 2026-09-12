@@ -32,6 +32,8 @@ export default function GmailAdminPage() {
     email: string | null;
   } | null>(null);
   const [filters, setFilters] = useState<GmailFilter[] | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageInfo, setPageInfo] = useState({ total: 0, totalPages: 1 });
   const [forwarding, setForwarding] = useState<ForwardingAddress[]>([]);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -54,21 +56,30 @@ export default function GmailAdminPage() {
       setStatus(s);
       if (s.connected) {
         const [f, fw] = await Promise.all([
-          fetch("/api/gmail/filters", { headers: authHeaders() }).then((r) =>
-            r.json(),
-          ),
+          fetch(`/api/gmail/filters?page=${page}`, {
+            headers: authHeaders(),
+          }).then((r) => r.json()),
           fetch("/api/gmail/forwarding", { headers: authHeaders() })
             .then((r) => r.json())
             .catch(() => ({})),
         ]);
         setFilters(f.filters ?? []);
+        setPageInfo({
+          total: f.total ?? 0,
+          totalPages: f.totalPages ?? 1,
+        });
+        // if the current page no longer exists (e.g. the last item on the
+        // last page was deleted), walk back a page
+        if (!(f.filters ?? []).length && page > (f.totalPages ?? 1)) {
+          setPage(f.totalPages ?? 1);
+        }
         setForwarding(fw.forwardingAddresses ?? []);
         if (f.error) setError(f.error);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "failed to load status");
     }
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     if (localStorage.getItem("admin_token")) {
@@ -266,6 +277,33 @@ export default function GmailAdminPage() {
                     </li>
                   ))}
                 </ul>
+              )}
+              {pageInfo.total > 0 && (
+                <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
+                  <span>
+                    {pageInfo.total} filter{pageInfo.total === 1 ? "" : "s"}
+                    {" · "}sorted by domain · page {page} of{" "}
+                    {pageInfo.totalPages}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page <= 1}
+                      className="border border-gray-700 rounded-md px-2 py-1 hover:text-gray-300 disabled:opacity-40"
+                    >
+                      Prev
+                    </button>
+                    <button
+                      onClick={() =>
+                        setPage((p) => Math.min(pageInfo.totalPages, p + 1))
+                      }
+                      disabled={page >= pageInfo.totalPages}
+                      className="border border-gray-700 rounded-md px-2 py-1 hover:text-gray-300 disabled:opacity-40"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
               )}
             </section>
 
