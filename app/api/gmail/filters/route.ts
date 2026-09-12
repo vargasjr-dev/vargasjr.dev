@@ -26,13 +26,51 @@ function isAdmin(request: Request): boolean {
   return !!token && token === process.env.ADMIN_TOKEN;
 }
 
+const PAGE_SIZE = 10;
+
+/** Sort key: the domain of the from address (b@a.com before a@b.com).
+ *  Filters without a from criterion sort to the end. */
+function sortKey(filter: {
+  criteria?: { from?: string; query?: string };
+}): string {
+  const from = filter.criteria?.from?.trim();
+  if (!from) return "\uffff";
+  const first = from.split(/[\s,;]+/)[0] ?? "";
+  const domain = first.split("@").pop() ?? "";
+  return domain.toLowerCase() || "\uffff";
+}
+
+function compareFilters(
+  a: { criteria?: { from?: string; query?: string } },
+  b: { criteria?: { from?: string; query?: string } },
+): number {
+  return (
+    sortKey(a).localeCompare(sortKey(b)) ||
+    (a.criteria?.from ?? "").localeCompare(b.criteria?.from ?? "")
+  );
+}
+
 export async function GET(request: Request) {
   if (!isAdmin(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   try {
-    const all = await listGmailFilters();
-    return NextResponse.json({ filters: all.filter(isManaged) });
+    const managed = (await listGmailFilters()).filter(isManaged);
+    managed.sort(compareFilters);
+    const totalPages = Math.max(1, Math.ceil(managed.length / PAGE_SIZE));
+    const url = new URL(request.url);
+    const page = Math.min(
+      Math.max(1, Number(url.searchParams.get("page")) || 1),
+      totalPages,
+    );
+    const slice = managed.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    return NextResponse.json({
+      filters: slice,
+      total: managed.length,
+      page,
+      pageSize: PAGE_SIZE,
+      totalPages,
+    });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "failed to list filters" },
