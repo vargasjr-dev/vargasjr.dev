@@ -31,7 +31,7 @@ export default function GmailAdminPage() {
     connected: boolean;
     email: string | null;
   } | null>(null);
-  const [filters, setFilters] = useState<GmailFilter[]>([]);
+  const [filters, setFilters] = useState<GmailFilter[] | null>(null);
   const [forwarding, setForwarding] = useState<ForwardingAddress[]>([]);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -210,7 +210,11 @@ export default function GmailAdminPage() {
               <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">
                 Existing filters
               </h2>
-              {filters.length === 0 ? (
+              {filters === null ? (
+                <p className="text-gray-500 text-sm animate-pulse">
+                  Loading filters…
+                </p>
+              ) : filters.length === 0 ? (
                 <p className="text-gray-500 text-sm">No filters.</p>
               ) : (
                 <ul className="space-y-2">
