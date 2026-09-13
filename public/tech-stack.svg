@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1560" viewBox="0 0 1200 1560">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1400" viewBox="0 0 1200 1400">
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b6b85"/>
@@ -61,7 +61,4 @@
   <path d="M 985 464 C 985 580, 215 540, 215 672" fill="none" stroke="#3a3a52" stroke-width="3" stroke-dasharray="7 7" marker-end="url(#arrow)"/>
   <path d="M 985 744 C 985 860, 215 820, 215 952" fill="none" stroke="#3a3a52" stroke-width="3" stroke-dasharray="7 7" marker-end="url(#arrow)"/>
   <path d="M 985 1024 C 985 1140, 215 1100, 215 1232" fill="none" stroke="#3a3a52" stroke-width="3" stroke-dasharray="7 7" marker-end="url(#arrow)"/>
-
-  <!-- caption -->
-  <text x="600" y="1470" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="26" fill="#8a8a9e">each layer converts the output of the layer above</text>
 </svg>
