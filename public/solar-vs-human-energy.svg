@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640">
+  <rect width="1200" height="640" fill="#0d0d17"/>
+
+  <!-- title -->
+  <text x="60" y="80" font-family="Helvetica, Arial, sans-serif" font-size="30" font-weight="700" fill="#e8e8f2">Sunlight hitting Earth in 90 minutes</text>
+  <text x="60" y="118" font-family="Helvetica, Arial, sans-serif" font-size="30" font-weight="700" fill="#f4b942">vs. all the energy humanity uses in a year</text>
+
+  <!-- bar 1: solar 90 minutes (~934 EJ) -->
+  <rect x="60" y="200" width="1080" height="120" rx="14" fill="#f4b942"/>
+  <text x="90" y="272" font-family="Helvetica, Arial, sans-serif" font-size="34" font-weight="800" fill="#1a1a2e">934 EJ</text>
+  <text x="1110" y="270" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="600" fill="#1a1a2e">90 minutes of sunlight</text>
+
+  <!-- bar 2: human annual use (~620 EJ) -->
+  <rect x="60" y="380" width="718" height="120" rx="14" fill="#2c3a5e"/>
+  <text x="90" y="452" font-family="Helvetica, Arial, sans-serif" font-size="34" font-weight="800" fill="#e8e8f2">620 EJ</text>
+  <text x="748" y="450" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="600" fill="#8a8a9e">a year of human energy use</text>
+
+  <!-- source -->
+  <text x="60" y="590" font-family="Helvetica, Arial, sans-serif" font-size="19" fill="#8a8a9e">Sources: NASA Earth radiation budget (~173,000 TW continuous incoming sunlight) · U.S. EIA International Energy Outlook</text>
+</svg>
