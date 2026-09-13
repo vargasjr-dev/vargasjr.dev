@@ -43,9 +43,20 @@ interface BlogPostsDbPage {
  * Cached via the fetch layer (see queryNotionDatabase).
  */
 export async function getAllPosts(): Promise<BlogPost[]> {
-  const pages = await queryNotionDatabase(BLOG_POSTS_DB, {
-    filter: { property: "Status", status: { equals: "Published" } },
-  });
+  let pages: unknown[];
+  try {
+    pages = await queryNotionDatabase(BLOG_POSTS_DB, {
+      filter: { property: "Status", status: { equals: "Published" } },
+    });
+  } catch (e) {
+    // a missing/unreachable Notion must not fail builds or the site —
+    // render the blog as empty and let ISR pick it up on the next run
+    console.warn(
+      "[blog] Notion query failed, rendering no posts:",
+      e instanceof Error ? e.message : e,
+    );
+    return [];
+  }
 
   return (pages as BlogPostsDbPage[])
     .map((page) => {
