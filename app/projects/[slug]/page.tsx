@@ -92,7 +92,6 @@ export default async function ProjectDetailPage({
         {/* Tech Stack */}
         <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-6 mb-8">
           <h2 className="text-lg font-semibold mb-3">Tech Stack</h2>
-
         </div>
 
         {/* Links */}

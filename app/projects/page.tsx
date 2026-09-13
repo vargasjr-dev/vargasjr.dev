@@ -38,7 +38,10 @@ export default function ProjectsPage() {
           <h1 className="text-4xl font-bold mb-3">Projects</h1>
           <p className="text-gray-400 max-w-xl">
             Every project fits one layer of the{" "}
-            <Link href="/blog/the-personal-intelligence-tech-stack" className="text-primary hover:underline">
+            <Link
+              href="/blog/the-personal-intelligence-tech-stack"
+              className="text-primary hover:underline"
+            >
               Personal Intelligence Stack
             </Link>
             . Each layer converts the output of the layer above into something

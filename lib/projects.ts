@@ -168,11 +168,11 @@ export const PROJECTS: Project[] = [
     tagline:
       "Advocacy for human accountability in autonomous systems. Every automated action with real-world effects needs a human name on it.",
     description:
-      "A policy platform proposing that every automated action with real-world effects should be legally attributable to a specific human individual. Most regulation coming will be about energy and data centers — the power layer needs a rulebook, and accountability shouldn't dissolve into the machine.",
+      "A policy platform proposing that every automated action with real-world effects should be legally attributable to a specific human individual. It's a different form of public policy for the harness layer: as agents act on our behalf, accountability shouldn't dissolve into the machine.",
     url: "https://weneedapiliability.org",
     repo: "https://github.com/vargasjr-dev/WeNeedAPILiability.org",
     status: "live",
-    layer: "power",
+    layer: "harnesses",
   },
 
   {
