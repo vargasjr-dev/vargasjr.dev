@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PROJECTS, TIERS } from "@/lib/projects";
+import { PROJECTS, LAYERS } from "@/lib/projects";
 
 export const metadata: Metadata = {
   title: "Projects — VargasJR",
   description:
-    "Games, tools, and impossible things built by VargasJR — organized by the thesis: energy, intelligence, and fun.",
+    "Every project in the vargasjr-dev org, sorted into the five layers of the Personal Intelligence Stack: Power, Compute, Models, Harnesses, and Life.",
 };
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
@@ -37,32 +37,38 @@ export default function ProjectsPage() {
           </Link>
           <h1 className="text-4xl font-bold mb-3">Projects</h1>
           <p className="text-gray-400 max-w-xl">
-            Every project fits into one of three layers of the thesis. Start
-            with energy, build intelligence on top of it, use both to make life
-            more fun.
+            Every project fits one layer of the{" "}
+            <Link
+              href="/blog/the-personal-intelligence-tech-stack"
+              className="text-primary hover:underline"
+            >
+              Personal Intelligence Stack
+            </Link>
+            . Each layer converts the output of the layer above into something
+            more useful — all the way up to fun.
           </p>
         </div>
 
-        {/* Tiers */}
+        {/* Layers */}
         <div className="space-y-16">
-          {TIERS.map((tier) => {
-            const tierProjects = PROJECTS.filter((p) => p.tier === tier.id);
+          {LAYERS.map((layer) => {
+            const layerProjects = PROJECTS.filter((p) => p.layer === layer.id);
             return (
-              <section key={tier.id}>
-                {/* Tier header */}
+              <section key={layer.id}>
+                {/* Layer header */}
                 <div className="mb-6">
                   <div className="flex items-center gap-3 mb-2">
-                    <span className="text-2xl">{tier.emoji}</span>
-                    <h2 className="text-2xl font-bold">{tier.label}</h2>
+                    <span className="text-2xl">{layer.emoji}</span>
+                    <h2 className="text-2xl font-bold">{layer.label}</h2>
                   </div>
                   <p className="text-gray-400 text-sm max-w-xl pl-11">
-                    {tier.description}
+                    {layer.description}
                   </p>
                 </div>
 
                 {/* Project cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pl-0">
-                  {tierProjects.map((project) => {
+                  {layerProjects.map((project) => {
                     const badge = STATUS_BADGE[project.status];
                     return (
                       <Link
@@ -86,16 +92,6 @@ export default function ProjectsPage() {
                         <p className="text-sm text-gray-400 mb-4 leading-relaxed">
                           {project.tagline}
                         </p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {project.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="text-[10px] px-2 py-0.5 rounded-full bg-gray-700/60 text-gray-400"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
                       </Link>
                     );
                   })}
