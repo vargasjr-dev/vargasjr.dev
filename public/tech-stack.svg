@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1400" viewBox="0 0 1200 1400">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b6b85"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="1560" fill="#0d0d17"/>
+
+  <!-- ============ LAYER 1: POWER ============ -->
+  <rect x="90" y="120" width="250" height="64" rx="12" fill="#161624" stroke="#f4b942" stroke-width="2"/>
+  <text x="215" y="160" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="600" fill="#e8e8f2">Natural Resources</text>
+  <line x1="345" y1="152" x2="442" y2="152" stroke="#6b6b85" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="450" y="80" width="300" height="150" rx="18" fill="#f4b942"/>
+  <text x="600" y="168" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="38" font-weight="800" fill="#1a1a2e">Power</text>
+  <line x1="758" y1="152" x2="852" y2="152" stroke="#6b6b85" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="860" y="120" width="250" height="64" rx="12" fill="#161624" stroke="#f4b942" stroke-width="2"/>
+  <text x="985" y="160" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="600" fill="#e8e8f2">Energy</text>
+
+  <!-- ============ LAYER 2: COMPUTE ============ -->
+  <rect x="90" y="400" width="250" height="64" rx="12" fill="#161624" stroke="#4cc9f0" stroke-width="2"/>
+  <text x="215" y="440" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="600" fill="#e8e8f2">Energy</text>
+  <line x1="345" y1="432" x2="442" y2="432" stroke="#6b6b85" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="450" y="360" width="300" height="150" rx="18" fill="#4cc9f0"/>
+  <text x="600" y="448" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="38" font-weight="800" fill="#1a1a2e">Compute</text>
+  <line x1="758" y1="432" x2="852" y2="432" stroke="#6b6b85" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="860" y="400" width="250" height="64" rx="12" fill="#161624" stroke="#4cc9f0" stroke-width="2"/>
+  <text x="985" y="440" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="600" fill="#e8e8f2">FLOPs</text>
+
+  <!-- ============ LAYER 3: MODELS ============ -->
+  <rect x="90" y="680" width="250" height="64" rx="12" fill="#161624" stroke="#b06ef7" stroke-width="2"/>
+  <text x="215" y="720" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="600" fill="#e8e8f2">FLOPs</text>
+  <line x1="345" y1="712" x2="442" y2="712" stroke="#6b6b85" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="450" y="640" width="300" height="150" rx="18" fill="#b06ef7"/>
+  <text x="600" y="728" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="38" font-weight="800" fill="#1a1a2e">Models</text>
+  <line x1="758" y1="712" x2="852" y2="712" stroke="#6b6b85" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="860" y="680" width="250" height="64" rx="12" fill="#161624" stroke="#b06ef7" stroke-width="2"/>
+  <text x="985" y="720" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="600" fill="#e8e8f2">Tokens</text>
+
+  <!-- ============ LAYER 4: HARNESSES ============ -->
+  <rect x="90" y="960" width="250" height="64" rx="12" fill="#161624" stroke="#4ade80" stroke-width="2"/>
+  <text x="215" y="1000" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="600" fill="#e8e8f2">Tokens</text>
+  <line x1="345" y1="992" x2="442" y2="992" stroke="#6b6b85" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="450" y="920" width="300" height="150" rx="18" fill="#4ade80"/>
+  <text x="600" y="1008" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="38" font-weight="800" fill="#1a1a2e">Harnesses</text>
+  <line x1="758" y1="992" x2="852" y2="992" stroke="#6b6b85" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="860" y="960" width="250" height="64" rx="12" fill="#161624" stroke="#4ade80" stroke-width="2"/>
+  <text x="985" y="1000" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="600" fill="#e8e8f2">Free Time</text>
+
+  <!-- ============ LAYER 5: LIFE ============ -->
+  <rect x="90" y="1240" width="250" height="64" rx="12" fill="#161624" stroke="#fb7185" stroke-width="2"/>
+  <text x="215" y="1280" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="600" fill="#e8e8f2">Free Time</text>
+  <line x1="345" y1="1272" x2="442" y2="1272" stroke="#6b6b85" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="450" y="1200" width="300" height="150" rx="18" fill="#fb7185"/>
+  <text x="600" y="1288" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="38" font-weight="800" fill="#1a1a2e">Life</text>
+  <line x1="758" y1="1272" x2="852" y2="1272" stroke="#6b6b85" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="860" y="1240" width="250" height="64" rx="12" fill="#161624" stroke="#fb7185" stroke-width="2"/>
+  <text x="985" y="1280" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="600" fill="#e8e8f2">Happiness</text>
+
+  <!-- ============ FEED-FORWARD CONNECTORS ============ -->
+  <path d="M 985 184 C 985 300, 215 260, 215 392" fill="none" stroke="#3a3a52" stroke-width="3" stroke-dasharray="7 7" marker-end="url(#arrow)"/>
+  <path d="M 985 464 C 985 580, 215 540, 215 672" fill="none" stroke="#3a3a52" stroke-width="3" stroke-dasharray="7 7" marker-end="url(#arrow)"/>
+  <path d="M 985 744 C 985 860, 215 820, 215 952" fill="none" stroke="#3a3a52" stroke-width="3" stroke-dasharray="7 7" marker-end="url(#arrow)"/>
+  <path d="M 985 1024 C 985 1140, 215 1100, 215 1232" fill="none" stroke="#3a3a52" stroke-width="3" stroke-dasharray="7 7" marker-end="url(#arrow)"/>
+</svg>
