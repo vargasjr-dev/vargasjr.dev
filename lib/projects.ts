@@ -155,11 +155,11 @@ export const PROJECTS: Project[] = [
     tagline:
       "Empowering voters with informed choices. Ballot auto-fill is product #1.",
     description:
-      "A civic harness: informed choices for voters, with ballot auto-fill as the first product. The coordination and research pile of being an informed citizen, converted into completed work.",
+      "Public policy as infrastructure: informed choices for voters, with ballot auto-fill as the first product. The power layer isn't just watts — it's the rules that govern where the rest of the stack gets to build.",
     url: null,
     repo: "https://github.com/vargasjr-dev/the-informed",
     status: "in-progress",
-    layer: "harnesses",
+    layer: "power",
   },
   {
     slug: "weneedapiliability",
