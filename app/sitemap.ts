@@ -3,7 +3,7 @@ import { getAllPosts } from "@/lib/blog";
 import { PROJECTS } from "@/lib/projects";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const posts = getAllPosts();
+  const posts = await getAllPosts();
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: "https://vargasjr.dev", lastModified: new Date(), priority: 1.0 },

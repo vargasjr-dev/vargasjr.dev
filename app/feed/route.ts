@@ -12,7 +12,7 @@ const FEED_DESCRIPTION =
  * Auto-discoverable via the <link rel="alternate"> tag in the layout.
  */
 export async function GET() {
-  const posts = getAllPosts();
+  const posts = await getAllPosts();
 
   const items = posts
     .map(

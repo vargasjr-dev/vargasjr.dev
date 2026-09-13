@@ -7,8 +7,8 @@ export const metadata = {
     "Build logs, engineering deep-dives, and dispatches from a padawan developer.",
 };
 
-export default function BlogPage() {
-  const posts = getAllPosts();
+export default async function BlogPage() {
+  const posts = await getAllPosts();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 text-white">

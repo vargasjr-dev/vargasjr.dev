@@ -1,22 +1,15 @@
 /**
- * Blog post data layer — file-based storage.
+ * Blog post data layer — Notion-backed.
  *
- * Posts live as Markdown files in data/blog/ with YAML frontmatter.
- * The auto-publish pipeline (Phase 5, Item 2) will generate new .md
- * files from real build activity on a Tue/Fri schedule.
- *
- * Frontmatter schema:
- *   title: string
- *   date: string (ISO date, e.g. "2026-04-19")
- *   tags: string[]
- *   summary: string
+ * All posts live in the "Blog Posts" Notion database. Only pages whose
+ * Status is "Published" render on the blog. Post bodies are Notion page
+ * content, resolved to Markdown at request time (lib/notion.ts) and
+ * CDN-cached — there are no markdown files anymore.
  */
 
-import fs from "fs";
-import path from "path";
-import matter from "gray-matter";
+import { queryNotionDatabase } from "./notion";
 
-const BLOG_DIR = path.join(process.cwd(), "data", "blog");
+const BLOG_POSTS_DB = "3dafa8e8-a0df-8004-b431-f4f837e3ef6c";
 
 export interface BlogPost {
   slug: string;
@@ -24,81 +17,69 @@ export interface BlogPost {
   summary: string;
   date: string;
   tags: string[];
-  /** Raw Markdown content (no frontmatter) */
+  /** Notion page id — content resolves from it at request time */
+  notionId: string;
+  /** Always empty; content comes from Notion via resolveNotionPage */
   content: string;
 }
 
+function slugify(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+interface BlogPostsDbPage {
+  id: string;
+  created_time: string;
+  properties: {
+    Name?: { title?: { plain_text: string }[] };
+  };
+}
+
 /**
- * Parse a single .md file into a BlogPost.
- * Returns null if the file is malformed or missing required fields.
+ * Get all published blog posts, sorted newest-first.
+ * Cached via the fetch layer (see queryNotionDatabase).
  */
-function parsePost(filename: string): BlogPost | null {
+export async function getAllPosts(): Promise<BlogPost[]> {
+  let pages: unknown[];
   try {
-    const filePath = path.join(BLOG_DIR, filename);
-    const raw = fs.readFileSync(filePath, "utf-8");
-    const { data, content } = matter(raw);
-
-    if (!data.title || !data.date || !data.summary) {
-      console.warn(`[blog] Skipping ${filename}: missing required frontmatter`);
-      return null;
-    }
-
-    return {
-      slug: filename.replace(/\.md$/, ""),
-      title: data.title,
-      summary: data.summary,
-      date: data.date,
-      tags: Array.isArray(data.tags) ? data.tags : [],
-      content: content.trim(),
-    };
-  } catch (err) {
-    console.warn(`[blog] Failed to parse ${filename}:`, err);
-    return null;
+    pages = await queryNotionDatabase(BLOG_POSTS_DB, {
+      filter: { property: "Status", status: { equals: "Published" } },
+    });
+  } catch (e) {
+    // a missing/unreachable Notion must not fail builds or the site —
+    // render the blog as empty and let ISR pick it up on the next run
+    console.warn(
+      "[blog] Notion query failed, rendering no posts:",
+      e instanceof Error ? e.message : e,
+    );
+    return [];
   }
+
+  return (pages as BlogPostsDbPage[])
+    .map((page) => {
+      const title = (page.properties?.Name?.title ?? [])
+        .map((t) => t.plain_text)
+        .join("")
+        .trim();
+      return {
+        slug: slugify(title) || page.id,
+        title,
+        summary: "",
+        date: page.created_time,
+        tags: [],
+        notionId: page.id,
+        content: "",
+      };
+    })
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
 /**
- * Get all blog posts, sorted newest-first.
- * Reads from data/blog/*.md at request time (no caching — Next.js
- * handles this via its own caching layer in production).
+ * Get a single published post by slug.
  */
-export function getAllPosts(): BlogPost[] {
-  if (!fs.existsSync(BLOG_DIR)) return [];
-
-  const files = fs
-    .readdirSync(BLOG_DIR)
-    .filter((f) => f.endsWith(".md"))
-    .sort();
-
-  const posts = files.map(parsePost).filter((p): p is BlogPost => p !== null);
-
-  return posts.sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-  );
-}
-
-/**
- * Get a single post by slug.
- */
-export function getPost(slug: string): BlogPost | undefined {
-  const filename = `${slug}.md`;
-  const filePath = path.join(BLOG_DIR, filename);
-
-  if (!fs.existsSync(filePath)) return undefined;
-
-  return parsePost(filename) ?? undefined;
-}
-
-/**
- * Get all unique tags across all posts, sorted alphabetically.
- */
-export function getAllTags(): string[] {
-  const posts = getAllPosts();
-  const tags = new Set<string>();
-  for (const post of posts) {
-    for (const tag of post.tags) {
-      tags.add(tag);
-    }
-  }
-  return [...tags].sort();
+export async function getPost(slug: string): Promise<BlogPost | undefined> {
+  return (await getAllPosts()).find((p) => p.slug === slug);
 }
