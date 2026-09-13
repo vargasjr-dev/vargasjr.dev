@@ -89,16 +89,6 @@ export default function ProjectsPage() {
                         <p className="text-sm text-gray-400 mb-4 leading-relaxed">
                           {project.tagline}
                         </p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {project.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="text-[10px] px-2 py-0.5 rounded-full bg-gray-700/60 text-gray-400"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
                       </Link>
                     );
                   })}

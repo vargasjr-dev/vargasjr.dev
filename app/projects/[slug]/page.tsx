@@ -92,16 +92,7 @@ export default async function ProjectDetailPage({
         {/* Tech Stack */}
         <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-6 mb-8">
           <h2 className="text-lg font-semibold mb-3">Tech Stack</h2>
-          <div className="flex flex-wrap gap-2">
-            {project.tags.map((tag) => (
-              <span
-                key={tag}
-                className="text-sm px-3 py-1 rounded-full bg-gray-700/60 text-gray-300"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
+
         </div>
 
         {/* Links */}
