@@ -40,7 +40,22 @@ function apiKey(): string {
   return key;
 }
 
-async function notionFetch(path: string, revalidate: number): Promise<any> {
+interface NotionListResponse {
+  results: NotionBlock[];
+  has_more: boolean;
+  next_cursor?: string;
+}
+
+interface NotionQueryResponse {
+  results: unknown[];
+  has_more: boolean;
+  next_cursor?: string;
+}
+
+async function notionFetch(
+  path: string,
+  revalidate: number,
+): Promise<NotionListResponse> {
   const res = await fetch(`${NOTION_API}${path}`, {
     headers: {
       Authorization: `Bearer ${apiKey()}`,
@@ -52,6 +67,31 @@ async function notionFetch(path: string, revalidate: number): Promise<any> {
     throw new Error(`notion api ${path} failed: ${res.status}`);
   }
   return res.json();
+}
+
+/** Query a Notion database with a JSON filter body (CDN-cached). */
+export async function queryNotionDatabase(
+  databaseId: string,
+  body: Record<string, unknown>,
+  revalidate = NOTION_REVALIDATE_SECONDS,
+): Promise<unknown[]> {
+  const res = await fetch(`${NOTION_API}/databases/${databaseId}/query`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey()}`,
+      "Notion-Version": NOTION_VERSION,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body ?? {}),
+    // POST fetches aren't cached by Next anyway — be explicit so status
+    // flips in Notion show up immediately
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(`notion database query failed: ${res.status}`);
+  }
+  const data = (await res.json()) as NotionQueryResponse;
+  return data.results ?? [];
 }
 
 function richTextToMarkdown(rich: RichText[]): string {
@@ -73,7 +113,6 @@ function richTextToMarkdown(rich: RichText[]): string {
 async function blockToMarkdown(
   block: NotionBlock,
   depth: number,
-  revalidate: number,
 ): Promise<string> {
   const t = block.type;
   const body = block[t] as
@@ -149,7 +188,7 @@ export async function resolveNotionPage(
       }
       prevType = block.type;
 
-      let md = await blockToMarkdown(block, 0, revalidate);
+      let md = await blockToMarkdown(block, 0);
       if (block.type === "numbered_list_item") {
         numberedIndex += 1;
         md = md.replace(/^(\s*)1\./, `$1${numberedIndex}.`);
@@ -179,7 +218,7 @@ async function resolveNotionChildren(
       revalidate,
     );
     for (const block of data.results as NotionBlock[]) {
-      const md = await blockToMarkdown(block, depth, revalidate);
+      const md = await blockToMarkdown(block, depth);
       if (md) out.push(md);
       if (block.has_children) {
         out.push(await resolveNotionChildren(block.id, depth + 1, revalidate));
