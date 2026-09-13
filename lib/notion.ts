@@ -69,11 +69,11 @@ async function notionFetch(
   return res.json();
 }
 
-/** Query a Notion database with a JSON filter body (CDN-cached). */
+/** Query a Notion database with a JSON filter body (not cached —
+ *  status changes in Notion show up immediately). */
 export async function queryNotionDatabase(
   databaseId: string,
   body: Record<string, unknown>,
-  revalidate = NOTION_REVALIDATE_SECONDS,
 ): Promise<unknown[]> {
   const res = await fetch(`${NOTION_API}/databases/${databaseId}/query`, {
     method: "POST",
