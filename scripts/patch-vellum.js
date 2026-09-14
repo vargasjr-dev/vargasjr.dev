@@ -30,7 +30,17 @@ function patchAsset(prefix, patches, label) {
   let content = readFileSync(file, "utf8");
   let applied = 0;
   for (const [from, to] of patches) {
-    if (content.includes(from)) {
+    if (from instanceof RegExp) {
+      // Regex patches survive minifier name churn between releases; `to` is
+      // called with the match array so replacements can reuse captures.
+      const m = content.match(from);
+      if (m) {
+        content = content.replace(from, to);
+        applied += 1;
+      } else {
+        console.warn(`patch-vellum: [${label}] regex not found: ${from}`);
+      }
+    } else if (content.includes(from)) {
       content = content.replace(from, to);
       applied += 1;
     } else if (content.includes(to)) {
@@ -62,14 +72,14 @@ patchAsset(
   "command-palette-recent-limit",
 );
 
-// Vellum 0.11.9 gates Inspect/developer access through ck(user).
+// Vellum gates Inspect/developer access through the user's isStaff flag.
+// 0.11.9 computed it in one minified helper (ck/zk); 0.12.1 moved it into
+// two parse sites, so force both to true.
 patchAsset(
   "index-",
   [
-    [
-      "function ck(e){return e?.isStaff===!0||e?.email?.toLowerCase().endsWith(`@vellum.ai`)===!0}",
-      "function ck(e){return!0}",
-    ],
+    ["isStaff:t.isStaff===!0", "isStaff:!0"],
+    ["isStaff:e.is_staff??!1", "isStaff:!0"],
   ],
   "inspect-access",
 );
