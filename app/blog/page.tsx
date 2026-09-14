@@ -38,7 +38,6 @@ export default async function BlogPage() {
             >
               {post.hero && (
                 <div className="aspect-video bg-gray-900">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={post.hero}
                     alt={post.title}
