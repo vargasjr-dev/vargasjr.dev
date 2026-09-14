@@ -12,7 +12,7 @@ export default async function BlogPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 text-white">
-      <div className="max-w-3xl mx-auto px-6 py-16">
+      <div className="max-w-6xl mx-auto px-6 py-16">
         {/* Header */}
         <div className="mb-12">
           <Link
@@ -28,38 +28,50 @@ export default async function BlogPage() {
           </p>
         </div>
 
-        {/* Post List */}
-        <div className="space-y-6">
+        {/* Post Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {posts.map((post) => (
             <Link
               key={post.slug}
               href={`/blog/${post.slug}`}
-              className="group block bg-gray-800/50 border border-gray-700/50 rounded-xl p-6 hover:border-primary/40 hover:bg-gray-800/80 transition-all duration-200"
+              className="group block bg-gray-800/50 border border-gray-700/50 rounded-xl overflow-hidden hover:border-primary/40 hover:bg-gray-800/80 transition-all duration-200"
             >
-              <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                <time dateTime={post.date}>
-                  {new Date(post.date).toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </time>
-                <span>·</span>
-                {post.tags.slice(0, 3).map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-1.5 py-0.5 rounded bg-gray-700/60 text-gray-400"
-                  >
-                    {tag}
-                  </span>
-                ))}
+              {post.hero && (
+                <div className="aspect-video bg-gray-900">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={post.hero}
+                    alt={post.title}
+                    className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-200"
+                  />
+                </div>
+              )}
+              <div className="p-6">
+                <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+                  <time dateTime={post.date}>
+                    {new Date(post.date).toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </time>
+                  <span>·</span>
+                  {post.tags.slice(0, 3).map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-1.5 py-0.5 rounded bg-gray-700/60 text-gray-400"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <h2 className="text-xl font-bold group-hover:text-primary transition-colors mb-2">
+                  {post.title}
+                </h2>
+                <p className="text-sm text-gray-400 leading-relaxed">
+                  {post.summary}
+                </p>
               </div>
-              <h2 className="text-xl font-bold group-hover:text-primary transition-colors mb-2">
-                {post.title}
-              </h2>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                {post.summary}
-              </p>
             </Link>
           ))}
         </div>

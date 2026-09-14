@@ -19,6 +19,8 @@ export interface BlogPost {
   tags: string[];
   /** Notion page id — content resolves from it at request time */
   notionId: string;
+  /** Hero image URL from the Notion "Hero" url property (null if unset) */
+  hero: string | null;
   /** Always empty; content comes from Notion via resolveNotionPage */
   content: string;
 }
@@ -35,6 +37,7 @@ interface BlogPostsDbPage {
   created_time: string;
   properties: {
     Name?: { title?: { plain_text: string }[] };
+    Hero?: { url?: string | null };
   };
 }
 
@@ -70,6 +73,7 @@ export async function getAllPosts(): Promise<BlogPost[]> {
         summary: "",
         date: page.created_time,
         tags: [],
+        hero: page.properties?.Hero?.url ?? null,
         notionId: page.id,
         content: "",
       };
