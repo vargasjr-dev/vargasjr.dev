@@ -22,6 +22,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       priority: 0.9,
     },
+    {
+      url: "https://vargasjr.dev/sms-consent",
+      lastModified: new Date(),
+      priority: 0.5,
+    },
+    {
+      url: "https://vargasjr.dev/terms",
+      lastModified: new Date(),
+      priority: 0.5,
+    },
+    {
+      url: "https://vargasjr.dev/privacy",
+      lastModified: new Date(),
+      priority: 0.5,
+    },
   ];
 
   const projectPages: MetadataRoute.Sitemap = PROJECTS.map((p) => ({
