@@ -2,7 +2,8 @@ import Link from "next/link";
 
 export const metadata = {
   title: "Privacy Policy — VargasJR",
-  description: "How VargasJR collects, uses, and protects your information, including phone numbers used for SMS.",
+  description:
+    "How VargasJR collects, uses, and protects your information, including phone numbers used for SMS.",
 };
 
 export default function PrivacyPage() {
@@ -33,8 +34,8 @@ export default function PrivacyPage() {
                 through the messaging service, so the assistant can respond.
               </li>
               <li>
-                <strong>Basic technical data</strong> — standard web server
-                logs (IP address, user agent) kept for security and reliability.
+                <strong>Basic technical data</strong> — standard web server logs
+                (IP address, user agent) kept for security and reliability.
               </li>
             </ul>
           </section>
@@ -57,9 +58,9 @@ export default function PrivacyPage() {
               Processors we rely on
             </h2>
             <p>
-              Text messages are delivered through Twilio as our
-              communications carrier. Web hosting is provided by Vercel. These
-              providers process data only as needed to operate the service.
+              Text messages are delivered through Twilio as our communications
+              carrier. Web hosting is provided by Vercel. These providers
+              process data only as needed to operate the service.
             </p>
           </section>
 
@@ -88,7 +89,10 @@ export default function PrivacyPage() {
             </h2>
             <p>
               See the{" "}
-              <Link className="text-primary hover:underline" href="/sms-consent">
+              <Link
+                className="text-primary hover:underline"
+                href="/sms-consent"
+              >
                 SMS Opt-In Policy
               </Link>{" "}
               for how we collect consent, and the{" "}

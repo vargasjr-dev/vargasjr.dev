@@ -38,8 +38,8 @@ export default function SmsConsentPage() {
               </li>
               <li>
                 <strong>Verified account holder:</strong> the number is used for
-                security verification (for example, two-factor
-                authentication) at the account owner&apos;s own request.
+                security verification (for example, two-factor authentication)
+                at the account owner&apos;s own request.
               </li>
             </ul>
             <p className="mt-3">
@@ -84,8 +84,8 @@ export default function SmsConsentPage() {
             </h2>
             <p>
               Phone numbers are used solely to deliver the messages you asked
-              for. We do not sell or share them with third parties for their
-              own marketing. See our{" "}
+              for. We do not sell or share them with third parties for their own
+              marketing. See our{" "}
               <Link className="text-primary hover:underline" href="/privacy">
                 Privacy Policy
               </Link>{" "}
