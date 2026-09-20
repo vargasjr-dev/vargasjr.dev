@@ -27,32 +27,42 @@ console.log("✅ Copied @vellumai/web/dist → public/assistant/");
 const assetsDir = join(destDir, "assets");
 const assetFiles = await readdir(assetsDir);
 
-function findAsset(prefix: string): string | null {
-  const match = assetFiles.find(
-    (f) => f.startsWith(prefix) && f.endsWith(".js"),
-  );
-  return match ? join(assetsDir, match) : null;
+function findAsset(prefix: string | null): string[] {
+  const js = assetFiles.filter((f) => f.endsWith(".js"));
+  const matches = prefix ? js.filter((f) => f.startsWith(prefix)) : js;
+  return matches.map((f) => join(assetsDir, f));
 }
 
 const patches: Array<{
-  filePrefix: string;
+  filePrefix: string | null;
   description: string;
   from: string;
   to: string;
 }> = [
-  // @vellumai/web 0.11.9 keeps the command-palette section in index-*.js.
+  // The main bundle's hash-prefix churns across releases (index-*.js in
+  // 0.11.9–0.12.1, app-*.js in 0.12.2+), so filePrefix null scans every
+  // asset .js — a patch applies wherever its pattern lives.
+  // Command palette: recent conversations 5 → 20.
   {
-    filePrefix: "index-",
+    filePrefix: null,
     description: "Command-palette recent conversations 5 → 20",
     from: "label:`Recent`,items:e.slice(0,5).map(e=>({id:`conv-${e.conversationId}`",
     to: "label:`Recent`,items:e.slice(0,20).map(e=>({id:`conv-${e.conversationId}`",
   },
-  // @vellumai/web 0.11.9 consolidated the Inspect access gate into ck().
+  // Inspect/developer access: 0.11.9 gated it in one minified helper
+  // (ck, later zk); 0.12.1+ moved the flag into two parse sites. Force
+  // both to true.
   {
-    filePrefix: "index-",
-    description: "Allow Inspect/developer access for all users",
-    from: "function ck(e){return e?.isStaff===!0||e?.email?.toLowerCase().endsWith(`@vellum.ai`)===!0}",
-    to: "function ck(e){return!0}",
+    filePrefix: null,
+    description: "Allow Inspect/developer access (isStaff parse site 1)",
+    from: "isStaff:t.isStaff===!0",
+    to: "isStaff:!0",
+  },
+  {
+    filePrefix: null,
+    description: "Allow Inspect/developer access (isStaff parse site 2)",
+    from: "isStaff:e.is_staff??!1",
+    to: "isStaff:!0",
   },
 ];
 
@@ -183,29 +193,27 @@ const navEmitterScript = `<script>/*vellum-nav-emitter*/(function(){var M={sourc
 }
 
 for (const { filePrefix, description, from, to } of patches) {
-  const filePath = findAsset(filePrefix);
+  const filePaths = findAsset(filePrefix);
 
-  if (!filePath) {
-    console.warn(
-      `⚠️  No file matching ${filePrefix}*.js found — skipping patch`,
-    );
-    continue;
-  }
-
-  const content = await readFile(filePath, "utf-8");
-
-  if (content.includes(to)) {
-    console.log(`⏭️  Already patched: ${filePrefix}*.js`);
-    continue;
-  }
-
-  if (!content.includes(from)) {
-    console.warn(`⚠️  Patch target not found in ${filePrefix}*.js — skipping`);
+  if (filePaths.length === 0) {
+    console.warn(`⚠️  No file matching ${filePrefix ?? "*"}*.js — skipping`);
     console.warn(`    ${description}`);
     continue;
   }
 
-  await writeFile(filePath, content.replace(from, to));
-  console.log(`🩹 Patched: ${filePrefix}*.js`);
-  console.log(`    ${description}`);
+  for (const filePath of filePaths) {
+    const name = filePath.split("/").at(-1);
+    const content = await readFile(filePath, "utf-8");
+
+    if (content.includes(to)) {
+      console.log(`⏭️  Already patched: ${name}`);
+      continue;
+    }
+
+    if (!content.includes(from)) continue; // pattern lives in another asset
+
+    await writeFile(filePath, content.replace(from, to));
+    console.log(`🩹 Patched: ${name}`);
+    console.log(`    ${description}`);
+  }
 }

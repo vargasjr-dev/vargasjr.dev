@@ -7,6 +7,11 @@ import {
 import { db } from "@/db";
 import { gmailConnection } from "@/db/schema";
 
+// Cold Neon connects + Google token refresh + Gmail API can exceed the
+// 10s default; the platform's timeout page is HTML, which the admin UI
+// can't parse. Raise the ceiling instead.
+export const maxDuration = 60;
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
