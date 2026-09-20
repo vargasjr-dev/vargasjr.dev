@@ -46,9 +46,23 @@ export default function GmailAdminPage() {
   const refresh = useCallback(async () => {
     setError("");
     try {
-      const s = await fetch("/api/gmail/status", {
-        headers: authHeaders(),
-      }).then((r) => r.json());
+      // API routes return JSON, but platform-level failures (cold-start
+      // timeouts, crash loops) return HTML — read text first and only parse
+      // when the response is actually JSON, so the user sees a clean message
+      // instead of "Unexpected token '<'".
+      async function getJson(res: Response) {
+        const text = await res.text();
+        const trimmed = text.trimStart();
+        if (!res.ok || trimmed.startsWith("<")) {
+          throw new Error(
+            `Gmail API returned ${res.status} — try again in a minute`,
+          );
+        }
+        return JSON.parse(trimmed);
+      }
+      const s = await getJson(
+        await fetch("/api/gmail/status", { headers: authHeaders() }),
+      );
       if (s.error) {
         setError(s.error);
         return;
@@ -56,9 +70,11 @@ export default function GmailAdminPage() {
       setStatus(s);
       if (s.connected) {
         const [f, fw] = await Promise.all([
-          fetch(`/api/gmail/filters?page=${page}`, {
-            headers: authHeaders(),
-          }).then((r) => r.json()),
+          getJson(
+            await fetch(`/api/gmail/filters?page=${page}`, {
+              headers: authHeaders(),
+            }),
+          ),
           fetch("/api/gmail/forwarding", { headers: authHeaders() })
             .then((r) => r.json())
             .catch(() => ({})),

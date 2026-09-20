@@ -4,6 +4,11 @@ import {
   listForwardingAddresses,
 } from "@/lib/gmail-auth";
 
+// Cold Neon connects + Google token refresh + Gmail API can exceed the
+// 10s default; the platform's timeout page is HTML, which the admin UI
+// can't parse. Raise the ceiling instead.
+export const maxDuration = 60;
+
 function isAdmin(request: Request): boolean {
   const cookie = request.headers.get("cookie") ?? "";
   if (cookie.includes("admin_session=1")) return true;

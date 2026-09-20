@@ -6,6 +6,11 @@ import {
   listGmailFilters,
 } from "@/lib/gmail-auth";
 
+// Cold Neon connects + Google token refresh + Gmail API can exceed the
+// 10s default; the platform's timeout page is HTML, which the admin UI
+// can't parse. Raise the ceiling instead.
+export const maxDuration = 60;
+
 /** All filters we manage forward to this address — anything else belongs to
  *  Vargas's personal Gmail and must never be shown or touched from here. */
 const MANAGED_FORWARD_TO = "hello@vargasjr.dev";
