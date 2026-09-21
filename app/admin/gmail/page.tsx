@@ -53,12 +53,15 @@ export default function GmailAdminPage() {
       async function getJson(res: Response) {
         const text = await res.text();
         const trimmed = text.trimStart();
-        if (!res.ok || trimmed.startsWith("<")) {
+        if (trimmed.startsWith("<")) {
+          // Platform-level failure page (timeout, crash) — HTML, no message.
           throw new Error(
             `Gmail API returned ${res.status} — try again in a minute`,
           );
         }
-        return JSON.parse(trimmed);
+        const body = JSON.parse(trimmed);
+        if (!res.ok && body.error) throw new Error(body.error);
+        return body;
       }
       const s = await getJson(
         await fetch("/api/gmail/status", { headers: authHeaders() }),
