@@ -109,6 +109,24 @@ export default async function BlogPostPage({
                 />
               ),
               a: ({ href, children }) => {
+                const tweet = href?.match(
+                  /^https:\/\/(www\.)?(twitter\.com|x\.com)\/[^/]+\/status\/(\d+)/,
+                );
+                if (tweet) {
+                  // X's iframe embed endpoint needs no JS SDK, so this works
+                  // server-rendered and never fights the content pipeline.
+                  return (
+                    <span className="block my-6 max-w-[550px]">
+                      <iframe
+                        src={`https://platform.twitter.com/embed/Tweet.html?id=${tweet[3]}&theme=dark`}
+                        className="w-full h-[420px] rounded-lg border border-gray-800 bg-black"
+                        title="Embedded post"
+                        loading="lazy"
+                        allowFullScreen
+                      />
+                    </span>
+                  );
+                }
                 const internal = href?.startsWith("/");
                 return internal ? (
                   <a href={href} className="text-primary hover:underline">
