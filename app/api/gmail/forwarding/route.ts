@@ -16,6 +16,9 @@ function isAdmin(request: Request): boolean {
   return !!token && token === process.env.ADMIN_TOKEN;
 }
 
+// NB: errors return 200 with an {error} field on purpose — the site sits
+// behind Cloudflare, which replaces non-200 bodies with its own error
+// page. The admin UI reads the error field instead of the status code.
 export async function GET(request: Request) {
   if (!isAdmin(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -32,7 +35,7 @@ export async function GET(request: Request) {
             ? e.message
             : "failed to list forwarding addresses",
       },
-      { status: 502 },
+      {},
     );
   }
 }
@@ -63,7 +66,7 @@ export async function POST(request: Request) {
             ? e.message
             : "failed to create forwarding address",
       },
-      { status: 502 },
+      {},
     );
   }
 }

@@ -55,6 +55,9 @@ function compareFilters(
   );
 }
 
+// NB: errors return 200 with an {error} field on purpose — the site sits
+// behind Cloudflare, which replaces non-200 bodies with its own error
+// page. The admin UI reads the error field instead of the status code.
 export async function GET(request: Request) {
   if (!isAdmin(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -79,7 +82,7 @@ export async function GET(request: Request) {
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "failed to list filters" },
-      { status: 502 },
+      {},
     );
   }
 }
@@ -139,7 +142,7 @@ export async function POST(request: Request) {
         { status: 409 },
       );
     }
-    return NextResponse.json({ error: msg }, { status: 502 });
+    return NextResponse.json({ error: msg }, {});
   }
 }
 
@@ -163,7 +166,7 @@ export async function DELETE(request: Request) {
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "failed to delete filter" },
-      { status: 502 },
+      {},
     );
   }
 }

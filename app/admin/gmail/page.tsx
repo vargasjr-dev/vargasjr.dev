@@ -60,7 +60,7 @@ export default function GmailAdminPage() {
           );
         }
         const body = JSON.parse(trimmed);
-        if (!res.ok && body.error) throw new Error(body.error);
+        if (body.error) throw new Error(body.error);
         return body;
       }
       const s = await getJson(
