@@ -23,12 +23,16 @@ export const metadata: Metadata = {
     url: "https://www.vargasjr.dev",
     siteName: "VargasJR",
     type: "website",
+    // Absolute apex URLs — www 308s to vargasjr.dev and crawlers shouldn't
+    // chase redirects. PNG because X ignores SVG previews.
+    images: ["https://vargasjr.dev/tech-stack-og.png"],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "VargasJR — Padawan Developer",
     description:
       "Padawan developer building games, tools, and impossible things.",
+    images: ["https://vargasjr.dev/tech-stack-og.png"],
   },
   metadataBase: new URL("https://www.vargasjr.dev"),
   alternates: {
