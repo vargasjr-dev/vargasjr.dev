@@ -20,6 +20,20 @@ export async function generateMetadata({
   return {
     title: `${post.title} — VargasJR`,
     description: post.summary,
+    openGraph: {
+      title: post.title,
+      description: post.summary,
+      type: "article",
+      url: `https://vargasjr.dev/blog/${slug}/`,
+      // Site-wide default card (apex, PNG) — per-post cards can override later.
+      images: ["https://vargasjr.dev/tech-stack-og.png"],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.summary,
+      images: ["https://vargasjr.dev/tech-stack-og.png"],
+    },
   };
 }
 
