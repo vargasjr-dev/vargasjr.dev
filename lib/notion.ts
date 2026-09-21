@@ -146,7 +146,14 @@ async function blockToMarkdown(
     case "divider":
       return `---`;
     case "image": {
-      const url = (body as { url?: string })?.url ?? "";
+      // Notion nests the URL: uploads come back as file.{url,expiry_time}
+      // (presigned, expires ~1h — fine since the page revalidates hourly),
+      // external links as external.url. There is no top-level url.
+      const b = body as {
+        file?: { url?: string };
+        external?: { url?: string };
+      };
+      const url = b?.file?.url ?? b?.external?.url ?? "";
       return `![${richTextToMarkdown(body?.caption ?? [])}](${url})`;
     }
     case "bookmark":
