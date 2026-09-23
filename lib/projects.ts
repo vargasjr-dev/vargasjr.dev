@@ -99,7 +99,7 @@ export const PROJECTS: Project[] = [
   {
     slug: "vellum-assistant",
     name: "Vellum",
-    emoji: "🧞",
+    emoji: "👾",
     tagline:
       "The open-source personal assistant harness. Skills, schedules, credentials, and channels — everything an assistant needs to actually do things.",
     description:
@@ -113,7 +113,7 @@ export const PROJECTS: Project[] = [
   {
     slug: "vargasjr",
     name: "VargasJR",
-    emoji: "👾",
+    emoji: "⚔️",
     tagline:
       "The personal intelligence harness you're reading right now. Builds, maintains, and operates software so its principal doesn't have to.",
     description:

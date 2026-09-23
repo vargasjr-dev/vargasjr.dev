@@ -44,7 +44,7 @@ export default async function ProjectDetailPage({
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 text-white">
-      <div className="max-w-3xl mx-auto px-6 py-16">
+      <div className="max-w-3xl mx-auto px-6 pt-8 pb-16">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-gray-500 mb-8">
           <Link href="/" className="hover:text-primary transition-colors">
@@ -74,7 +74,6 @@ export default async function ProjectDetailPage({
                   {badge.label}
                 </span>
               </div>
-              <p className="text-gray-400 mt-1">{project.tagline}</p>
             </div>
           </div>
         </div>
@@ -83,11 +82,6 @@ export default async function ProjectDetailPage({
         <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-6 mb-8">
           <h2 className="text-lg font-semibold mb-3">About</h2>
           <p className="text-gray-300 leading-relaxed">{project.description}</p>
-        </div>
-
-        {/* Tech Stack */}
-        <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-6 mb-8">
-          <h2 className="text-lg font-semibold mb-3">Tech Stack</h2>
         </div>
 
         {/* Links */}
@@ -112,16 +106,6 @@ export default async function ProjectDetailPage({
               <span>📦</span> Source Code
             </a>
           )}
-        </div>
-
-        {/* Back */}
-        <div className="mt-12 pt-8 border-t border-gray-800">
-          <Link
-            href="/projects"
-            className="text-sm text-gray-500 hover:text-primary transition-colors"
-          >
-            ← All Projects
-          </Link>
         </div>
       </div>
     </div>
