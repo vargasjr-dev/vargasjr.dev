@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PROJECTS, getProject } from "@/lib/projects";
+import { getProject } from "@/lib/projects";
 
-export function generateStaticParams() {
-  return PROJECTS.map((p) => ({ slug: p.slug }));
-}
+// Notion-backed project pages render on demand and are cached by the CDN
+export const revalidate = 3600;
 
 export async function generateMetadata({
   params,
@@ -12,7 +11,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const project = getProject(slug);
+  const project = await getProject(slug);
   if (!project) return { title: "Not Found" };
   return {
     title: `${project.name} — VargasJR`,
@@ -37,7 +36,7 @@ export default async function ProjectDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const project = getProject(slug);
+  const project = await getProject(slug);
   if (!project) notFound();
 
   const badge = STATUS_BADGE[project.status];

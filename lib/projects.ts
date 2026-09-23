@@ -1,3 +1,17 @@
+/**
+ * Projects data layer — Notion-backed, mirroring lib/blog.ts.
+ *
+ * All projects live in the "Project Portfolio" Notion database. The list
+ * and detail pages render from it so copy can be edited in Notion (the
+ * CMS). The static array below is kept as a build-time fallback: if the
+ * Notion query fails, the site renders the hardcoded data instead of
+ * breaking — the same contract the blog has ("render empty, never fail").
+ */
+
+import { queryNotionDatabase } from "./notion";
+
+const PROJECTS_DB = "3e4fa8e8-a0df-8131-b9f3-f60914966a26";
+
 export interface Project {
   slug: string;
   name: string;
@@ -14,46 +28,42 @@ export const LAYERS: {
   id: Project["layer"];
   label: string;
   emoji: string;
-  description: string;
+  /** Right-aligned inline conversion line, e.g. "Energy → FLOPs" */
+  subtitle: string;
 }[] = [
   {
     id: "power",
     label: "Power",
-    emoji: "☀️",
-    description:
-      "Converts natural resources into energy. Capture near-infinite energy from the sun — the foundation everything else runs on.",
+    emoji: "⚡️",
+    subtitle: "Resources → Energy",
   },
   {
     id: "compute",
     label: "Compute",
-    emoji: "⚡",
-    description:
-      "Converts energy into FLOPs. Where energy becomes math — the raw material of machine intelligence.",
+    emoji: "💾",
+    subtitle: "Energy → FLOPs",
   },
   {
     id: "models",
     label: "Models",
     emoji: "🧠",
-    description:
-      "Converts FLOPs into tokens. Intelligence itself, manufactured — a token is a fragment of a word, and increasingly a fragment of work.",
+    subtitle: "FLOPs → Tokens",
   },
   {
     id: "harnesses",
     label: "Harnesses",
     emoji: "🦾",
-    description:
-      "Converts tokens into free time. Personal intelligence that points models at a life — your inbox, your codebase, your calendar, your robot.",
+    subtitle: "Tokens → Free time",
   },
   {
     id: "life",
     label: "Life",
     emoji: "🎮",
-    description:
-      "Converts free time into happiness. Games, movies, music, sports — the oldest entertainment economy in the world, and soon the biggest.",
+    subtitle: "Free time → Happiness",
   },
 ];
 
-export const PROJECTS: Project[] = [
+const FALLBACK_PROJECTS: Project[] = [
   {
     slug: "infinite-vibes",
     name: "Infinite Vibes",
@@ -255,10 +265,82 @@ export const PROJECTS: Project[] = [
   },
 ];
 
-export function getProject(slug: string): Project | undefined {
-  return PROJECTS.find((p) => p.slug === slug);
+interface PortfolioDbPage {
+  id: string;
+  properties: {
+    Name?: { title?: { plain_text: string }[] };
+    Slug?: { rich_text?: { plain_text: string }[] };
+    Emoji?: { rich_text?: { plain_text: string }[] };
+    Tagline?: { rich_text?: { plain_text: string }[] };
+    Description?: { rich_text?: { plain_text: string }[] };
+    Status?: { select?: { name: string } | null };
+    Layer?: { select?: { name: string } | null };
+    URL?: { url?: string | null };
+    Repo?: { url?: string | null };
+  };
 }
 
-export function getProjectsByLayer(layer: Project["layer"]): Project[] {
-  return PROJECTS.filter((p) => p.layer === layer);
+function plainText(rt?: { plain_text: string }[]): string {
+  return (rt ?? [])
+    .map((t) => t.plain_text)
+    .join("")
+    .trim();
+}
+
+function toLayer(name: string | null | undefined): Project["layer"] | null {
+  const id = name?.toLowerCase() as Project["layer"] | undefined;
+  if (id && ["power", "compute", "models", "harnesses", "life"].includes(id)) {
+    return id;
+  }
+  return null;
+}
+
+function pageToProject(page: PortfolioDbPage): Project | null {
+  const layer = toLayer(page.properties?.Layer?.select?.name);
+  if (!layer) return null; // not a portfolio row (or layer unset yet)
+  return {
+    slug: plainText(page.properties?.Slug?.rich_text) || page.id,
+    name: plainText(page.properties?.Name?.title) || page.id,
+    emoji: plainText(page.properties?.Emoji?.rich_text) || "📦",
+    tagline: plainText(page.properties?.Tagline?.rich_text),
+    description: plainText(page.properties?.Description?.rich_text),
+    url: page.properties?.URL?.url ?? null,
+    repo: page.properties?.Repo?.url ?? null,
+    status:
+      page.properties?.Status?.select?.name === "Live"
+        ? "live"
+        : "in-development",
+    layer,
+  };
+}
+
+/**
+ * Get all projects from the Notion "Project Portfolio" database.
+ * On any Notion failure, falls back to the hardcoded array so the
+ * site never renders empty or breaks the build.
+ */
+export async function getAllProjects(): Promise<Project[]> {
+  let pages: unknown[];
+  try {
+    pages = await queryNotionDatabase(PROJECTS_DB, {});
+  } catch (e) {
+    console.warn(
+      "[projects] Notion query failed, using fallback data:",
+      e instanceof Error ? e.message : e,
+    );
+    return FALLBACK_PROJECTS;
+  }
+
+  const projects = (pages as PortfolioDbPage[])
+    .map(pageToProject)
+    .filter((p): p is Project => p !== null);
+
+  return projects.length > 0 ? projects : FALLBACK_PROJECTS;
+}
+
+/**
+ * Get a single project by slug.
+ */
+export async function getProject(slug: string): Promise<Project | undefined> {
+  return (await getAllProjects()).find((p) => p.slug === slug);
 }
