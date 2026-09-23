@@ -267,10 +267,11 @@ const FALLBACK_PROJECTS: Project[] = [
 
 interface PortfolioDbPage {
   id: string;
+  /** Page-level icon, e.g. {"type":"emoji","emoji":"👾"} */
+  icon?: { type?: string; emoji?: string } | null;
   properties: {
     Name?: { title?: { plain_text: string }[] };
     Slug?: { rich_text?: { plain_text: string }[] };
-    Emoji?: { rich_text?: { plain_text: string }[] };
     Tagline?: { rich_text?: { plain_text: string }[] };
     Description?: { rich_text?: { plain_text: string }[] };
     Status?: { select?: { name: string } | null };
@@ -301,7 +302,7 @@ function pageToProject(page: PortfolioDbPage): Project | null {
   return {
     slug: plainText(page.properties?.Slug?.rich_text) || page.id,
     name: plainText(page.properties?.Name?.title) || page.id,
-    emoji: plainText(page.properties?.Emoji?.rich_text) || "📦",
+    emoji: (page.icon?.type === "emoji" ? page.icon.emoji : undefined) ?? "📦",
     tagline: plainText(page.properties?.Tagline?.rich_text),
     description: plainText(page.properties?.Description?.rich_text),
     url: page.properties?.URL?.url ?? null,
@@ -335,7 +336,15 @@ export async function getAllProjects(): Promise<Project[]> {
     .map(pageToProject)
     .filter((p): p is Project => p !== null);
 
-  return projects.length > 0 ? projects : FALLBACK_PROJECTS;
+  if (projects.length === 0) return FALLBACK_PROJECTS;
+
+  // within a layer, Live always sorts before In development
+  const layerOrder = new Map(LAYERS.map((l, i) => [l.id, i]));
+  return projects.sort(
+    (a, b) =>
+      (layerOrder.get(a.layer) ?? 99) - (layerOrder.get(b.layer) ?? 99) ||
+      (a.status === "live" ? 0 : 1) - (b.status === "live" ? 0 : 1),
+  );
 }
 
 /**
