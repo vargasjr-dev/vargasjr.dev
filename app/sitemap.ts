@@ -1,9 +1,10 @@
 import type { MetadataRoute } from "next";
 import { getAllPosts } from "@/lib/blog";
-import { PROJECTS } from "@/lib/projects";
+import { getAllProjects } from "@/lib/projects";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const posts = await getAllPosts();
+  const projects = await getAllProjects();
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: "https://vargasjr.dev", lastModified: new Date(), priority: 1.0 },
@@ -39,7 +40,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  const projectPages: MetadataRoute.Sitemap = PROJECTS.map((p) => ({
+  const projectPages: MetadataRoute.Sitemap = projects.map((p) => ({
     url: `https://vargasjr.dev/projects/${p.slug}`,
     lastModified: new Date(),
     priority: 0.7,

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PROJECTS, LAYERS } from "@/lib/projects";
+import { getAllProjects, LAYERS } from "@/lib/projects";
 
 export const metadata: Metadata = {
   title: "Projects — VargasJR",
@@ -19,7 +19,9 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   },
 };
 
-export default function ProjectsPage() {
+export default async function ProjectsPage() {
+  const projects = await getAllProjects();
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 text-white">
       <div className="max-w-5xl mx-auto px-6 py-16">
@@ -40,25 +42,25 @@ export default function ProjectsPage() {
             >
               Personal Intelligence Stack
             </Link>
-            . Each layer converts the output of the layer above into something
-            more useful — all the way up to fun.
+            .
           </p>
         </div>
 
         {/* Layers */}
         <div className="space-y-16">
           {LAYERS.map((layer) => {
-            const layerProjects = PROJECTS.filter((p) => p.layer === layer.id);
+            const layerProjects = projects.filter((p) => p.layer === layer.id);
+            if (layerProjects.length === 0) return null;
             return (
               <section key={layer.id}>
                 {/* Layer header */}
-                <div className="mb-6">
-                  <div className="flex items-center gap-3 mb-2">
+                <div className="mb-6 flex items-baseline justify-between gap-4">
+                  <div className="flex items-center gap-3">
                     <span className="text-2xl">{layer.emoji}</span>
                     <h2 className="text-2xl font-bold">{layer.label}</h2>
                   </div>
-                  <p className="text-gray-400 text-sm max-w-xl pl-11">
-                    {layer.description}
+                  <p className="text-gray-400 text-sm whitespace-nowrap">
+                    {layer.subtitle}
                   </p>
                 </div>
 
