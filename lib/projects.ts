@@ -6,7 +6,7 @@ export interface Project {
   description: string;
   url: string | null;
   repo: string | null;
-  status: "live" | "in-progress" | "parked";
+  status: "live" | "in-development";
   layer: "power" | "compute" | "models" | "harnesses" | "life";
 }
 
@@ -64,7 +64,7 @@ export const PROJECTS: Project[] = [
       "A 10-step interactive engineering roadmap from first orbital ring to full Dyson sphere. Each step includes technical specifications, material requirements, and physics simulations. Built with real aerospace engineering constraints — Zylon tethers, electromagnetic launchers, and bootstrap growth curves.",
     url: "https://infinitevibes.solar",
     repo: "https://github.com/vargasjr-dev/infinitevibes.solar",
-    status: "live",
+    status: "in-development",
     layer: "power",
   },
 
@@ -78,7 +78,7 @@ export const PROJECTS: Project[] = [
       "The first AI inference chip designed for orbit, not Earth. Every accelerator in space today was built for a data center — when it dies, it stays dead. durium makes the tradeoffs that are wrong for Earth but right for space: triple mode redundancy, no HBM, deliberate 5–7nm node selection, and chiplet graceful degradation with hot spares. The result: 10× better annual chip mortality, satellite life extended from 5 to 10–12 years, and the 18× orbital compute cost gap collapsed. Combined with eat-the-sun's launch economics, orbital compute crosses below terrestrial a decade ahead of any existing model.",
     url: "https://durium.vercel.app",
     repo: "https://github.com/vargasjr-dev/durium",
-    status: "in-progress",
+    status: "in-development",
     layer: "compute",
   },
 
@@ -92,8 +92,22 @@ export const PROJECTS: Project[] = [
       "A ~10M parameter language model trained from scratch using reinforcement learning (GRPO). Piro learns from your personal knowledge base — corrections, discoveries, preferences — and distills them into a model that actually knows you. The models layer, personalized: cheap, yours, trained on one person.",
     url: null,
     repo: "https://github.com/vargasjr-dev/piro",
-    status: "in-progress",
+    status: "in-development",
     layer: "models",
+  },
+
+  {
+    slug: "vellum-assistant",
+    name: "Vellum",
+    emoji: "🧞",
+    tagline:
+      "The open-source personal assistant harness. Skills, schedules, credentials, and channels — everything an assistant needs to actually do things.",
+    description:
+      "An open-source assistant harness that turns a model into an operator: a skill system for capabilities, schedules for autonomous runs, a credential vault, and channels that reach you wherever you are. The same harness pattern that powers VargasJR — install it, give it a mission, and let it work.",
+    url: "https://www.vellum.ai",
+    repo: "https://github.com/vellum-ai/vellum-assistant",
+    status: "live",
+    layer: "harnesses",
   },
 
   {
@@ -119,7 +133,7 @@ export const PROJECTS: Project[] = [
       "A set of skills and capabilities that give an assistant its craft: engineering, digest-building, budget-wrangling, and more. Ships as a Vellum plugin. If VargasJR is the harness, The Force is the muscle memory.",
     url: null,
     repo: "https://github.com/vargasjr-dev/the-force",
-    status: "in-progress",
+    status: "in-development",
     layer: "harnesses",
   },
   {
@@ -132,7 +146,7 @@ export const PROJECTS: Project[] = [
       "A bare-metal x86_64 operating system built from scratch in Rust. Features VGA text output, keyboard input, and an LLM abstraction layer. The long-term vision: an OS where the AI assistant is a first-class citizen at the kernel level, not an app running on top.",
     url: null,
     repo: "https://github.com/vargasjr-dev/personal-os",
-    status: "in-progress",
+    status: "in-development",
     layer: "harnesses",
   },
   {
@@ -145,7 +159,7 @@ export const PROJECTS: Project[] = [
       "Lego Technic superstructure + robot base kits that mount a Mac Mini and let it roam untethered. Each kit ships with all the parts, hardware, and build instructions. Add cameras and arms when you're ready. Built for makers who want their AI to move — because a harness that can only touch software has one hand tied behind its back.",
     url: "https://mac-falcon.vercel.app",
     repo: "https://github.com/vargasjr-dev/mac-falcon",
-    status: "live",
+    status: "in-development",
     layer: "harnesses",
   },
   {
@@ -158,7 +172,7 @@ export const PROJECTS: Project[] = [
       "Public policy as infrastructure: informed choices for voters, with ballot auto-fill as the first product. The power layer isn't just watts — it's the rules that govern where the rest of the stack gets to build.",
     url: null,
     repo: "https://github.com/vargasjr-dev/the-informed",
-    status: "in-progress",
+    status: "in-development",
     layer: "power",
   },
   {
@@ -171,7 +185,7 @@ export const PROJECTS: Project[] = [
       "A policy platform proposing that every automated action with real-world effects should be legally attributable to a specific human individual. It's a different form of public policy for the harness layer: as agents act on our behalf, accountability shouldn't dissolve into the machine.",
     url: "https://weneedapiliability.org",
     repo: "https://github.com/vargasjr-dev/WeNeedAPILiability.org",
-    status: "live",
+    status: "in-development",
     layer: "harnesses",
   },
 
@@ -185,7 +199,7 @@ export const PROJECTS: Project[] = [
       "A 1v1 tactical RPG where both players act simultaneously. Build a roster of 8 vellymons, field 4 on an 8×5 grid, and win by elimination, occupation, or energy accumulation. Features a market with 64 unique vellymons, real-time WebSocket matches, and a full game engine with server-authoritative turn resolution.",
     url: "https://vellymon.game",
     repo: "https://github.com/vargasjr-dev/vellymon.game",
-    status: "live",
+    status: "in-development",
     layer: "life",
   },
   {
@@ -198,7 +212,7 @@ export const PROJECTS: Project[] = [
       "A party game platform where AI generates unique mini-games on the fly using Lua scripting. Host sessions, invite friends, and play through rounds of AI-crafted challenges. Currently rebuilding from Expo to native Swift (iOS) and Next.js (web).",
     url: "https://squad-party.vercel.app",
     repo: "https://github.com/vargasjr-dev/Squad-Party",
-    status: "in-progress",
+    status: "in-development",
     layer: "life",
   },
   {
@@ -211,7 +225,7 @@ export const PROJECTS: Project[] = [
       "A real-time multiplayer implementation of the classic word-guessing party game. Create rooms, invite friends, and play with live updates. Supports spymasters, operatives, and spectators with full game state sync.",
     url: "https://codenaimes.vercel.app",
     repo: "https://github.com/vargasjr-dev/codenaimes",
-    status: "live",
+    status: "in-development",
     layer: "life",
   },
   {
@@ -224,7 +238,7 @@ export const PROJECTS: Project[] = [
       "A digital implementation of Avalon (The Resistance) with AI players that use game theory and deduction. Play with friends or fill seats with AI opponents that bluff, deduce, and vote strategically.",
     url: null,
     repo: "https://github.com/vargasjr-dev/aivalon",
-    status: "in-progress",
+    status: "in-development",
     layer: "life",
   },
   {
@@ -236,7 +250,7 @@ export const PROJECTS: Project[] = [
       "A bingo game where the balls are real-world events from prediction markets. Life layer, gambling-adjacent edition: the joy of watching a card fill itself as reality obliges.",
     url: null,
     repo: "https://github.com/vargasjr-dev/predictionbingo",
-    status: "in-progress",
+    status: "in-development",
     layer: "life",
   },
 ];

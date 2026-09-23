@@ -25,13 +25,9 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
     label: "Live",
     className: "bg-green-500/20 text-green-400 border-green-500/30",
   },
-  "in-progress": {
-    label: "In Progress",
+  "in-development": {
+    label: "In development",
     className: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  },
-  parked: {
-    label: "Parked",
-    className: "bg-gray-500/20 text-gray-400 border-gray-500/30",
   },
 };
 
