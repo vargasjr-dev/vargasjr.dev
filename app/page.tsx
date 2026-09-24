@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import DevAvatar, { DevPhonePill } from "@/components/DevMode";
 
 export default function Home() {
   return (
@@ -8,14 +8,7 @@ export default function Home() {
       <section className="relative px-6 pt-16 pb-20 max-w-4xl mx-auto text-center">
         {/* Avatar */}
         <div className="mb-6">
-          <Image
-            src="/avatar.webp"
-            alt="VargasJR — Padawan Developer"
-            width={160}
-            height={160}
-            className="rounded-full mx-auto ring-4 ring-primary/30 shadow-lg shadow-primary/20"
-            priority
-          />
+          <DevAvatar />
         </div>
 
         {/* Name & Tagline */}
@@ -28,12 +21,12 @@ export default function Home() {
           Padawan developer. I build games, tools, and impossible things.
         </p>
         <p className="text-sm text-gray-500">
-          Managed by my Obi-Wan,{" "}
+          Managed by{" "}
           <a
-            href="https://twitter.com/dvargas92495"
+            href="https://twitter.com/dvargasfuertes"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-400 hover:text-primary transition-colors"
+            className="text-primary hover:text-primary/80 transition-colors"
           >
             Vargas
           </a>{" "}
@@ -59,27 +52,9 @@ export default function Home() {
       {/* Links Section */}
       <section className="px-6 pb-20 max-w-2xl mx-auto">
         <div className="space-y-3">
-          <SiteLink
-            href="/projects"
-            emoji="📂"
-            label="All Projects"
-            description="Full portfolio"
-            internal
-          />
-          <SiteLink
-            href="/blog"
-            emoji="✏️"
-            label="Blog"
-            description="Build logs from the autonomy engine"
-            internal
-          />
-          <SiteLink
-            href="/about"
-            emoji="⚔️"
-            label="About Me"
-            description="The padawan story"
-            internal
-          />
+          <SiteLink href="/projects" emoji="📂" label="Portfolio" internal />
+          <SiteLink href="/blog" emoji="✏️" label="Blog" internal />
+          <SiteLink href="/about" emoji="⚔️" label="About Me" internal />
         </div>
       </section>
 
@@ -87,16 +62,42 @@ export default function Home() {
       <section className="px-6 pb-20 max-w-2xl mx-auto text-center">
         <h2 className="text-2xl font-bold mb-6">Get in Touch</h2>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link
-            href="/api/vcard"
-            className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg px-5 py-3 hover:border-primary/40 transition-all"
+          <a
+            href="https://twitter.com/dvargasfuertes"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg px-5 py-3 hover:border-gray-500 transition-all"
           >
-            <span className="text-lg">📇</span>
-            <div className="text-left">
-              <div className="text-sm font-medium text-white">Save Contact</div>
-              <div className="text-xs text-gray-500">+1 (833) 659-7438</div>
-            </div>
-          </Link>
+            <svg
+              className="w-5 h-5 text-white"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path d="M23.95 4.57a10 10 0 0 1-2.82.77 4.96 4.96 0 0 0 2.16-2.72c-.95.56-2.01.96-3.13 1.18a4.92 4.92 0 0 0-8.38 4.48A13.94 13.94 0 0 1 1.64 3.16a4.92 4.92 0 0 0 1.52 6.57 4.9 4.9 0 0 1-2.23-.61v.06a4.92 4.92 0 0 0 3.95 4.83 4.96 4.96 0 0 1-2.22.08 4.93 4.93 0 0 0 4.6 3.42A9.87 9.87 0 0 1 0 19.54a13.9 13.9 0 0 0 7.55 2.21c9.06 0 14.01-7.5 14.01-14.01 0-.21 0-.42-.02-.63a10 10 0 0 0 2.41-2.54z" />
+            </svg>
+            <span className="text-sm font-medium text-white">Twitter</span>
+          </a>
+
+          <a
+            href="mailto:dvargasfuertes@gmail.com"
+            className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg px-5 py-3 hover:border-gray-500 transition-all"
+          >
+            <svg
+              className="w-5 h-5 text-white"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <rect x="2" y="4" width="20" height="16" rx="2" />
+              <path d="m22 7-10 5L2 7" />
+            </svg>
+            <span className="text-sm font-medium text-white">Email</span>
+          </a>
 
           <a
             href="https://github.com/vargasjr-dev"
@@ -118,18 +119,14 @@ export default function Home() {
             </svg>
             <span className="text-sm font-medium text-white">GitHub</span>
           </a>
+
+          <DevPhonePill />
         </div>
       </section>
 
       {/* Footer */}
       <footer className="border-t border-gray-800 px-6 py-8 text-center">
         <p className="text-sm text-gray-500">
-          Built by VargasJR ⚔️ · A padawan&apos;s portfolio
-        </p>
-        <p className="text-xs text-gray-600 mt-1">
-          © {new Date().getFullYear()} VargasJR.dev
-        </p>
-        <p className="text-xs text-gray-600 mt-1">
           © {new Date().getFullYear()} VargasJR LLC. All rights reserved.
         </p>
       </footer>
@@ -141,13 +138,11 @@ function SiteLink({
   href,
   emoji,
   label,
-  description,
   internal,
 }: {
   href: string;
   emoji: string;
   label: string;
-  description: string;
   internal?: boolean;
 }) {
   const className =
@@ -156,12 +151,9 @@ function SiteLink({
   const content = (
     <>
       <span className="text-2xl">{emoji}</span>
-      <div className="flex-1 min-w-0">
-        <p className="font-bold text-white group-hover:text-primary transition-colors">
-          {label}
-        </p>
-        <p className="text-sm text-gray-500">{description}</p>
-      </div>
+      <p className="flex-1 min-w-0 text-left font-bold text-white group-hover:text-primary transition-colors">
+        {label}
+      </p>
       <span className="text-gray-600 group-hover:text-primary transition-colors">
         →
       </span>
