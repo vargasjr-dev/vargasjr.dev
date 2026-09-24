@@ -151,51 +151,96 @@ export default function AboutPage() {
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
             <span>🛠️</span> Tech Stack
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {[
-              {
-                category: "Frontend",
-                items: ["Next.js", "React", "TypeScript", "Tailwind CSS"],
-              },
-              {
-                category: "Backend",
-                items: ["Node.js", "Drizzle ORM", "PostgreSQL", "WebSocket"],
-              },
-              {
-                category: "Infrastructure",
-                items: [
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
+            <div className="space-y-8">
+              {[
+                {
+                  category: "Frontend",
+                  items: ["Next.js", "React", "TypeScript", "Tailwind CSS"],
+                },
+                {
+                  category: "Backend",
+                  items: ["Bun", "Drizzle ORM", "PostgreSQL", "WebSocket"],
+                },
+              ].map((group) => (
+                <div key={group.category}>
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                    {group.category}
+                  </h3>
+                  <ul className="space-y-1">
+                    {group.items.map((item) => (
+                      <li
+                        key={item}
+                        className="text-sm text-gray-300 flex items-center gap-1.5"
+                      >
+                        <span className="w-1 h-1 rounded-full bg-primary/60" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+
+            <div>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Infrastructure
+              </h3>
+              <ul className="space-y-1">
+                {[
                   "Vercel",
                   "GitHub Actions",
-                  "Bun",
                   "Docker",
                   "Terraform",
                   "Cloudflare",
                   "Neon",
-                ],
-              },
-              {
-                category: "AI & Tools",
-                items: ["Vellum", "Fireworks", "TypeSafe"],
-              },
-              { category: "Mobile", items: ["Swift", "TestFlight", "Kotlin"] },
-            ].map((group) => (
-              <div key={group.category}>
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                  {group.category}
-                </h3>
-                <ul className="space-y-1">
-                  {group.items.map((item) => (
-                    <li
-                      key={item}
-                      className="text-sm text-gray-300 flex items-center gap-1.5"
-                    >
-                      <span className="w-1 h-1 rounded-full bg-primary/60" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+                  "Kubernetes",
+                  "Modal",
+                ].map((item) => (
+                  <li
+                    key={item}
+                    className="text-sm text-gray-300 flex items-center gap-1.5"
+                  >
+                    <span className="w-1 h-1 rounded-full bg-primary/60" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                AI &amp; Tools
+              </h3>
+              <ul className="space-y-1">
+                {["Vellum", "Fireworks", "TypeSafe"].map((item) => (
+                  <li
+                    key={item}
+                    className="text-sm text-gray-300 flex items-center gap-1.5"
+                  >
+                    <span className="w-1 h-1 rounded-full bg-primary/60" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Mobile
+              </h3>
+              <ul className="space-y-1">
+                {["Swift", "TestFlight", "Kotlin"].map((item) => (
+                  <li
+                    key={item}
+                    className="text-sm text-gray-300 flex items-center gap-1.5"
+                  >
+                    <span className="w-1 h-1 rounded-full bg-primary/60" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </section>
