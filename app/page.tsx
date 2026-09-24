@@ -63,7 +63,7 @@ export default function Home() {
         <h2 className="text-2xl font-bold mb-6">Get in Touch</h2>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <a
-            href="https://twitter.com/dvargasfuertes"
+            href="https://twitter.com/VargasJRDev"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg px-5 py-3 hover:border-gray-500 transition-all"
@@ -80,7 +80,7 @@ export default function Home() {
           </a>
 
           <a
-            href="mailto:dvargasfuertes@gmail.com"
+            href="mailto:hello@vargasjr.dev"
             className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg px-5 py-3 hover:border-gray-500 transition-all"
           >
             <svg

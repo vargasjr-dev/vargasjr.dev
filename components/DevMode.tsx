@@ -39,7 +39,7 @@ export default function DevAvatar() {
     <div onClick={onTap} className="cursor-default select-none inline-block">
       <Image
         src="/avatar.webp"
-        alt="VargasJR — Padawan Developer"
+        alt="VargasJR, Padawan Developer"
         width={160}
         height={160}
         className="rounded-full mx-auto ring-4 ring-primary/30 shadow-lg shadow-primary/20"
@@ -53,21 +53,14 @@ export function DevPhonePill() {
   const unlocked = useDevMode();
   if (!unlocked) return null;
   return (
-    <div className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg px-5 py-3">
-      <span className="text-lg">📱</span>
-      <a
-        href="sms:+18336597438"
-        className="text-sm font-medium text-white hover:text-primary transition-colors"
-      >
-        Text
-      </a>
-      <span className="text-xs text-gray-500">·</span>
-      <a
-        href="/api/vcard"
-        className="text-xs text-gray-500 hover:text-primary transition-colors"
-      >
-        Save
-      </a>
-    </div>
+    <a
+      href="sms:+18336597438"
+      className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg px-5 py-3 hover:border-gray-500 transition-all"
+    >
+      <span className="w-5 h-5 flex items-center justify-center text-base leading-none">
+        📱
+      </span>
+      <span className="text-sm font-medium text-white">Text</span>
+    </a>
   );
 }
