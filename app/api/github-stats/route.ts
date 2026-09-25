@@ -39,6 +39,7 @@ type GridData = Record<string, DayData>;
 const historicalCache = new Map<string, DayData>();
 let recentCache: { fetchedAt: number; data: GridData } | null = null;
 let blobLoaded = false; // track if we've already tried to load from Blob this instance
+let refreshComplete: Promise<unknown> = Promise.resolve();
 const RECENT_TTL_MS = 60 * 60 * 1000; // re-fetch recent window every 1h
 const BLOB_CACHE_KEY = "github-stats-cache-v2.json";
 
@@ -257,29 +258,9 @@ async function saveHistoricalToBlob(): Promise<void> {
   }
 }
 
-async function getMergedPRGrid(): Promise<GridData> {
-  const todayStr = today();
-  const now = Date.now();
-
-  // On cold start, try to load historical cache from Blob (only once per instance)
-  if (historicalCache.size === 0 && !blobLoaded) {
-    await loadHistoricalFromBlob();
-  }
-
-  // Is recent cache still fresh?
-  const recentFresh =
-    recentCache && now - recentCache.fetchedAt < RECENT_TTL_MS;
-
-  if (historicalCache.size > 0 && recentFresh) {
-    // Serve everything from cache
-    return {
-      ...Object.fromEntries(historicalCache),
-      ...recentCache!.data,
-    };
-  }
-
-  // Need to (re)fetch. Determine the right range:
-  // - Cold start: fetch full year
+async function refreshGrid(now: number, blocking: boolean): Promise<GridData> {
+  // Determine the right range:
+  // - Cold start (no historical data at all): fetch full year, must block
   // - Warm / recent stale: only fetch last 8 days (keeps historical cache intact)
   const isWarm = historicalCache.size > 0;
   const since = new Date();
@@ -306,7 +287,7 @@ async function getMergedPRGrid(): Promise<GridData> {
 
   // Persist completed days to historical cache
   for (const [day, data] of Object.entries(fresh)) {
-    if (day < todayStr) {
+    if (day < today()) {
       historicalCache.set(day, data);
     }
   }
@@ -319,13 +300,46 @@ async function getMergedPRGrid(): Promise<GridData> {
   // Cache recent window (today + any days fetched this run)
   const recentData: GridData = {};
   for (const [day, data] of Object.entries(fresh)) {
-    if (day >= todayStr) recentData[day] = data;
+    if (day >= today()) recentData[day] = data;
   }
   recentCache = { fetchedAt: now, data: recentData };
 
-  return {
+  const merged = {
     ...Object.fromEntries(historicalCache),
     ...recentData,
+  };
+  if (!blocking) refreshComplete = Promise.resolve(merged);
+  return merged;
+}
+
+/**
+ * Serves the best available data immediately: Blob-backed historical cache +
+ * last known recent window. If the recent window is stale, a background
+ * refresh kicks off (GitHub's camo image proxy times out on slow responses,
+ * which used to render the profile graphic as a broken image on cold starts).
+ * The very first request ever (no Blob, no memory) blocks on a full fetch.
+ */
+async function getMergedPRGrid(): Promise<GridData> {
+  if (historicalCache.size === 0 && !blobLoaded) {
+    await loadHistoricalFromBlob();
+  }
+
+  const now = Date.now();
+  const hasData = historicalCache.size > 0 || recentCache !== null;
+
+  if (!hasData) {
+    return refreshGrid(now, true);
+  }
+
+  if (!recentCache || now - recentCache.fetchedAt >= RECENT_TTL_MS) {
+    refreshComplete = refreshGrid(now, false).catch((err) => {
+      console.warn("[github-stats] background refresh failed:", err);
+    });
+  }
+
+  return {
+    ...Object.fromEntries(historicalCache),
+    ...(recentCache?.data ?? {}),
   };
 }
 
@@ -388,8 +402,8 @@ function generateSVG(grid: GridData): string {
       });
       const tip =
         total === 0
-          ? `${label}: no activity`
-          : `${label}: Vargas ${data.vargas} contribution${data.vargas !== 1 ? "s" : ""}, VargasJR ${data.vargasJR} merged PR${data.vargasJR !== 1 ? "s" : ""}`;
+          ? `No contributions on ${label}`
+          : `${total} contribution${total !== 1 ? "s" : ""} on ${label} \u00b7 Vargas ${data.vargas}, VargasJR ${data.vargasJR}`;
 
       cells.push(
         `<rect x="${x}" y="${y}" width="${CELL}" height="${CELL}" rx="2" fill="${color}" opacity="${opacity}"><title>${tip}</title></rect>`,
@@ -441,8 +455,14 @@ function generateSVG(grid: GridData): string {
 // ── Handler ───────────────────────────────────────────────────────────────────
 
 export async function GET() {
-  const grid = await getMergedPRGrid();
-  const svg = generateSVG(grid);
+  const gridPromise = getMergedPRGrid();
+  // Give the background refresh a short window to land before responding;
+  // if it needs longer we still respond with the slightly stale grid.
+  const settled = await Promise.race([
+    Promise.all([gridPromise, refreshComplete]).then(([g]) => g),
+    gridPromise,
+  ]);
+  const svg = generateSVG(settled);
 
   return new Response(svg, {
     headers: {
