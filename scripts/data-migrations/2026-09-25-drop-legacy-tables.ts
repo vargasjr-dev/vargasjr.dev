@@ -22,6 +22,8 @@
  * Credentials: `database` (DATABASE_URL = POSTGRES_URL secret).
  */
 
+import { neon } from "@neondatabase/serverless";
+
 const KEEP: Record<string, number | "unknown"> = {
   emails: 226,
   gmail_connection: 1,
@@ -47,12 +49,15 @@ const LEGACY: string[] = [
   "blog_posts",
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function tableExists(sql: any, name: string): Promise<boolean> {
   const rows = await sql`SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = ${name}`;
   return rows.length > 0;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function countRows(sql: any, name: string): Promise<number> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const queries: Record<string, Promise<any[]>> = {
     emails: sql`SELECT count(*)::int AS n FROM emails`,
     gmail_connection: sql`SELECT count(*)::int AS n FROM gmail_connection`,
@@ -77,7 +82,6 @@ async function countRows(sql: any, name: string): Promise<number> {
   return result[0].n as number;
 }
 
-const { neon } = await import("@neondatabase/serverless");
 const sql = neon(process.env.DATABASE_URL!);
 
 // ---------- BEFORE ----------
