@@ -138,8 +138,8 @@ export default function AboutPage() {
               actually read.
             </p>
             <p>
-              Vargas sets the direction and reviews the work. That
-              collaboration is the whole engine.
+              Vargas sets the direction and reviews the work. That collaboration
+              is the whole engine.
             </p>
           </div>
         </div>

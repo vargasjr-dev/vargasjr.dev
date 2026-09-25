@@ -1,0 +1,274 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+type Entry = {
+  id: number;
+  entryDate: string;
+  account: string;
+  debitCents: number;
+  creditCents: number;
+  description: string;
+  sourceUrl: string | null;
+  correctingOfId: number | null;
+};
+
+type Balance = { account: string; debitCents: number; creditCents: number };
+
+function cents(c: number): string {
+  return (c / 100).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+  });
+}
+
+export default function AccountingPage() {
+  const router = useRouter();
+  const [entries, setEntries] = useState<Entry[]>([]);
+  const [balances, setBalances] = useState<Balance[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [message, setMessage] = useState("");
+
+  // New-entry form
+  const [entryDate, setEntryDate] = useState("");
+  const [account, setAccount] = useState("cash");
+  const [amount, setAmount] = useState("");
+  const [side, setSide] = useState<"debit" | "credit">("debit");
+  const [description, setDescription] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
+
+  const load = useCallback(async () => {
+    const adminToken = localStorage.getItem("admin_token") ?? "";
+    const res = await fetch("/api/admin/accounting", {
+      headers: { "x-admin-token": adminToken },
+    });
+    if (res.status === 401) {
+      router.replace("/admin");
+      return;
+    }
+    const data = await res.json();
+    setEntries(data.entries ?? []);
+    setBalances(data.balances ?? []);
+    setLoading(false);
+  }, [router]);
+
+  useEffect(() => {
+    if (!localStorage.getItem("admin_token")) {
+      router.replace("/admin");
+      return;
+    }
+    load();
+  }, [router, load]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus("loading");
+    setMessage("");
+
+    const centsValue = Math.round(parseFloat(amount) * 100);
+    if (isNaN(centsValue) || centsValue <= 0) {
+      setStatus("error");
+      setMessage("Amount must be a positive number.");
+      return;
+    }
+
+    const adminToken = localStorage.getItem("admin_token") ?? "";
+    const res = await fetch("/api/admin/accounting", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-token": adminToken,
+      },
+      body: JSON.stringify({
+        entryDate,
+        account,
+        [side === "debit" ? "debitCents" : "creditCents"]: centsValue,
+        description,
+        sourceUrl: sourceUrl || null,
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      setStatus("error");
+      setMessage(data.error ?? "Failed to add entry.");
+      return;
+    }
+
+    setStatus("idle");
+    setMessage(`Entry #${data.entry.id} recorded.`);
+    setAmount("");
+    setDescription("");
+    setSourceUrl("");
+    load();
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <p className="text-gray-400">Loading ledger…</p>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-gray-950 p-8">
+      <div className="max-w-5xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-[#3ba4dc]">
+            ⚖️ Accounting Ledger
+          </h1>
+          <a
+            href="/api/admin/accounting/export"
+            className="text-sm text-gray-400 hover:text-gray-200 underline"
+          >
+            Export CSV
+          </a>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
+          {balances.map((b) => (
+            <div key={b.account} className="bg-gray-900 rounded-lg p-4">
+              <p className="text-gray-400 text-xs mb-1">
+                {b.account.replace(/_/g, " ")}
+              </p>
+              <p className="text-white font-semibold">
+                {cents(b.debitCents - b.creditCents)}
+              </p>
+            </div>
+          ))}
+          {balances.length === 0 && (
+            <p className="text-gray-500 text-sm col-span-3">
+              No entries yet — the ledger is empty.
+            </p>
+          )}
+        </div>
+
+        <form
+          onSubmit={handleSubmit}
+          className="bg-gray-900 rounded-lg p-4 mb-8 grid grid-cols-1 sm:grid-cols-2 gap-3"
+        >
+          <input
+            type="date"
+            required
+            value={entryDate}
+            onChange={(e) => setEntryDate(e.target.value)}
+            className="bg-gray-800 text-white rounded px-3 py-2 text-sm"
+          />
+          <input
+            placeholder="account (e.g. cash, member_contributions)"
+            required
+            value={account}
+            onChange={(e) => setAccount(e.target.value)}
+            className="bg-gray-800 text-white rounded px-3 py-2 text-sm"
+          />
+          <div className="flex gap-2">
+            <select
+              value={side}
+              onChange={(e) => setSide(e.target.value as "debit" | "credit")}
+              className="bg-gray-800 text-white rounded px-3 py-2 text-sm"
+            >
+              <option value="debit">Debit</option>
+              <option value="credit">Credit</option>
+            </select>
+            <input
+              type="number"
+              step="0.01"
+              min="0.01"
+              placeholder="amount"
+              required
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="bg-gray-800 text-white rounded px-3 py-2 text-sm flex-1"
+            />
+          </div>
+          <input
+            placeholder="source document URL (bank statement, receipt)"
+            value={sourceUrl}
+            onChange={(e) => setSourceUrl(e.target.value)}
+            className="bg-gray-800 text-white rounded px-3 py-2 text-sm"
+          />
+          <input
+            placeholder="description"
+            required
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="bg-gray-800 text-white rounded px-3 py-2 text-sm sm:col-span-2"
+          />
+          <button
+            type="submit"
+            disabled={status === "loading"}
+            className="sm:col-span-2 py-2 rounded-lg bg-[#3ba4dc] text-white font-semibold hover:bg-[#2990c5] transition-colors disabled:opacity-50 text-sm"
+          >
+            {status === "loading" ? "Recording…" : "Record entry"}
+          </button>
+          {message && (
+            <p
+              className={`sm:col-span-2 text-xs ${
+                status === "error" ? "text-red-400" : "text-gray-400"
+              }`}
+            >
+              {message}
+            </p>
+          )}
+        </form>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-gray-400 border-b border-gray-800">
+                <th className="py-2 pr-4">Date</th>
+                <th className="py-2 pr-4">Account</th>
+                <th className="py-2 pr-4 text-right">Debit</th>
+                <th className="py-2 pr-4 text-right">Credit</th>
+                <th className="py-2 pr-4">Description</th>
+                <th className="py-2">Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((e) => (
+                <tr key={e.id} className="border-b border-gray-900">
+                  <td className="py-2 pr-4 text-gray-300 whitespace-nowrap">
+                    {e.entryDate}
+                  </td>
+                  <td className="py-2 pr-4 text-gray-400">
+                    {e.account.replace(/_/g, " ")}
+                  </td>
+                  <td className="py-2 pr-4 text-right text-gray-300">
+                    {e.debitCents ? cents(e.debitCents) : ""}
+                  </td>
+                  <td className="py-2 pr-4 text-right text-gray-300">
+                    {e.creditCents ? cents(e.creditCents) : ""}
+                  </td>
+                  <td className="py-2 pr-4 text-gray-300">
+                    {e.description}
+                    {e.correctingOfId && (
+                      <span className="text-gray-500">
+                        {" "}
+                        (corr. #{e.correctingOfId})
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-2">
+                    {e.sourceUrl && (
+                      <a
+                        href={e.sourceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[#3ba4dc] hover:underline"
+                      >
+                        doc
+                      </a>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  );
+}
