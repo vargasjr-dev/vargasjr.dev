@@ -117,7 +117,11 @@ if (legacyPresent.length === 0) {
 // ---------- DROP ----------
 console.log(`=== DROPPING ${legacyPresent.length} LEGACY TABLES ===`);
 for (const name of legacyPresent) {
-  await sql(`DROP TABLE IF EXISTS "${name}" CASCADE`);
+  // The neon-http driver only accepts tagged templates or sql.query().
+  // Table names are identifiers and cannot be parameterized; they come
+  // exclusively from the hardcoded LEGACY list, validated below.
+  if (!/^[a-z_]+$/.test(name)) throw new Error(`unexpected table name: ${name}`);
+  await sql.query(`DROP TABLE IF EXISTS "${name}" CASCADE`);
   console.log(`dropped ${name}`);
 }
 
