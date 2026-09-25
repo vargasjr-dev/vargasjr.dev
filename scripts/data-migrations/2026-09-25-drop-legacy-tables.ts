@@ -89,9 +89,11 @@ for (const [name, expected] of Object.entries(KEEP)) {
   }
   const n = await countRows(sql, name);
   beforeKeeperCounts[name] = n;
-  if (expected !== "unknown" && n !== expected) {
+  // Live tables grow (new mail, new entries); only row LOSS is the danger
+  // CASCADE could cause, so require count >= expected rather than exact.
+  if (expected !== "unknown" && n < expected) {
     throw new Error(
-      `KEEPER TABLE UNEXPECTED COUNT: ${name} has ${n} rows, expected ${expected} — aborting`,
+      `KEEPER TABLE LOST ROWS: ${name} has ${n} rows, expected at least ${expected} — aborting`,
     );
   }
   console.log(`keeper ${name}: ${n} rows (ok)`);
@@ -133,12 +135,12 @@ for (const [name, before] of Object.entries(beforeKeeperCounts)) {
     throw new Error(`KEEPER TABLE MISSING AFTER RUN: ${name} — CASCADE damaged a keeper, investigate immediately`);
   }
   const n = await countRows(sql, name);
-  if (n !== before) {
+  if (n < before) {
     throw new Error(
-      `KEEPER TABLE COUNT CHANGED: ${name} was ${before}, now ${n} — CASCADE removed rows, investigate immediately`,
+      `KEEPER TABLE LOST ROWS: ${name} was ${before}, now ${n} — CASCADE removed rows, investigate immediately`,
     );
   }
-  console.log(`keeper ${name}: ${n} rows (unchanged)`);
+  console.log(`keeper ${name}: ${before} -> ${n} rows (${n === before ? "unchanged" : "grew"} — no loss)`);
 }
 
 console.log("SUCCESS: legacy tables dropped, keeper tables intact.");
