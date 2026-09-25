@@ -64,6 +64,9 @@ export const accountingEntries = pgTable(
     description: text("description").notNull(),
     // Link to the source document (bank statement, transfer confirmation).
     sourceUrl: text("source_url"),
+    // Stable identity of the source record (e.g. "mercury:<tx-uuid>") so
+    // automated ingests are idempotent. Null for manual entries.
+    externalId: varchar("external_id", { length: 128 }).unique(),
     correctingOfId: integer("correcting_of_id"), // references accountingEntries.id
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

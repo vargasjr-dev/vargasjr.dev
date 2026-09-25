@@ -1,4 +1,10 @@
 {
   "installCommand": "bun install --frozen-lockfile",
-  "buildCommand": "bun scripts/patch-vellum.js && bun scripts/copy-assistant.ts && next build"
+  "buildCommand": "bun scripts/patch-vellum.js && bun scripts/copy-assistant.ts && next build",
+  "crons": [
+    {
+      "path": "/api/cron/financial-ingest",
+      "schedule": "0 5 * * *"
+    }
+  ]
 }
