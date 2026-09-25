@@ -51,7 +51,8 @@ const LEGACY: string[] = [
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function tableExists(sql: any, name: string): Promise<boolean> {
-  const rows = await sql`SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = ${name}`;
+  const rows =
+    await sql`SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = ${name}`;
   return rows.length > 0;
 }
 
@@ -124,7 +125,8 @@ for (const name of legacyPresent) {
   // The neon-http driver only accepts tagged templates or sql.query().
   // Table names are identifiers and cannot be parameterized; they come
   // exclusively from the hardcoded LEGACY list, validated below.
-  if (!/^[a-z_]+$/.test(name)) throw new Error(`unexpected table name: ${name}`);
+  if (!/^[a-z_]+$/.test(name))
+    throw new Error(`unexpected table name: ${name}`);
   await sql.query(`DROP TABLE IF EXISTS "${name}" CASCADE`);
   console.log(`dropped ${name}`);
 }
@@ -140,7 +142,9 @@ console.log("all legacy tables absent");
 
 for (const [name, before] of Object.entries(beforeKeeperCounts)) {
   if (!(await tableExists(sql, name))) {
-    throw new Error(`KEEPER TABLE MISSING AFTER RUN: ${name} — CASCADE damaged a keeper, investigate immediately`);
+    throw new Error(
+      `KEEPER TABLE MISSING AFTER RUN: ${name} — CASCADE damaged a keeper, investigate immediately`,
+    );
   }
   const n = await countRows(sql, name);
   if (n < before) {
@@ -148,7 +152,9 @@ for (const [name, before] of Object.entries(beforeKeeperCounts)) {
       `KEEPER TABLE LOST ROWS: ${name} was ${before}, now ${n} — CASCADE removed rows, investigate immediately`,
     );
   }
-  console.log(`keeper ${name}: ${before} -> ${n} rows (${n === before ? "unchanged" : "grew"} — no loss)`);
+  console.log(
+    `keeper ${name}: ${before} -> ${n} rows (${n === before ? "unchanged" : "grew"} — no loss)`,
+  );
 }
 
 console.log("SUCCESS: legacy tables dropped, keeper tables intact.");
