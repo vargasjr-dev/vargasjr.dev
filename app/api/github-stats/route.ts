@@ -373,11 +373,9 @@ function generateSVG(grid: GridData): string {
   return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
   <style>
     text { font-family: 'Segoe UI', Ubuntu, 'Helvetica Neue', Sans-Serif; }
-    .title { font-size: 14px; font-weight: 600; fill: #e6edf3; }
     .month { font-size: 10px; fill: #6e7681; }
   </style>
   <rect width="${W}" height="${H}" rx="10" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
-  <text x="${PAD_LEFT}" y="16" class="title">PRs Merged</text>
   ${monthLabels}
   ${cells.join("\n  ")}
   ${legend}
