@@ -70,6 +70,12 @@ export default function AdminPage() {
             >
               Gmail Filters
             </Link>
+            <Link
+              href="/admin/accounting"
+              className="block w-full py-3 rounded-lg bg-gray-800 text-gray-200 font-semibold hover:bg-gray-700 transition-colors"
+            >
+              Accounting
+            </Link>
             <button
               onClick={handleLogout}
               className="block w-full py-3 rounded-lg bg-transparent text-gray-500 text-sm hover:text-gray-300 transition-colors"

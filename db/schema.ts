@@ -1,4 +1,13 @@
-import { pgTable, text, timestamp, varchar, index } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  timestamp,
+  varchar,
+  index,
+  serial,
+  date,
+  integer,
+} from "drizzle-orm/pg-core";
 
 export const emails = pgTable(
   "emails",
@@ -40,3 +49,31 @@ export const gmailConnection = pgTable("gmail_connection", {
 
 export type GmailConnection = typeof gmailConnection.$inferSelect;
 export type NewGmailConnection = typeof gmailConnection.$inferInsert;
+
+// Append-only double-entry ledger for Vargas JR, LLC.
+// Entries are never updated or deleted; corrections are new entries that
+// reference the entry they correct (correctingOfId).
+export const accountingEntries = pgTable(
+  "accounting_entries",
+  {
+    id: serial("id").primaryKey(),
+    entryDate: date("entry_date").notNull(),
+    account: varchar("account", { length: 64 }).notNull(), // e.g. "cash", "member_contributions"
+    debitCents: integer("debit_cents").notNull().default(0),
+    creditCents: integer("credit_cents").notNull().default(0),
+    description: text("description").notNull(),
+    // Link to the source document (bank statement, transfer confirmation).
+    sourceUrl: text("source_url"),
+    correctingOfId: integer("correcting_of_id"), // references accountingEntries.id
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("accounting_entries_date_idx").on(t.entryDate),
+    index("accounting_entries_account_idx").on(t.account),
+  ],
+);
+
+export type AccountingEntry = typeof accountingEntries.$inferSelect;
+export type NewAccountingEntry = typeof accountingEntries.$inferInsert;
