@@ -38,6 +38,7 @@ export default function AccountingPage() {
   const [side, setSide] = useState<"debit" | "credit">("debit");
   const [description, setDescription] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
 
   const load = useCallback(async () => {
     const adminToken = localStorage.getItem("admin_token") ?? "";
@@ -102,6 +103,7 @@ export default function AccountingPage() {
     setAmount("");
     setDescription("");
     setSourceUrl("");
+    setModalOpen(false);
     load();
   }
 
@@ -120,12 +122,36 @@ export default function AccountingPage() {
           <h1 className="text-2xl font-bold text-[#3ba4dc]">
             ⚖️ Accounting Ledger
           </h1>
-          <a
-            href="/api/admin/accounting/export"
-            className="text-sm text-gray-400 hover:text-gray-200 underline"
-          >
-            Export CSV
-          </a>
+          <div className="flex items-center gap-2">
+            <a
+              href="/api/admin/accounting/export"
+              title="Export CSV"
+              aria-label="Export CSV"
+              className="p-2 rounded-lg bg-gray-900 text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </a>
+            <button
+              onClick={() => setModalOpen(true)}
+              className="py-2 px-3 rounded-lg bg-[#3ba4dc] text-white font-semibold hover:bg-[#2990c5] transition-colors text-sm"
+            >
+              Record entry
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
@@ -139,81 +165,7 @@ export default function AccountingPage() {
               </p>
             </div>
           ))}
-          {balances.length === 0 && (
-            <p className="text-gray-500 text-sm col-span-3">
-              No entries yet — the ledger is empty.
-            </p>
-          )}
         </div>
-
-        <form
-          onSubmit={handleSubmit}
-          className="bg-gray-900 rounded-lg p-4 mb-8 grid grid-cols-1 sm:grid-cols-2 gap-3"
-        >
-          <input
-            type="date"
-            required
-            value={entryDate}
-            onChange={(e) => setEntryDate(e.target.value)}
-            className="bg-gray-800 text-white rounded px-3 py-2 text-sm"
-          />
-          <input
-            placeholder="account (e.g. cash, member_contributions)"
-            required
-            value={account}
-            onChange={(e) => setAccount(e.target.value)}
-            className="bg-gray-800 text-white rounded px-3 py-2 text-sm"
-          />
-          <div className="flex gap-2">
-            <select
-              value={side}
-              onChange={(e) => setSide(e.target.value as "debit" | "credit")}
-              className="bg-gray-800 text-white rounded px-3 py-2 text-sm"
-            >
-              <option value="debit">Debit</option>
-              <option value="credit">Credit</option>
-            </select>
-            <input
-              type="number"
-              step="0.01"
-              min="0.01"
-              placeholder="amount"
-              required
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="bg-gray-800 text-white rounded px-3 py-2 text-sm flex-1"
-            />
-          </div>
-          <input
-            placeholder="source document URL (bank statement, receipt)"
-            value={sourceUrl}
-            onChange={(e) => setSourceUrl(e.target.value)}
-            className="bg-gray-800 text-white rounded px-3 py-2 text-sm"
-          />
-          <input
-            placeholder="description"
-            required
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="bg-gray-800 text-white rounded px-3 py-2 text-sm sm:col-span-2"
-          />
-          <button
-            type="submit"
-            disabled={status === "loading"}
-            className="sm:col-span-2 py-2 rounded-lg bg-[#3ba4dc] text-white font-semibold hover:bg-[#2990c5] transition-colors disabled:opacity-50 text-sm"
-          >
-            {status === "loading" ? "Recording…" : "Record entry"}
-          </button>
-          {message && (
-            <p
-              className={`sm:col-span-2 text-xs ${
-                status === "error" ? "text-red-400" : "text-gray-400"
-              }`}
-            >
-              {message}
-            </p>
-          )}
-        </form>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -269,6 +221,112 @@ export default function AccountingPage() {
           </table>
         </div>
       </div>
+
+      {modalOpen && (
+        <div
+          className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50"
+          onClick={() => setModalOpen(false)}
+        >
+          <div
+            className="bg-gray-900 rounded-lg p-6 w-full max-w-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">Record entry</h2>
+              <button
+                onClick={() => setModalOpen(false)}
+                aria-label="Close"
+                className="text-gray-400 hover:text-gray-200"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <form
+              onSubmit={handleSubmit}
+              className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+            >
+              <input
+                type="date"
+                required
+                value={entryDate}
+                onChange={(e) => setEntryDate(e.target.value)}
+                className="bg-gray-800 text-white rounded px-3 py-2 text-sm"
+              />
+              <input
+                placeholder="account (e.g. cash, member_contributions)"
+                required
+                value={account}
+                onChange={(e) => setAccount(e.target.value)}
+                className="bg-gray-800 text-white rounded px-3 py-2 text-sm"
+              />
+              <div className="flex gap-2">
+                <select
+                  value={side}
+                  onChange={(e) =>
+                    setSide(e.target.value as "debit" | "credit")
+                  }
+                  className="bg-gray-800 text-white rounded px-3 py-2 text-sm"
+                >
+                  <option value="debit">Debit</option>
+                  <option value="credit">Credit</option>
+                </select>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  placeholder="amount"
+                  required
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="bg-gray-800 text-white rounded px-3 py-2 text-sm flex-1"
+                />
+              </div>
+              <input
+                placeholder="source document URL (bank statement, receipt)"
+                value={sourceUrl}
+                onChange={(e) => setSourceUrl(e.target.value)}
+                className="bg-gray-800 text-white rounded px-3 py-2 text-sm"
+              />
+              <input
+                placeholder="description"
+                required
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="bg-gray-800 text-white rounded px-3 py-2 text-sm sm:col-span-2"
+              />
+              <button
+                type="submit"
+                disabled={status === "loading"}
+                className="sm:col-span-2 py-2 rounded-lg bg-[#3ba4dc] text-white font-semibold hover:bg-[#2990c5] transition-colors disabled:opacity-50 text-sm"
+              >
+                {status === "loading" ? "Recording…" : "Record entry"}
+              </button>
+              {message && (
+                <p
+                  className={`sm:col-span-2 text-xs ${
+                    status === "error" ? "text-red-400" : "text-gray-400"
+                  }`}
+                >
+                  {message}
+                </p>
+              )}
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
