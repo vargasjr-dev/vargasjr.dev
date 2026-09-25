@@ -1,10 +1,12 @@
 /**
  * GET /api/github-stats
  *
- * Returns a GitHub-style contribution grid SVG showing PRs merged per day
- * across the vargasjr-dev org, split between Vargas (@dvargas92495) and
- * VargasJR (app/vargas-jr). Each cell has a <title> tooltip with the
- * per-day breakdown on hover.
+ * Returns a GitHub-style contribution grid SVG split between Vargas
+ * (dvargasfuertes) and VargasJR (app/vargas-jr). Vargas's series uses his
+ * real GitHub contribution calendar (commits, PRs, issues, reviews across
+ * all repos, matching the green graph on his profile). VargasJR's series
+ * counts merged PRs authored by the app across all repos. Each cell has a
+ * <title> tooltip with the per-day breakdown on hover.
  *
  * Auth: uses GITHUB_PRIVATE_KEY env var (PKCS#1 RSA PEM, already in Vercel)
  * to mint a GitHub App installation token via node:crypto — no PAT needed.
@@ -38,7 +40,7 @@ const historicalCache = new Map<string, DayData>();
 let recentCache: { fetchedAt: number; data: GridData } | null = null;
 let blobLoaded = false; // track if we've already tried to load from Blob this instance
 const RECENT_TTL_MS = 60 * 60 * 1000; // re-fetch recent window every 1h
-const BLOB_CACHE_KEY = "github-stats-cache.json";
+const BLOB_CACHE_KEY = "github-stats-cache-v2.json";
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -102,7 +104,7 @@ async function fetchPRsForRange(
       const after = cursor ? `, after: "${cursor}"` : "";
       const query = `{
         search(
-          query: "is:pr is:merged org:vargasjr-dev ${authorQuery} merged:>=${sinceDate}"
+          query: "is:pr is:merged ${authorQuery} merged:>=${sinceDate}"
           type: ISSUE
           first: 100
           ${after}
@@ -141,11 +143,65 @@ async function fetchPRsForRange(
   }
 
   await Promise.all([
-    fetchForAuthor("author:dvargas92495", "vargas"),
     fetchForAuthor("author:app/vargas-jr", "vargasJR"),
+    fetchVargasContributions(token, sinceDate, grid),
   ]);
 
   return grid;
+}
+
+// Vargas's series comes from his real GitHub contribution calendar so direct
+// commits, issues, and reviews count (matching GitHub's own green graph).
+// The calendar is a single payload with no pagination.
+async function fetchVargasContributions(
+  token: string,
+  sinceDate: string,
+  grid: GridData,
+): Promise<void> {
+  const logins = ["dvargasfuertes", "dvargas92495"];
+
+  for (const login of logins) {
+    const query = `{
+      user(login: "${login}") {
+        contributionsCollection(from: "${sinceDate}T00:00:00Z") {
+          contributionCalendar {
+            weeks {
+              contributionDays {
+                date
+                contributionCount
+              }
+            }
+          }
+        }
+      }
+    }`;
+
+    const res = await fetch(GITHUB_GRAPHQL_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query }),
+    });
+    if (!res.ok) return;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data: any = await res.json();
+    const user = data.data?.user;
+    if (!user) continue; // try the next login
+
+    const weeks =
+      user.contributionsCollection?.contributionCalendar?.weeks ?? [];
+    for (const week of weeks) {
+      for (const day of week.contributionDays ?? []) {
+        if (!day.date) continue;
+        if (!grid[day.date]) grid[day.date] = { vargas: 0, vargasJR: 0 };
+        grid[day.date].vargas += day.contributionCount ?? 0;
+      }
+    }
+    return;
+  }
 }
 
 // ── Vercel Blob persistence ───────────────────────────────────────────────────
@@ -332,8 +388,8 @@ function generateSVG(grid: GridData): string {
       });
       const tip =
         total === 0
-          ? `${label}: no PRs`
-          : `${label}: ${total} PR${total !== 1 ? "s" : ""} — Vargas ${data.vargas}, VargasJR ${data.vargasJR}`;
+          ? `${label}: no activity`
+          : `${label}: Vargas ${data.vargas} contribution${data.vargas !== 1 ? "s" : ""}, VargasJR ${data.vargasJR} merged PR${data.vargasJR !== 1 ? "s" : ""}`;
 
       cells.push(
         `<rect x="${x}" y="${y}" width="${CELL}" height="${CELL}" rx="2" fill="${color}" opacity="${opacity}"><title>${tip}</title></rect>`,
