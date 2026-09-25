@@ -1,0 +1,7 @@
+<svg width="70" height="20" viewBox="0 0 70 20" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Twitter">
+  <rect width="70" height="20" rx="3" fill="#1DA1F2"/>
+  <g transform="translate(5,4) scale(0.5)">
+    <path fill="#ffffff" d="M23.95 4.57a10 10 0 0 1-2.82.77 4.96 4.96 0 0 0 2.16-2.72c-.95.56-2.01.96-3.13 1.18a4.92 4.92 0 0 0-8.38 4.48A13.94 13.94 0 0 1 1.64 3.16a4.92 4.92 0 0 0 1.52 6.57 4.9 4.9 0 0 1-2.23-.61v.06a4.92 4.92 0 0 0 3.95 4.83 4.96 4.96 0 0 1-2.22.08 4.93 4.93 0 0 0 4.6 3.42A9.87 9.87 0 0 1 0 19.54a13.9 13.9 0 0 0 7.55 2.21c9.06 0 14.01-7.5 14.01-14.01 0-.21 0-.42-.02-.63a10 10 0 0 0 2.41-2.54z"/>
+  </g>
+  <text x="21" y="14" fill="#ffffff" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11">Twitter</text>
+</svg>
