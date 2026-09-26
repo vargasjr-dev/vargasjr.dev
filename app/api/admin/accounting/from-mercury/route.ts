@@ -10,12 +10,14 @@ import {
   type MercuryTransaction,
 } from "@/lib/mercury";
 
-// POST /api/admin/accounting/parse — turn a Mercury dashboard transaction
-// link into a pre-filled ledger entry draft for the manual-entry modal.
+// POST /api/admin/accounting/from-mercury — parse a Mercury dashboard
+// transaction link and record the ledger entry in one action.
 //
 // Body: { url: string } — any Mercury dashboard link that embeds the
-// transaction UUID. Returns the draft plus a warning if the transaction is
-// still pending or was already ingested (so we never double-count).
+// transaction UUID. The entry is stamped with external_id = "mercury:<txId>"
+// so the daily cron ingest skips it (unique + ON CONFLICT DO NOTHING) —
+// pending transactions included: once it settles on Mercury, the nightly
+// run will see it already in the ledger and no-op.
 
 function isAuthorized(request: Request): boolean {
   return request.headers.get("x-admin-token") === process.env.ADMIN_TOKEN;
@@ -58,7 +60,7 @@ export async function POST(request: Request) {
     tx.status === "blocked"
   ) {
     return NextResponse.json(
-      { error: `Transaction is ${tx.status} — nothing to record.` },
+      { error: `Transaction is ${tx.status} on Mercury — nothing to record.` },
       { status: 422 },
     );
   }
@@ -69,28 +71,29 @@ export async function POST(request: Request) {
     .from(accountingEntries)
     .where(eq(accountingEntries.externalId, externalId))
     .limit(1);
+  if (existing.length > 0) {
+    return NextResponse.json(
+      { alreadyIngested: existing[0].id },
+      { status: 200 },
+    );
+  }
 
   const centsValue = Math.round(Math.abs(tx.amount) * 100);
-  return NextResponse.json({
-    draft: {
+  const [entry] = await db
+    .insert(accountingEntries)
+    .values({
       entryDate: (tx.postedAt ?? tx.createdAt).slice(0, 10),
       account: mercuryLedgerAccount(),
-      side: tx.amount > 0 ? ("debit" as const) : ("credit" as const),
-      amount: (centsValue / 100).toFixed(2),
+      debitCents: tx.amount > 0 ? centsValue : 0, // money in = debit to cash
+      creditCents: tx.amount < 0 ? centsValue : 0, // money out = credit to cash
       description: descriptionFor(tx),
       sourceUrl: tx.dashboardLink,
       externalId,
-    },
-    // Not blockers — surfaced so the operator can decide.
-    warnings: {
-      pending:
-        tx.status === "pending"
-          ? "Transaction is still pending on Mercury."
-          : null,
-      alreadyIngested:
-        existing.length > 0
-          ? `Already in the ledger as entry #${existing[0].id}.`
-          : null,
-    },
-  });
+    })
+    .returning();
+
+  return NextResponse.json(
+    { entry, pending: tx.status === "pending" },
+    { status: 201 },
+  );
 }
