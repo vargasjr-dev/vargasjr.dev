@@ -2,14 +2,16 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { accountingEntries, accountingEntryEdits } from "@/db/schema";
+import { isLedgerCategory } from "@/lib/ledger";
 
-// PATCH /api/admin/accounting/[id] — edit an entry's description in place.
+// PATCH /api/admin/accounting/[id] — edit an entry's description and/or
+// category in place.
 //
 // The ledger's financial substance (amount, date, account, correcting links)
 // is immutable: this endpoint explicitly rejects any payload that carries
 // those fields. Wrong amounts/dates get a correcting entry instead. Every
-// accepted description change is recorded in accounting_entry_edits before
-// the row is updated, so the audit trail is the source of truth.
+// accepted change is recorded in accounting_entry_edits before the row is
+// updated, so the audit trail is the source of truth.
 
 function isAuthorized(request: Request): boolean {
   return request.headers.get("x-admin-token") === process.env.ADMIN_TOKEN;
@@ -50,14 +52,38 @@ export async function PATCH(
     );
   }
 
-  const description: unknown = body.description;
-  if (
-    typeof description !== "string" ||
-    description.trim().length === 0 ||
-    description.trim().length > 500
-  ) {
+  // Both fields optional; at least one must be present.
+  let nextDescription: string | undefined;
+  if ("description" in body) {
+    const description: unknown = body.description;
+    if (
+      typeof description !== "string" ||
+      description.trim().length === 0 ||
+      description.trim().length > 500
+    ) {
+      return NextResponse.json(
+        { error: "description must be 1-500 characters" },
+        { status: 400 },
+      );
+    }
+    nextDescription = description.trim();
+  }
+
+  let nextCategory: string | null | undefined;
+  if ("category" in body) {
+    const category: unknown = body.category;
+    if (category !== null && !isLedgerCategory(category)) {
+      return NextResponse.json(
+        { error: "category must be one of the ledger categories" },
+        { status: 400 },
+      );
+    }
+    nextCategory = (category as string | null) ?? null;
+  }
+
+  if (nextDescription === undefined && nextCategory === undefined) {
     return NextResponse.json(
-      { error: "description must be 1-500 characters" },
+      { error: "nothing to update — send description and/or category" },
       { status: 400 },
     );
   }
@@ -71,20 +97,31 @@ export async function PATCH(
     return NextResponse.json({ error: "Entry not found" }, { status: 404 });
   }
 
-  const newDescription = description.trim();
-  if (newDescription === entry.description) {
+  const descriptionChanged =
+    nextDescription !== undefined && nextDescription !== entry.description;
+  const categoryChanged =
+    nextCategory !== undefined && nextCategory !== entry.category;
+
+  if (!descriptionChanged && !categoryChanged) {
     return NextResponse.json({ entry });
   }
 
-  // Audit row first, update second.
+  // Audit row first, update second. One row per action even if both fields
+  // changed together — old/new pairs are null when that field didn't change.
   await db.insert(accountingEntryEdits).values({
     entryId,
-    oldDescription: entry.description,
-    newDescription,
+    oldDescription: descriptionChanged ? entry.description : null,
+    newDescription: descriptionChanged ? nextDescription! : null,
+    oldCategory: categoryChanged ? entry.category : null,
+    newCategory: categoryChanged ? nextCategory! : null,
   });
+
   const [updated] = await db
     .update(accountingEntries)
-    .set({ description: newDescription })
+    .set({
+      ...(descriptionChanged ? { description: nextDescription! } : {}),
+      ...(categoryChanged ? { category: nextCategory! } : {}),
+    })
     .where(eq(accountingEntries.id, entryId))
     .returning();
 

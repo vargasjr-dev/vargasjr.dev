@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     .orderBy(asc(accountingEntries.entryDate), asc(accountingEntries.id));
 
   const header =
-    "id,entry_date,account,debit_cents,credit_cents,description,source_url,correcting_of_id,created_at";
+    "id,entry_date,account,category,debit_cents,credit_cents,description,source_url,correcting_of_id,created_at";
   const rows = entries.map((e) =>
     [
       e.id,
@@ -23,6 +23,7 @@ export async function GET(request: Request) {
       e.account,
       e.debitCents,
       e.creditCents,
+      e.category ?? "",
       e.description,
       e.sourceUrl ?? "",
       e.correctingOfId ?? "",

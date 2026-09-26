@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { LEDGER_CATEGORIES } from "@/lib/ledger";
 
 type Entry = {
   id: number;
@@ -10,6 +11,7 @@ type Entry = {
   debitCents: number;
   creditCents: number;
   description: string;
+  category: string | null;
   sourceUrl: string | null;
   correctingOfId: number | null;
   editCount: number;
@@ -39,6 +41,7 @@ export default function AccountingPage() {
   const [amount, setAmount] = useState("");
   const [side, setSide] = useState<"debit" | "credit">("debit");
   const [description, setDescription] = useState("");
+  const [category, setCategory] = useState<string>("");
   const [sourceUrl, setSourceUrl] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"link" | "manual">("link");
@@ -52,6 +55,10 @@ export default function AccountingPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editDraft, setEditDraft] = useState("");
   const [editSaving, setEditSaving] = useState(false);
+  // Inline category editing in the table
+  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(
+    null,
+  );
 
   const load = useCallback(async () => {
     const adminToken = localStorage.getItem("admin_token") ?? "";
@@ -100,6 +107,7 @@ export default function AccountingPage() {
         account,
         [side === "debit" ? "debitCents" : "creditCents"]: centsValue,
         description,
+        category: category || null,
         sourceUrl: sourceUrl || null,
       }),
     });
@@ -115,6 +123,7 @@ export default function AccountingPage() {
     setMessage(`Entry #${data.entry.id} recorded.`);
     setAmount("");
     setDescription("");
+    setCategory("");
     setSourceUrl("");
     setModalOpen(false);
     setModalMode("link");
@@ -203,6 +212,28 @@ export default function AccountingPage() {
     load();
   }
 
+  // Categories save immediately on pick — they're metadata, not substance.
+  async function saveCategoryEdit(entryId: number, next: string) {
+    setEditingCategoryId(null);
+
+    const adminToken = localStorage.getItem("admin_token") ?? "";
+    const res = await fetch(`/api/admin/accounting/${entryId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-token": adminToken,
+      },
+      body: JSON.stringify({ category: next || null }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      setMessage(data.error ?? "Failed to update category.");
+      return;
+    }
+    load();
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen bg-gray-950 flex items-center justify-center">
@@ -269,6 +300,7 @@ export default function AccountingPage() {
               <tr className="text-left text-gray-400 border-b border-gray-800">
                 <th className="py-2 pr-4">Date</th>
                 <th className="py-2 pr-4">Account</th>
+                <th className="py-2 pr-4">Category</th>
                 <th className="py-2 pr-4 text-right">Debit</th>
                 <th className="py-2 pr-4 text-right">Credit</th>
                 <th className="py-2 pr-4">Description</th>
@@ -283,6 +315,38 @@ export default function AccountingPage() {
                   </td>
                   <td className="py-2 pr-4 text-gray-400">
                     {e.account.replace(/_/g, " ")}
+                  </td>
+                  <td className="py-2 pr-4 text-gray-400">
+                    {editingCategoryId === e.id ? (
+                      <select
+                        autoFocus
+                        defaultValue={e.category ?? ""}
+                        onChange={(ev) =>
+                          saveCategoryEdit(e.id, ev.target.value)
+                        }
+                        onBlur={() => setEditingCategoryId(null)}
+                        className="bg-gray-800 text-white rounded px-2 py-1 text-sm"
+                      >
+                        <option value="">—</option>
+                        {LEDGER_CATEGORIES.map((c) => (
+                          <option key={c} value={c}>
+                            {c.replace(/_/g, " ")}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <button
+                        onClick={() => setEditingCategoryId(e.id)}
+                        title="Change category"
+                        className="text-left hover:text-gray-200"
+                      >
+                        {e.category ? (
+                          e.category.replace(/_/g, " ")
+                        ) : (
+                          <span className="text-gray-600">set category</span>
+                        )}
+                      </button>
+                    )}
                   </td>
                   <td className="py-2 pr-4 text-right text-gray-300">
                     {e.debitCents ? cents(e.debitCents) : ""}
@@ -502,6 +566,18 @@ export default function AccountingPage() {
                   onChange={(e) => setAccount(e.target.value)}
                   className="bg-gray-800 text-white rounded px-3 py-2 text-sm"
                 />
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="bg-gray-800 text-white rounded px-3 py-2 text-sm"
+                >
+                  <option value="">category (optional)</option>
+                  {LEDGER_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c.replace(/_/g, " ")}
+                    </option>
+                  ))}
+                </select>
                 <div className="flex gap-2">
                   <select
                     value={side}
