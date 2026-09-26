@@ -67,6 +67,10 @@ export const accountingEntries = pgTable(
     // Stable identity of the source record (e.g. "mercury:<tx-uuid>") so
     // automated ingests are idempotent. Null for manual entries.
     externalId: varchar("external_id", { length: 128 }).unique(),
+    // Tax-reporting category (Schedule C lines for Vargas JR, LLC). Metadata,
+    // not financial substance — reassignable, changes audited in
+    // accounting_entry_edits. See lib/ledger.ts for the taxonomy.
+    category: varchar("category", { length: 64 }),
     correctingOfId: integer("correcting_of_id"), // references accountingEntries.id
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -81,9 +85,9 @@ export const accountingEntries = pgTable(
 export type AccountingEntry = typeof accountingEntries.$inferSelect;
 export type NewAccountingEntry = typeof accountingEntries.$inferInsert;
 
-// Audit trail for description edits on ledger entries. Financial fields
-// (amount, date, account) are immutable — only descriptions may be corrected
-// in place, and every change is recorded here first.
+// Audit trail for edits on ledger entries. Financial fields
+// (amount, date, account) are immutable — only descriptions and categories
+// may be corrected in place, and every change is recorded here first.
 export const accountingEntryEdits = pgTable(
   "accounting_entry_edits",
   {
@@ -91,8 +95,10 @@ export const accountingEntryEdits = pgTable(
     entryId: integer("entry_id")
       .notNull()
       .references(() => accountingEntries.id, { onDelete: "cascade" }),
-    oldDescription: text("old_description").notNull(),
-    newDescription: text("new_description").notNull(),
+    oldDescription: text("old_description"),
+    newDescription: text("new_description"),
+    oldCategory: varchar("old_category", { length: 64 }),
+    newCategory: varchar("new_category", { length: 64 }),
     editedAt: timestamp("edited_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

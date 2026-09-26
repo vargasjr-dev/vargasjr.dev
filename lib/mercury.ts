@@ -20,6 +20,7 @@ export type MercuryTransaction = {
   bankDescription: string | null;
   note: string | null;
   kind: string;
+  mercuryCategory: string | null;
   createdAt: string; // UTC datetime
   postedAt: string | null; // UTC datetime, null while pending
   dashboardLink: string;

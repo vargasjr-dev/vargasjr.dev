@@ -8,6 +8,7 @@ import {
   type MercuryAccount,
   type MercuryTransaction,
 } from "@/lib/mercury";
+import { categoryFromMercury } from "@/lib/ledger";
 
 // Daily ingest of Mercury bank transactions into the accounting ledger.
 //
@@ -85,6 +86,7 @@ async function ingestAccount(
         debitCents: tx.amount > 0 ? centsValue : 0, // money in = debit to cash
         creditCents: tx.amount < 0 ? centsValue : 0, // money out = credit to cash
         description: descriptionFor(tx),
+        category: categoryFromMercury(tx.mercuryCategory, tx.kind),
         sourceUrl: tx.dashboardLink,
         externalId: `mercury:${tx.id}`,
       };

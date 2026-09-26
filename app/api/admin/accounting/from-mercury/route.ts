@@ -9,6 +9,7 @@ import {
   transactionIdFromUrl,
   type MercuryTransaction,
 } from "@/lib/mercury";
+import { categoryFromMercury } from "@/lib/ledger";
 
 // POST /api/admin/accounting/from-mercury — parse a Mercury dashboard
 // transaction link and record the ledger entry in one action.
@@ -87,6 +88,7 @@ export async function POST(request: Request) {
       debitCents: tx.amount > 0 ? centsValue : 0, // money in = debit to cash
       creditCents: tx.amount < 0 ? centsValue : 0, // money out = credit to cash
       description: descriptionFor(tx),
+      category: categoryFromMercury(tx.mercuryCategory, tx.kind),
       sourceUrl: tx.dashboardLink,
       externalId,
     })

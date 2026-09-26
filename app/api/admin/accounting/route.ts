@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { desc, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { accountingEntries, accountingEntryEdits } from "@/db/schema";
+import { isLedgerCategory } from "@/lib/ledger";
 
 function isAuthorized(request: Request): boolean {
   return request.headers.get("x-admin-token") === process.env.ADMIN_TOKEN;
@@ -64,6 +65,7 @@ export async function POST(request: Request) {
   const sourceUrl: unknown = body.sourceUrl;
   const correctingOfId: unknown = body.correctingOfId;
   const externalId: unknown = body.externalId;
+  const category: unknown = body.category;
 
   if (typeof entryDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(entryDate)) {
     return NextResponse.json(
@@ -128,6 +130,16 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  if (
+    category !== undefined &&
+    category !== null &&
+    !isLedgerCategory(category)
+  ) {
+    return NextResponse.json(
+      { error: "category must be one of the ledger categories" },
+      { status: 400 },
+    );
+  }
 
   const [entry] = await db
     .insert(accountingEntries)
@@ -140,6 +152,7 @@ export async function POST(request: Request) {
       sourceUrl: (sourceUrl as string | null | undefined) ?? null,
       correctingOfId: (correctingOfId as number | null | undefined) ?? null,
       externalId: (externalId as string | null | undefined) ?? null,
+      category: (category as string | null | undefined) ?? null,
     })
     .returning();
 
