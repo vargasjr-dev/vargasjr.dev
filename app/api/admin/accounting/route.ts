@@ -46,6 +46,7 @@ export async function POST(request: Request) {
   const creditCents: unknown = body.creditCents ?? 0;
   const sourceUrl: unknown = body.sourceUrl;
   const correctingOfId: unknown = body.correctingOfId;
+  const externalId: unknown = body.externalId;
 
   if (typeof entryDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(entryDate)) {
     return NextResponse.json(
@@ -100,6 +101,16 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  if (
+    externalId !== undefined &&
+    externalId !== null &&
+    typeof externalId !== "string"
+  ) {
+    return NextResponse.json(
+      { error: "externalId must be a string" },
+      { status: 400 },
+    );
+  }
 
   const [entry] = await db
     .insert(accountingEntries)
@@ -111,6 +122,7 @@ export async function POST(request: Request) {
       description: description.trim(),
       sourceUrl: (sourceUrl as string | null | undefined) ?? null,
       correctingOfId: (correctingOfId as number | null | undefined) ?? null,
+      externalId: (externalId as string | null | undefined) ?? null,
     })
     .returning();
 
