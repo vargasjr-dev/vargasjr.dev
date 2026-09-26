@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { accountingEntries } from "@/db/schema";
+import {
+  descriptionFor,
+  mercuryFetch,
+  mercuryLedgerAccount,
+  type MercuryAccount,
+  type MercuryTransaction,
+} from "@/lib/mercury";
 
 // Daily ingest of Mercury bank transactions into the accounting ledger.
 //
@@ -22,24 +29,10 @@ import { accountingEntries } from "@/db/schema";
 // inserted with ON CONFLICT DO NOTHING, so re-runs never duplicate rows. The
 // ledger stays append-only — corrections are manual entries via the UI.
 
-const MERCURY_BASE = "https://api.mercury.com/api/v1";
 const LOOKBACK_DAYS = 7; // overlap window so late-posting transactions aren't missed
 
-type MercuryTransaction = {
-  id: string;
-  amount: number; // dollars; negative = money out
-  status: "pending" | "sent" | "cancelled" | "failed" | "reversed" | "blocked";
-  counterpartyName: string | null;
-  bankDescription: string | null;
-  note: string | null;
-  kind: string;
-  createdAt: string; // UTC datetime
-  postedAt: string | null; // UTC datetime, null while pending
-  dashboardLink: string;
-};
-
 type MercuryAccountsResponse = {
-  accounts: { id: string; name: string }[];
+  accounts: MercuryAccount[];
   total?: number;
 };
 
@@ -55,32 +48,9 @@ function isAuthorized(request: Request): boolean {
   return request.headers.get("x-admin-token") === process.env.ADMIN_TOKEN;
 }
 
-async function mercuryFetch<T>(path: string, apiKey: string): Promise<T> {
-  const res = await fetch(`${MERCURY_BASE}${path}`, {
-    headers: {
-      accept: "application/json",
-      authorization: `Bearer ${apiKey}`,
-    },
-  });
-  if (!res.ok) {
-    throw new Error(
-      `Mercury API ${path} failed: ${res.status} ${await res.text()}`,
-    );
-  }
-  return res.json() as Promise<T>;
-}
-
-function descriptionFor(tx: MercuryTransaction): string {
-  const primary =
-    tx.counterpartyName ?? tx.bankDescription ?? tx.note ?? tx.kind;
-  const secondary = tx.note && tx.note !== primary ? ` — ${tx.note}` : "";
-  return `${primary}${secondary}`.slice(0, 500);
-}
-
 async function ingestAccount(
   accountId: string,
   accountName: string,
-  apiKey: string,
   ledgerAccount: string,
 ): Promise<{ account: string; fetched: number; inserted: number }> {
   const start = new Date();
@@ -94,7 +64,6 @@ async function ingestAccount(
   while (fetched.length < total) {
     const page = await mercuryFetch<MercuryTransactionsResponse>(
       `/account/${accountId}/transactions?limit=1000&offset=${offset}&start=${startParam}&status=sent`,
-      apiKey,
     );
     total = page.total;
     fetched.push(...page.transactions);
@@ -147,16 +116,14 @@ export async function GET(request: Request) {
     });
   }
 
-  const ledgerAccount = process.env.MERCURY_LEDGER_ACCOUNT || "cash";
+  const ledgerAccount = mercuryLedgerAccount();
   const accountFilter = process.env.MERCURY_ACCOUNT_IDS
     ? new Set(process.env.MERCURY_ACCOUNT_IDS.split(",").map((s) => s.trim()))
     : null;
 
   try {
-    const accountsResponse = await mercuryFetch<MercuryAccountsResponse>(
-      "/accounts",
-      apiKey,
-    );
+    const accountsResponse =
+      await mercuryFetch<MercuryAccountsResponse>("/accounts");
     const accounts = accountsResponse.accounts.filter(
       (a) => !accountFilter || accountFilter.has(a.id),
     );
@@ -165,7 +132,7 @@ export async function GET(request: Request) {
     for (const account of accounts) {
       try {
         results.push(
-          await ingestAccount(account.id, account.name, apiKey, ledgerAccount),
+          await ingestAccount(account.id, account.name, ledgerAccount),
         );
       } catch (error) {
         // One bad account shouldn't block the others.
