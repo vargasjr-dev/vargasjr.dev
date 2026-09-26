@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { desc, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { accountingEntries } from "@/db/schema";
+import { accountingEntries, accountingEntryEdits } from "@/db/schema";
 
 function isAuthorized(request: Request): boolean {
   return request.headers.get("x-admin-token") === process.env.ADMIN_TOKEN;
@@ -18,6 +18,23 @@ export async function GET(request: Request) {
     .from(accountingEntries)
     .orderBy(desc(accountingEntries.entryDate), desc(accountingEntries.id));
 
+  // Edit audit trail summary per entry, so the UI can show an "(edited)" marker.
+  const editSummaries = await db
+    .select({
+      entryId: accountingEntryEdits.entryId,
+      editCount: sql<number>`count(*)::int`,
+      lastEditedAt: sql<string>`max(${accountingEntryEdits.editedAt})`,
+    })
+    .from(accountingEntryEdits)
+    .groupBy(accountingEntryEdits.entryId);
+  const editsByEntry = new Map(editSummaries.map((s) => [s.entryId, s]));
+
+  const entriesWithEdits = entries.map((entry) => ({
+    ...entry,
+    editCount: editsByEntry.get(entry.id)?.editCount ?? 0,
+    lastEditedAt: editsByEntry.get(entry.id)?.lastEditedAt ?? null,
+  }));
+
   const balances = await db
     .select({
       account: accountingEntries.account,
@@ -27,7 +44,7 @@ export async function GET(request: Request) {
     .from(accountingEntries)
     .groupBy(accountingEntries.account);
 
-  return NextResponse.json({ entries, balances });
+  return NextResponse.json({ entries: entriesWithEdits, balances });
 }
 
 // POST /api/admin/accounting — append a new entry. No update or delete exists:

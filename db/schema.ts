@@ -80,3 +80,25 @@ export const accountingEntries = pgTable(
 
 export type AccountingEntry = typeof accountingEntries.$inferSelect;
 export type NewAccountingEntry = typeof accountingEntries.$inferInsert;
+
+// Audit trail for description edits on ledger entries. Financial fields
+// (amount, date, account) are immutable — only descriptions may be corrected
+// in place, and every change is recorded here first.
+export const accountingEntryEdits = pgTable(
+  "accounting_entry_edits",
+  {
+    id: serial("id").primaryKey(),
+    entryId: integer("entry_id")
+      .notNull()
+      .references(() => accountingEntries.id, { onDelete: "cascade" }),
+    oldDescription: text("old_description").notNull(),
+    newDescription: text("new_description").notNull(),
+    editedAt: timestamp("edited_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("accounting_entry_edits_entry_idx").on(t.entryId)],
+);
+
+export type AccountingEntryEdit = typeof accountingEntryEdits.$inferSelect;
+export type NewAccountingEntryEdit = typeof accountingEntryEdits.$inferInsert;

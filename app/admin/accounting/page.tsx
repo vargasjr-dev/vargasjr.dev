@@ -12,6 +12,8 @@ type Entry = {
   description: string;
   sourceUrl: string | null;
   correctingOfId: number | null;
+  editCount: number;
+  lastEditedAt: string | null;
 };
 
 type Balance = { account: string; debitCents: number; creditCents: number };
@@ -38,15 +40,18 @@ export default function AccountingPage() {
   const [side, setSide] = useState<"debit" | "credit">("debit");
   const [description, setDescription] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
-  const [externalId, setExternalId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"link" | "manual">("link");
   const [mercuryUrl, setMercuryUrl] = useState("");
-  const [parseStatus, setParseStatus] = useState<"idle" | "loading" | "error">(
-    "idle",
-  );
-  const [parseMessage, setParseMessage] = useState("");
-  const [parseWarnings, setParseWarnings] = useState<string[]>([]);
+  const [mercuryStatus, setMercuryStatus] = useState<
+    "idle" | "loading" | "error"
+  >("idle");
+  const [mercuryNotice, setMercuryNotice] = useState("");
+
+  // Inline description editing in the table
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
 
   const load = useCallback(async () => {
     const adminToken = localStorage.getItem("admin_token") ?? "";
@@ -96,7 +101,6 @@ export default function AccountingPage() {
         [side === "debit" ? "debitCents" : "creditCents"]: centsValue,
         description,
         sourceUrl: sourceUrl || null,
-        externalId: externalId || null,
       }),
     });
 
@@ -115,19 +119,17 @@ export default function AccountingPage() {
     setModalOpen(false);
     setModalMode("link");
     setMercuryUrl("");
-    setParseWarnings([]);
-    setExternalId(null);
     load();
   }
 
-  async function handleParse(e: React.FormEvent) {
+  // One shot: parse the Mercury link and record the entry.
+  async function handleMercuryRecord(e: React.FormEvent) {
     e.preventDefault();
-    setParseStatus("loading");
-    setParseMessage("");
-    setParseWarnings([]);
+    setMercuryStatus("loading");
+    setMercuryNotice("");
 
     const adminToken = localStorage.getItem("admin_token") ?? "";
-    const res = await fetch("/api/admin/accounting/parse", {
+    const res = await fetch("/api/admin/accounting/from-mercury", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -138,36 +140,67 @@ export default function AccountingPage() {
 
     const data = await res.json();
     if (!res.ok) {
-      setParseStatus("error");
-      setParseMessage(data.error ?? "Failed to parse link.");
+      setMercuryStatus("error");
+      setMercuryNotice(data.error ?? "Failed to record from link.");
       return;
     }
 
-    setEntryDate(data.draft.entryDate);
-    setAccount(data.draft.account);
-    setSide(data.draft.side);
-    setAmount(data.draft.amount);
-    setDescription(data.draft.description);
-    setSourceUrl(data.draft.sourceUrl);
-    setExternalId(data.draft.externalId);
-    setParseWarnings(
-      [data.warnings?.pending, data.warnings?.alreadyIngested].filter(
-        (w: string | null): w is string => Boolean(w),
-      ),
-    );
-    setModalMode("manual");
-    setParseStatus("idle");
-    setParseMessage("");
+    setMercuryStatus("idle");
+    setMercuryUrl("");
+    setModalOpen(false);
+    setModalMode("link");
+
+    if (data.alreadyIngested) {
+      setMessage(
+        `That transaction is already in the ledger as entry #${data.alreadyIngested}.`,
+      );
+    } else if (data.pending) {
+      setMessage(
+        `Entry #${data.entry.id} recorded from Mercury (transaction still pending). The nightly cron will not duplicate it.`,
+      );
+    } else {
+      setMessage(`Entry #${data.entry.id} recorded from Mercury.`);
+    }
+    load();
   }
 
   function resetModal() {
     setModalOpen(false);
     setModalMode("link");
     setMercuryUrl("");
-    setParseStatus("idle");
-    setParseMessage("");
-    setParseWarnings([]);
-    setExternalId(null);
+    setMercuryStatus("idle");
+    setMercuryNotice("");
+  }
+
+  function startDescriptionEdit(e: Entry) {
+    setEditingId(e.id);
+    setEditDraft(e.description);
+  }
+
+  async function saveDescriptionEdit(entryId: number) {
+    const next = editDraft.trim();
+    if (next.length === 0) return;
+    setEditSaving(true);
+
+    const adminToken = localStorage.getItem("admin_token") ?? "";
+    const res = await fetch(`/api/admin/accounting/${entryId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-token": adminToken,
+      },
+      body: JSON.stringify({ description: next }),
+    });
+    setEditSaving(false);
+
+    const data = await res.json();
+    if (!res.ok) {
+      setMessage(data.error ?? "Failed to update description.");
+      return;
+    }
+    setEditingId(null);
+    setEditDraft("");
+    load();
   }
 
   if (loading) {
@@ -258,11 +291,82 @@ export default function AccountingPage() {
                     {e.creditCents ? cents(e.creditCents) : ""}
                   </td>
                   <td className="py-2 pr-4 text-gray-300">
-                    {e.description}
-                    {e.correctingOfId && (
-                      <span className="text-gray-500">
-                        {" "}
-                        (corr. #{e.correctingOfId})
+                    {editingId === e.id ? (
+                      <span className="flex items-center gap-2">
+                        <input
+                          autoFocus
+                          value={editDraft}
+                          onChange={(ev) => setEditDraft(ev.target.value)}
+                          onKeyDown={(ev) => {
+                            if (ev.key === "Escape") {
+                              setEditingId(null);
+                              setEditDraft("");
+                            }
+                          }}
+                          maxLength={500}
+                          className="bg-gray-800 text-white rounded px-2 py-1 text-sm flex-1 min-w-[12rem]"
+                        />
+                        <button
+                          onClick={() => saveDescriptionEdit(e.id)}
+                          disabled={editSaving}
+                          className="text-[#3ba4dc] hover:underline text-xs whitespace-nowrap"
+                        >
+                          {editSaving ? "Saving…" : "Save"}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingId(null);
+                            setEditDraft("");
+                          }}
+                          className="text-gray-500 hover:text-gray-300 text-xs"
+                        >
+                          Cancel
+                        </button>
+                      </span>
+                    ) : (
+                      <span className="group/desc inline-flex items-center gap-2">
+                        <span>
+                          {e.description}
+                          {e.correctingOfId && (
+                            <span className="text-gray-500">
+                              {" "}
+                              (corr. #{e.correctingOfId})
+                            </span>
+                          )}
+                          {e.editCount > 0 && (
+                            <span
+                              className="text-gray-500 text-xs"
+                              title={`Edited ${e.editCount} time${e.editCount > 1 ? "s" : ""}${
+                                e.lastEditedAt
+                                  ? ` — last ${new Date(e.lastEditedAt).toLocaleString()}`
+                                  : ""
+                              }`}
+                            >
+                              {" "}
+                              (edited)
+                            </span>
+                          )}
+                        </span>
+                        <button
+                          onClick={() => startDescriptionEdit(e)}
+                          title="Edit description"
+                          aria-label={`Edit description of entry #${e.id}`}
+                          className="opacity-0 group-hover/desc:opacity-100 transition-opacity text-gray-500 hover:text-gray-300"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                          </svg>
+                        </button>
                       </span>
                     )}
                   </td>
@@ -336,9 +440,8 @@ export default function AccountingPage() {
               <button
                 onClick={() => {
                   setModalMode("manual");
-                  setParseStatus("idle");
-                  setParseMessage("");
-                  setParseWarnings([]);
+                  setMercuryStatus("idle");
+                  setMercuryNotice("");
                 }}
                 className={`px-3 py-1 rounded text-sm transition-colors ${
                   modalMode === "manual"
@@ -351,7 +454,7 @@ export default function AccountingPage() {
             </div>
 
             {modalMode === "link" && (
-              <form onSubmit={handleParse} className="space-y-3">
+              <form onSubmit={handleMercuryRecord} className="space-y-3">
                 <input
                   type="url"
                   placeholder="https://app.mercury.com/transactions/…"
@@ -362,17 +465,20 @@ export default function AccountingPage() {
                 />
                 <button
                   type="submit"
-                  disabled={parseStatus === "loading"}
+                  disabled={mercuryStatus === "loading"}
                   className="py-2 rounded-lg bg-[#3ba4dc] text-white font-semibold hover:bg-[#2990c5] transition-colors disabled:opacity-50 text-sm w-full"
                 >
-                  {parseStatus === "loading" ? "Parsing…" : "Parse transaction"}
+                  {mercuryStatus === "loading"
+                    ? "Recording…"
+                    : "Record entry from Mercury"}
                 </button>
-                {parseMessage && (
-                  <p className="text-xs text-red-400">{parseMessage}</p>
+                {mercuryNotice && (
+                  <p className="text-xs text-red-400">{mercuryNotice}</p>
                 )}
                 <p className="text-xs text-gray-500">
-                  Paste a Mercury dashboard transaction link and it will be
-                  pre-filled for review — nothing is recorded until you submit.
+                  Fetches the transaction from Mercury and records it
+                  immediately. Amounts, dates, and accounts are immutable once
+                  recorded — descriptions can be edited in the table below.
                 </p>
               </form>
             )}
@@ -382,18 +488,6 @@ export default function AccountingPage() {
                 onSubmit={handleSubmit}
                 className="grid grid-cols-1 sm:grid-cols-2 gap-3"
               >
-                {parseWarnings.length > 0 && (
-                  <div className="sm:col-span-2 space-y-1">
-                    {parseWarnings.map((w) => (
-                      <p
-                        key={w}
-                        className="text-xs text-yellow-400 bg-yellow-400/10 rounded px-2 py-1"
-                      >
-                        ⚠ {w}
-                      </p>
-                    ))}
-                  </div>
-                )}
                 <input
                   type="date"
                   required

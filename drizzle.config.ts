@@ -13,7 +13,12 @@ export default {
   // The production database is shared with tables owned by other products.
   // Scope push to the tables this app owns so drizzle-kit never prompts to
   // drop foreign tables (which aborts the CI runner non-interactively).
-  tablesFilter: ["emails", "gmail_connection", "accounting_entries"],
+  tablesFilter: [
+    "emails",
+    "gmail_connection",
+    "accounting_entries",
+    "accounting_entry_edits",
+  ],
   dbCredentials: {
     url: databaseUrl,
   },
