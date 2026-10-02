@@ -6,6 +6,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 
 const VARGAS_ADDRESS = "vargas@vargasjr.dev";
 const HELLO_ADDRESS = "hello@vargasjr.dev";
+const SUPPORT_ADDRESS = "support@mycadet.ai";
 const FORWARD_TO = "dvargasfuertes@gmail.com";
 
 async function forwardEmail(data: Record<string, unknown>): Promise<void> {
@@ -153,9 +154,10 @@ export async function POST(req: NextRequest) {
 
   // ── Routing ──────────────────────────────────────────────────────────────
   // vargas@ → forward to personal Gmail
+  // support@mycadet.ai → forward to personal Gmail
   // hello@  → store in DB (webhook inbox)
   // other   → drop
-  if (to === VARGAS_ADDRESS) {
+  if (to === VARGAS_ADDRESS || to === SUPPORT_ADDRESS) {
     await forwardEmail(data);
     console.log(
       `[resend webhook] forwarded ${messageId} from ${from} → ${FORWARD_TO}`,
