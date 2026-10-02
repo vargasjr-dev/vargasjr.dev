@@ -14,12 +14,41 @@ async function forwardEmail(data: Record<string, unknown>): Promise<void> {
 
   const originalFrom = (data.from as string) ?? "";
   const subject = (data.subject as string) ?? "(no subject)";
-  const html = (data.html as string) ?? "";
-  const plainText = (data.text as string) ?? (data.plain_text as string) ?? "";
+  const messageId = (data.email_id ?? data.id ?? "") as string;
+  let html = (data.html as string) ?? "";
+  let plainText = (data.text as string) ?? (data.plain_text as string) ?? "";
+
+  // The email.received webhook payload is metadata-only — fetch the full
+  // content from the Receiving API, falling back to the payload fields.
+  if (messageId) {
+    try {
+      const contentRes = await fetch(
+        `https://api.resend.com/emails/receiving/${messageId}`,
+        { headers: { Authorization: `Bearer ${apiKey}` } },
+      );
+      if (contentRes.ok) {
+        const content = (await contentRes.json()) as {
+          html?: string | null;
+          text?: string | null;
+        };
+        html = content.html ?? html;
+        plainText = content.text ?? plainText;
+      } else {
+        console.warn(
+          `[resend webhook] receiving fetch failed (${contentRes.status}) for ${messageId}`,
+        );
+      }
+    } catch (err) {
+      console.warn(
+        `[resend webhook] receiving fetch error for ${messageId}:`,
+        err,
+      );
+    }
+  }
 
   // Pass the body through as-is — no forwarding headers, no "Fwd:" prefix.
   // reply_to points back to the original sender so replies go to them.
-  const body = html ? { html } : { text: plainText || " " };
+  const body = html ? { html } : { text: plainText || "(content unavailable)" };
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
