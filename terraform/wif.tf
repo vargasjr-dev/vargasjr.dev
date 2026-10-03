@@ -45,6 +45,17 @@ resource "google_service_account" "terraform_apply" {
   display_name = "Terraform apply (GitHub Actions)"
 }
 
+# The CI identity manages this project's own infra (services, SAs, IAM,
+# WIF, secrets, bucket ACLs). Editor is broader than a hand-rolled perm
+# list, but the account is only usable from the two repos via the WIF
+# principalSet bindings above — blast radius is this project. Granting is
+# chicken-and-egg for CI itself, so the FIRST apply must be local (owner).
+resource "google_project_iam_member" "terraform_apply_editor" {
+  project = "vargasjr-dev"
+  role    = "roles/editor"
+  member  = "serviceAccount:${google_service_account.terraform_apply.email}"
+}
+
 # Which repos may impersonate the CI service account.
 resource "google_service_account_iam_member" "terraform_apply_impersonation" {
   service_account_id = google_service_account.terraform_apply.name
