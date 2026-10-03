@@ -64,6 +64,8 @@ cdktf.out/
 *.tfstate
 *.tfstate.*
 *.tfplan
+.terraform/
+terraform/*.tfvars
 .env*.local
 .internal/
 
