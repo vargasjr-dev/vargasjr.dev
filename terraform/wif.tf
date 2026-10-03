@@ -4,11 +4,12 @@
 # kinetic-bond-324620) with per-run OIDC tokens.
 #
 # The pool is deliberately NOT restricted to one repo — the IAM bindings
-# below are the actual gate. New portfolio repos join by adding another
-# google_service_account_iam_member with their own attribute.repository
-# principalSet.
+# below are the actual gate. New portfolio repos join by adding one entry
+# to the impersonation list.
 #
-# Until this is applied, the mycadet-platform GHA workflow self-skips.
+# The mycadet-platform workflow hardcodes this provider path + SA email
+# once this stack has been applied once (locally — the apply creates the
+# pool it authenticates through).
 # ---------------------------------------------------------------------------
 
 resource "google_iam_workload_identity_pool" "github" {
@@ -48,11 +49,18 @@ resource "google_storage_bucket_iam_member" "tfstate_object_admin" {
   member = "serviceAccount:${google_service_account.terraform_apply.email}"
 }
 
-#   2. mycadet's Stripe key (cross-project grant — the secret stays at home)
-resource "google_secret_manager_secret_iam_member" "mycadet_stripe_key" {
-  secret_id = "projects/mycadet/secrets/STRIPE_API_KEY"
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.terraform_apply.email}"
+# Which repos may impersonate the CI service account. The pool is shared
+# portfolio infrastructure; each repo joins with one list entry and stays
+# gated to its own paths by these attribute.repository principalSets.
+resource "google_service_account_iam_member" "ci_impersonation" {
+  for_each = toset([
+    "vargasjr-dev/mycadet-platform",
+    "vargasjr-dev/vargasjr.dev",
+  ])
+
+  service_account_id = google_service_account.terraform_apply.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/${each.value}"
 }
 
 output "wif_provider" {

@@ -15,8 +15,10 @@ terraform {
 }
 
 provider "cloudflare" {
-  # Authentication is supplied through the CLOUDFLARE_API_TOKEN environment
-  # variable. No credential is stored in this repository.
+  # Token is read from the project's own Secret Manager vault (secrets.tf) —
+  # it used to live in Terraform Cloud workspace variables. No credential is
+  # stored in this repository.
+  api_token = data.google_secret_manager_secret_version.cloudflare_api_token.secret_data
 }
 
 provider "google" {
