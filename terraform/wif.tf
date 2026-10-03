@@ -30,6 +30,14 @@ resource "google_iam_workload_identity_pool_provider" "github_oidc" {
     "google.subject"       = "assertion.sub"
     "attribute.repository" = "assertion.repository"
   }
+
+  # Google's STS API rejects GitHub-issuer providers that have no attribute
+  # condition: "The attribute condition must reference one of the provider's
+  # claims" (HTTP 400). This one is deliberately tautological — the mapping
+  # derives attribute.repository from assertion.repository, so it always
+  # holds — because repo restriction is enforced by the IAM principalSet
+  # bindings below, not here. Don't "simplify" it away; the apply breaks.
+  attribute_condition = "attribute.repository == assertion.repository"
 }
 
 resource "google_service_account" "terraform_apply" {
