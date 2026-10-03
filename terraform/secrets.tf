@@ -19,3 +19,39 @@ data "google_secret_manager_secret_version" "cloudflare_api_token" {
   # Same-apply ordering: the vault API must be on before we read from it.
   depends_on = [google_project_service.secretmanager]
 }
+
+data "google_secret_manager_secret_version" "vercel_api_token" {
+  project    = "vargasjr-dev"
+  secret     = "VERCEL_API_TOKEN"
+  depends_on = [google_project_service.secretmanager]
+}
+
+# The Gmail OAuth client for this app (cloned into this project during the
+# GCP home migration). Consumed by the deployed site via Vercel env vars.
+data "google_secret_manager_secret_version" "google_client_id" {
+  project    = "vargasjr-dev"
+  secret     = "GOOGLE_CLIENT_ID"
+  depends_on = [google_project_service.secretmanager]
+}
+
+data "google_secret_manager_secret_version" "google_client_secret" {
+  project    = "vargasjr-dev"
+  secret     = "GOOGLE_CLIENT_SECRET"
+  depends_on = [google_project_service.secretmanager]
+}
+
+# The CI identity reads this repo's vault directly at apply time — same
+# values the providers and resources above consume. (Other repos' secrets
+# are granted from their own repos; the owner grants, nobody else bleeds in.)
+resource "google_secret_manager_secret_iam_member" "ci_secret_reader" {
+  for_each = toset([
+    "CLOUDFLARE_API_TOKEN",
+    "VERCEL_API_TOKEN",
+    "GOOGLE_CLIENT_ID",
+    "GOOGLE_CLIENT_SECRET",
+  ])
+
+  secret_id = "projects/vargasjr-dev/secrets/${each.key}"
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:terraform-apply@vargasjr-dev.iam.gserviceaccount.com"
+}
