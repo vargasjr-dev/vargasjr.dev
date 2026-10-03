@@ -11,6 +11,11 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 6.0"
     }
+
+    vercel = {
+      source  = "vercel/vercel"
+      version = "~> 5.0"
+    }
   }
 }
 
@@ -26,4 +31,12 @@ provider "google" {
   # through Application Default Credentials (local) or the WIF identity below
   # (CI). No credential is stored in this repository.
   project = "vargasjr-dev"
+}
+
+provider "vercel" {
+  # Token read from the project's own vault (secrets.tf). Vercel API tokens
+  # are account-wide — no granular scopes exist — so it lives in the vault,
+  # never in the repo or CI variables.
+  api_token = data.google_secret_manager_secret_version.vercel_api_token.secret_data
+  team_id   = "team_bhY6xQNSaDzgiVpXhdFPXvZL"
 }
