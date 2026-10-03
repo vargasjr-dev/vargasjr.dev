@@ -21,7 +21,10 @@ resource "google_iam_workload_identity_pool_provider" "github_oidc" {
   workload_identity_pool_id          = google_iam_workload_identity_pool.github.workload_identity_pool_id
   workload_identity_pool_provider_id = "github-oidc"
   display_name                       = "GitHub OIDC"
-  issuer_uri                         = "https://token.actions.githubusercontent.com"
+
+  oidc {
+    issuer_uri = "https://token.actions.githubusercontent.com"
+  }
 
   attribute_mapping = {
     "google.subject"       = "assertion.sub"
