@@ -11,7 +11,7 @@
 # ---------------------------------------------------------------------------
 
 resource "vercel_project_environment_variable" "google_client_id" {
-  project_id = "PRJ_ID_PENDING"
+  project_id = "prj_qMPM1ihlNlPbkUYPm0rMUuCsZguI"
   key        = "GOOGLE_CLIENT_ID"
   value      = data.google_secret_manager_secret_version.google_client_id.secret_data
   target     = ["production", "preview"]
@@ -22,7 +22,7 @@ resource "vercel_project_environment_variable" "google_client_id" {
 }
 
 resource "vercel_project_environment_variable" "google_client_secret" {
-  project_id = "PRJ_ID_PENDING"
+  project_id = "prj_qMPM1ihlNlPbkUYPm0rMUuCsZguI"
   key        = "GOOGLE_CLIENT_SECRET"
   value      = data.google_secret_manager_secret_version.google_client_secret.secret_data
   target     = ["production", "preview"]

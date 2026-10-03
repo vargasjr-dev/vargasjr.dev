@@ -36,7 +36,8 @@ provider "google" {
 provider "vercel" {
   # Token read from the project's own vault (secrets.tf). Vercel API tokens
   # are account-wide — no granular scopes exist — so it lives in the vault,
-  # never in the repo or CI variables.
+  # never in the repo or CI variables. (v5 renamed team_id → team; it takes
+  # a team slug or ID.)
   api_token = data.google_secret_manager_secret_version.vercel_api_token.secret_data
-  team_id   = "team_bhY6xQNSaDzgiVpXhdFPXvZL"
+  team      = "team_bhY6xQNSaDzgiVpXhdFPXvZL"
 }
