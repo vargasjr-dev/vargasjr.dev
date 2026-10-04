@@ -72,5 +72,5 @@ if (outputFile) {
 }
 console.log(`Using ${owner}/${repo}@${pull.head.sha}`);
 
-# Make this file a module so bun can type-check it during the app build.
+// Make this file a module so bun can type-check it during the app build.
 export {};
