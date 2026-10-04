@@ -45,8 +45,8 @@ export default function SmsConsentPage() {
               Application-generated messages: task confirmations, calendar and
               deadline reminders, status alerts, and one-to-one conversational
               replies to requests you&apos;ve made. Message frequency varies.
-              Message and data rates may apply, based on your mobile carrier
-              and plan.
+              Message and data rates may apply, based on your mobile carrier and
+              plan.
             </p>
           </section>
 
@@ -86,8 +86,8 @@ export default function SmsConsentPage() {
             </h2>
             <p>
               Phone numbers are used solely to deliver the messages you asked
-              for. We do not sell or share them with third parties for their
-              own marketing. See our{" "}
+              for. We do not sell or share them with third parties for their own
+              marketing. See our{" "}
               <Link className="text-primary hover:underline" href="/privacy">
                 Privacy Policy
               </Link>{" "}

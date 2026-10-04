@@ -22,8 +22,8 @@ export default function PrivacyPage() {
             </h2>
             <p>
               vargasjr.dev is operated by Vargas JR, LLC, and we keep data
-              collection to a minimum. Depending on how you interact with us,
-              we may process:
+              collection to a minimum. Depending on how you interact with us, we
+              may process:
             </p>
             <ul className="list-disc list-inside mt-3 space-y-2">
               <li>

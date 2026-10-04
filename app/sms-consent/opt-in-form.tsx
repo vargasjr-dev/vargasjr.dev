@@ -9,15 +9,15 @@ import Link from "next/link";
 // CONSENT_VERSION.
 export const OPT_IN_DISCLOSURE_DISPLAY = (
   <>
-    By checking this box and submitting my phone number, I agree to receive
-    text messages from <strong>VargasJR</strong>, the AI assistant service
-    operated by <strong>Vargas JR, LLC</strong>, from the toll-free number{" "}
+    By checking this box and submitting my phone number, I agree to receive text
+    messages from <strong>VargasJR</strong>, the AI assistant service operated
+    by <strong>Vargas JR, LLC</strong>, from the toll-free number{" "}
     <strong>+1 (833) 659-7364</strong>. Messages include task confirmations,
     calendar and deadline reminders, status alerts, and one-to-one
-    conversational replies to requests I&apos;ve made. Message frequency
-    varies. Message and data rates may apply. Reply <strong>STOP</strong> to
-    opt out or <strong>HELP</strong> for help. Consent is optional and not
-    required to use any other part of vargasjr.dev. See our{" "}
+    conversational replies to requests I&apos;ve made. Message frequency varies.
+    Message and data rates may apply. Reply <strong>STOP</strong> to opt out or{" "}
+    <strong>HELP</strong> for help. Consent is optional and not required to use
+    any other part of vargasjr.dev. See our{" "}
     <Link href="/terms" className="text-primary underline">
       Terms &amp; Conditions
     </Link>{" "}
@@ -68,9 +68,9 @@ export function OptInForm() {
           You&apos;re opted in. Thanks!
         </p>
         <p className="mt-2 text-gray-300">
-          Expect a text from <strong>+1 (833) 659-7364</strong> when there&apos;s
-          something to tell you. Message frequency varies. Changed your mind?
-          Reply <strong>STOP</strong> to opt out at any time.
+          Expect a text from <strong>+1 (833) 659-7364</strong> when
+          there&apos;s something to tell you. Message frequency varies. Changed
+          your mind? Reply <strong>STOP</strong> to opt out at any time.
         </p>
       </div>
     );

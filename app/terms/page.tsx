@@ -48,9 +48,9 @@ export default function TermsPage() {
             </p>
             <ul className="list-disc list-inside mt-3 space-y-2">
               <li>
-                <strong>Message types:</strong> task confirmations, calendar
-                and deadline reminders, status alerts, and one-to-one
-                conversational replies to requests you&apos;ve made.
+                <strong>Message types:</strong> task confirmations, calendar and
+                deadline reminders, status alerts, and one-to-one conversational
+                replies to requests you&apos;ve made.
               </li>
               <li>
                 <strong>Frequency:</strong> message frequency varies.
@@ -60,8 +60,8 @@ export default function TermsPage() {
                 depending on your carrier and plan.
               </li>
               <li>
-                <strong>Opt-out:</strong> reply <strong>STOP</strong> to opt
-                out at any time; reply <strong>HELP</strong> for help.
+                <strong>Opt-out:</strong> reply <strong>STOP</strong> to opt out
+                at any time; reply <strong>HELP</strong> for help.
               </li>
               <li>
                 Carriers are not liable for delayed or undelivered messages.
