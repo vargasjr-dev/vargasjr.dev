@@ -55,3 +55,13 @@ jobs:
             gcloud builds submit "services/$SERVICE" --service-account=projects/vargasjr-dev/serviceAccounts/terraform-apply@vargasjr-dev.iam.gserviceaccount.com --default-buckets-behavior=regional-user-owned-bucket --pack image="$IMAGE:${{ github.sha }}"
             gcloud artifacts docker tags add "$IMAGE:${{ github.sha }}" "$IMAGE:latest"
           done
+
+      - name: Roll the service revisions (new image -> new revision)
+        if: steps.changed.outputs.services != ''
+        run: |
+          for SERVICE in ${{ steps.changed.outputs.services }}; do
+            gcloud run services update "$SERVICE" \
+              --region us-central1 \
+              --image "us-central1-docker.pkg.dev/vargasjr-dev/portfolio/$SERVICE:${{ github.sha }}" \
+              --quiet
+          done
