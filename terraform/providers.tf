@@ -16,6 +16,11 @@ terraform {
       source  = "vercel/vercel"
       version = "~> 5.0"
     }
+
+    stripe = {
+      source  = "franckverrot/stripe"
+      version = "~> 1.9"
+    }
   }
 }
 

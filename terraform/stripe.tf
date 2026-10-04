@@ -1,12 +1,3 @@
-terraform {
-  required_providers {
-    stripe = {
-      source  = "franckverrot/stripe"
-      version = "~> 1.9"
-    }
-  }
-}
-
 provider "stripe" {
   api_token = data.google_secret_manager_secret_version.stripe_api_key.secret_data
 }
