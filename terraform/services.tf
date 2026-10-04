@@ -1,11 +1,3 @@
-# ---------------------------------------------------------------------------
-# Service enablement for the vargasjr-dev project.
-#
-# (The project itself + billing link are created manually — a project cannot
-# manage its own existence. Same one-time bootstrap rule as the state bucket,
-# which also lives here and stays manual: state can't manage its own home.)
-# ---------------------------------------------------------------------------
-
 resource "google_project_service" "storage" {
   service = "storage.googleapis.com"
 }

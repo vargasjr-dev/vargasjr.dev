@@ -42,6 +42,6 @@ jobs:
           gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
           for SERVICE in ${{ steps.changed.outputs.services }}; do
             IMAGE="us-central1-docker.pkg.dev/vargasjr-dev/portfolio/$SERVICE"
-            gcloud builds submit "services/$SERVICE" --pack image="$IMAGE:${{ github.sha }}"
+            gcloud builds submit "services/$SERVICE" --service-account=terraform-apply@vargasjr-dev.iam.gserviceaccount.com --pack image="$IMAGE:${{ github.sha }}"
             gcloud artifacts docker tags add "$IMAGE:${{ github.sha }}" "$IMAGE:latest"
           done
