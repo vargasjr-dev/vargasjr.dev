@@ -28,3 +28,12 @@ resource "vercel_project_environment_variable" "google_client_secret" {
   target     = ["production", "preview"]
   sensitive  = true
 }
+
+# The mycadet app stamps Stripe checkout metadata with its GCP project id —
+# the portfolio dispatcher routes webhook events on this field.
+resource "vercel_project_environment_variable" "mycadet_project_id" {
+  project_id = "prj_FWyaJ9sfVoye6oIer0RmM75L3FqH"
+  key        = "PROJECT_ID"
+  value      = "mycadet"
+  target     = ["production", "preview"]
+}
