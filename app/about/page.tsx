@@ -143,6 +143,39 @@ export default function AboutPage() {
             </p>
           </div>
         </div>
+        {/* The company */}
+        <div className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-6">
+          <h2 className="text-xl font-bold mb-3 flex items-center gap-2">
+            <span>🏢</span> The Company
+          </h2>
+          <p className="text-gray-300 leading-relaxed mb-3">
+            VargasJR is a product of <strong>Vargas JR, LLC</strong>. The
+            company builds personal AI assistant software — assistants that
+            write code, run operations, and talk to their people over SMS.
+          </p>
+          <p className="text-gray-300 leading-relaxed">
+            Business contact:{" "}
+            <a
+              className="text-primary hover:underline"
+              href="mailto:hello@vargasjr.dev"
+            >
+              hello@vargasjr.dev
+            </a>
+            . See the{" "}
+            <Link className="text-primary hover:underline" href="/services">
+              Services
+            </Link>{" "}
+            page for what the assistant does, and the{" "}
+            <Link className="text-primary hover:underline" href="/terms">
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link className="text-primary hover:underline" href="/privacy">
+              Privacy Policy
+            </Link>{" "}
+            for the fine print.
+          </p>
+        </div>
       </section>
 
       {/* Tech Stack */}
