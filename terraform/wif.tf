@@ -1,16 +1,13 @@
-# ---------------------------------------------------------------------------
-# Keyless CI identity: GitHub Actions → GCP via Workload Identity Federation.
-# Replaces long-lived SA JSON keys (the ones we're deleting in
-# kinetic-bond-324620) with per-run OIDC tokens.
-#
-# The pool is deliberately NOT restricted to one repo — the IAM bindings
-# below are the actual gate. New portfolio repos join by adding one entry
-# to the impersonation list.
-#
-# The mycadet-platform workflow hardcodes this provider path + SA email
-# once this stack has been applied once (locally — the apply creates the
-# pool it authenticates through).
-# ---------------------------------------------------------------------------
+# Portfolio CI identity: one identical terraform-apply SA per (repo, project), provisioned here so child repos carry zero root references.
+
+locals {
+  portfolio = [
+    { repo = "vargasjr-dev/vargasjr.dev",     project = "vargasjr-dev" },
+    { repo = "vargasjr-dev/mycadet-platform", project = "mycadet" },
+  ]
+
+  pairs = { for p in local.portfolio : p.project => p }
+}
 
 resource "google_iam_workload_identity_pool" "github" {
   workload_identity_pool_id = "github"
@@ -31,66 +28,78 @@ resource "google_iam_workload_identity_pool_provider" "github_oidc" {
     "attribute.repository" = "assertion.repository"
   }
 
-  # Google's STS API rejects GitHub-issuer providers that have no attribute
-  # condition: "The attribute condition must reference one of the provider's
-  # claims" (HTTP 400). This one is deliberately tautological — the mapping
-  # derives attribute.repository from assertion.repository, so it always
-  # holds — because repo restriction is enforced by the IAM principalSet
-  # bindings below, not here. Don't "simplify" it away; the apply breaks.
+  # Google's STS API rejects GitHub-issuer providers with no attribute
+  # condition (HTTP 400). This one is tautological by design — repo
+  # restriction is enforced by the bindings below. Don't remove it.
   attribute_condition = "attribute.repository == assertion.repository"
 }
 
-resource "google_service_account" "terraform_apply" {
+resource "google_service_account" "ci" {
+  for_each = local.pairs
+
+  project      = each.value.project
   account_id   = "terraform-apply"
-  display_name = "Terraform apply (GitHub Actions)"
+  display_name = "Terraform CI (${each.value.repo})"
 }
 
-# The CI identity manages this project's own infra (services, SAs, IAM,
-# WIF, secrets, bucket ACLs). Editor is broader than a hand-rolled perm
-# list, but the account is only usable from the two repos via the WIF
-# principalSet bindings above — blast radius is this project. Granting is
-# chicken-and-egg for CI itself, so the FIRST apply must be local (owner).
-resource "google_project_iam_member" "terraform_apply_editor" {
-  project = "vargasjr-dev"
-  role    = "roles/editor"
-  member  = "serviceAccount:${google_service_account.terraform_apply.email}"
-}
+# One binding per pair: only that repo's Actions tokens may impersonate it.
+resource "google_service_account_iam_member" "ci_impersonation" {
+  for_each = local.pairs
 
-# Which repos may impersonate the CI service account.
-resource "google_service_account_iam_member" "terraform_apply_impersonation" {
-  service_account_id = google_service_account.terraform_apply.name
+  service_account_id = google_service_account.ci[each.key].name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/vargasjr-dev/mycadet-platform"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/${each.value.repo}"
 }
 
-# What the CI identity may touch (bucket is created manually — bootstrap rule):
-#   1. terraform state
-resource "google_storage_bucket_iam_member" "tfstate_object_admin" {
+# Each CI SA administers its own project's infrastructure.
+resource "google_project_iam_member" "ci_project" {
+  for_each = local.pairs
+
+  project = each.value.project
+  role    = "roles/editor"
+  member  = "serviceAccount:${google_service_account.ci[each.key].email}"
+}
+
+# The root pair's CI SA maintains this loop from CI: project IAM bindings
+# plus SA lifecycle (incl. the workloadIdentityUser grants) in every pair
+# project. First apply must be local; afterwards CI is self-sufficient.
+resource "google_project_iam_member" "root_ci_project_admin" {
+  for_each = local.pairs
+
+  project = each.value.project
+  role    = "roles/resourcemanager.projectIamAdmin"
+  member  = "serviceAccount:${google_service_account.ci["vargasjr-dev"].email}"
+}
+
+resource "google_project_iam_member" "root_ci_sa_admin" {
+  for_each = local.pairs
+
+  project = each.value.project
+  role    = "roles/iam.serviceAccountAdmin"
+  member  = "serviceAccount:${google_service_account.ci["vargasjr-dev"].email}"
+}
+
+resource "google_storage_bucket_iam_member" "ci_state" {
+  for_each = local.pairs
+
   bucket = "vargasjr-dev-tfstate"
   role   = "roles/storage.objectAdmin"
-  member = "serviceAccount:${google_service_account.terraform_apply.email}"
+  member = "serviceAccount:${google_service_account.ci[each.key].email}"
 }
 
-# Which repos may impersonate the CI service account. The pool is shared
-# portfolio infrastructure; each repo joins with one list entry and stays
-# gated to its own paths by these attribute.repository principalSets.
-resource "google_service_account_iam_member" "ci_impersonation" {
-  for_each = toset([
-    "vargasjr-dev/mycadet-platform",
-    "vargasjr-dev/vargasjr.dev",
-  ])
-
-  service_account_id = google_service_account.terraform_apply.name
-  role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/${each.value}"
+moved {
+  from = google_service_account.terraform_apply
+  to   = google_service_account.ci["vargasjr-dev"]
 }
-
-output "wif_provider" {
-  description = "Value for the terraform workflow's workload_identity_provider."
-  value       = google_iam_workload_identity_pool_provider.github_oidc.name
+moved {
+  from = google_project_iam_member.terraform_apply_editor
+  to   = google_project_iam_member.ci_project["vargasjr-dev"]
 }
-
-output "ci_sa" {
-  description = "Value for the terraform workflow's service_account."
-  value       = google_service_account.terraform_apply.email
+moved {
+  from = google_storage_bucket_iam_member.tfstate_object_admin
+  to   = google_storage_bucket_iam_member.ci_state["vargasjr-dev"]
+}
+moved {
+  from = google_service_account_iam_member.ci_impersonation["vargasjr-dev/vargasjr.dev"]
+  to   = google_service_account_iam_member.ci_impersonation["vargasjr-dev"]
 }
