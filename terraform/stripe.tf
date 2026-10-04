@@ -67,7 +67,8 @@ resource "google_secret_manager_secret_iam_member" "dispatcher_read_webhook_secr
 }
 
 resource "google_project_iam_member" "builds_push_images" {
-  role   = "roles/artifactregistry.writer"
+  project = data.google_project.portfolio.project_id
+  role    = "roles/artifactregistry.writer"
   member = "serviceAccount:${local.compute_default_sa}"
 }
 
