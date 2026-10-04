@@ -24,11 +24,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
-      url: "https://vargasjr.dev/services",
-      lastModified: new Date(),
-      priority: 0.9,
-    },
-    {
       url: "https://vargasjr.dev/sms-consent",
       lastModified: new Date(),
       priority: 0.5,
