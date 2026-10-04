@@ -107,10 +107,16 @@ data "google_project" "portfolio" {
   project_id = "vargasjr-dev"
 }
 
+# Cloud Run (gen2) resolves container images and secret_key_refs at deploy
+# time as the project's SERVICE AGENT, not the service's runtime SA.
+locals {
+  service_agent = "serviceAccount:service-${data.google_project.portfolio.number}@serverless-robot-prod.iam.gserviceaccount.com"
+}
+
 resource "google_project_iam_member" "run_service_agent_ar_reader" {
   project = data.google_project.portfolio.project_id
   role    = "roles/artifactregistry.reader"
-  member  = "serviceAccount:service-${data.google_project.portfolio.number}@serverless-robot-prod.iam.gserviceaccount.com"
+  member  = local.service_agent
 }
 
 # The Cloud Run SERVICE AGENT resolves secret_key_ref at deploy time — without
@@ -120,5 +126,5 @@ resource "google_project_iam_member" "run_service_agent_ar_reader" {
 resource "google_secret_manager_secret_iam_member" "run_agent_read_webhook_secret" {
   secret_id = google_secret_manager_secret.dispatcher_webhook_secret.id
   role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:service-${data.google_project.portfolio.number}@serverless-robot-prod.iam.gserviceaccount.com"
+  member    = local.service_agent
 }
