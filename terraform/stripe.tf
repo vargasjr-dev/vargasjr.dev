@@ -11,8 +11,28 @@ provider "stripe" {
   api_token = data.google_secret_manager_secret_version.stripe_api_key.secret_data
 }
 
+locals {
+  vercel_project_id = "prj_qMPM1ihlNlPbkUYPm0rMUuCsZguI"
+
+  stripe_secret_name = terraform.workspace == "default" ? "STRIPE_API_KEY" : "TEST_STRIPE_API_KEY"
+
+  webhook_url = terraform.workspace == "default" ? "https://vargasjr.dev/api/stripe/webhook" : var.sandbox_webhook_url
+
+  webhook_secret_target = terraform.workspace == "default" ? ["production"] : ["preview"]
+}
+
+variable "sandbox_webhook_url" {
+  type    = string
+  default = "https://vargasjr.dev/api/stripe/webhook"
+}
+
+data "google_secret_manager_secret_version" "stripe_api_key" {
+  project = "vargasjr-dev"
+  secret  = local.stripe_secret_name
+}
+
 resource "stripe_webhook_endpoint" "dispatcher" {
-  url = "https://vargasjr.dev/api/stripe/webhook"
+  url = local.webhook_url
   enabled_events = [
     "checkout.session.completed",
     "invoice.payment_succeeded",
@@ -23,13 +43,8 @@ resource "stripe_webhook_endpoint" "dispatcher" {
   ]
 }
 
-data "google_secret_manager_secret_version" "stripe_api_key" {
-  project = "mycadet"
-  secret  = "STRIPE_API_KEY"
-}
-
 resource "vercel_project_environment_variable" "stripe_api_key" {
-  project_id = "prj_qMPM1ihlNlPbkUYPm0rMUuCsZguI"
+  project_id = local.vercel_project_id
   key        = "STRIPE_API_KEY"
   value      = data.google_secret_manager_secret_version.stripe_api_key.secret_data
   target     = ["production"]
@@ -37,33 +52,9 @@ resource "vercel_project_environment_variable" "stripe_api_key" {
 }
 
 resource "vercel_project_environment_variable" "stripe_webhook_secret" {
-  project_id = "prj_qMPM1ihlNlPbkUYPm0rMUuCsZguI"
+  project_id = local.vercel_project_id
   key        = "STRIPE_WEBHOOK_SECRET"
   value      = stripe_webhook_endpoint.dispatcher.secret
-  target     = ["production"]
-  sensitive  = true
-}
-
-resource "vercel_project_environment_variable" "route_mycadet_url" {
-  project_id = "prj_qMPM1ihlNlPbkUYPm0rMUuCsZguI"
-  key        = "ROUTE_MYCADET_URL"
-  value      = "https://mycadet.ai/api/stripe/webhook"
-  target     = ["production"]
-  sensitive  = true
-}
-
-resource "vercel_project_environment_variable" "route_piro_url" {
-  project_id = "prj_qMPM1ihlNlPbkUYPm0rMUuCsZguI"
-  key        = "ROUTE_PIRO_URL"
-  value      = "https://trainpiro.app/api/stripe/webhook"
-  target     = ["production"]
-  sensitive  = true
-}
-
-resource "vercel_project_environment_variable" "route_vellymon_url" {
-  project_id = "prj_qMPM1ihlNlPbkUYPm0rMUuCsZguI"
-  key        = "ROUTE_VELLYMON_URL"
-  value      = "https://vellymon.game/api/webhooks/stripe"
-  target     = ["production"]
+  target     = local.webhook_secret_target
   sensitive  = true
 }
