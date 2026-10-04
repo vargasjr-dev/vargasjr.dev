@@ -16,14 +16,11 @@ locals {
 
   stripe_secret_name = terraform.workspace == "default" ? "STRIPE_API_KEY" : "TEST_STRIPE_API_KEY"
 
-  webhook_url = terraform.workspace == "default" ? "https://vargasjr.dev/api/stripe/webhook" : var.sandbox_webhook_url
+  webhook_url = terraform.workspace == "default" ? "https://vargasjr.dev/api/stripe/webhook" : local.sandbox_webhook_url
+
+  sandbox_webhook_url = "https://vargasjr.dev/api/stripe/webhook"
 
   webhook_secret_target = terraform.workspace == "default" ? ["production"] : ["preview"]
-}
-
-variable "sandbox_webhook_url" {
-  type    = string
-  default = "https://vargasjr.dev/api/stripe/webhook"
 }
 
 data "google_secret_manager_secret_version" "stripe_api_key" {
