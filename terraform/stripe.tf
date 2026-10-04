@@ -57,8 +57,6 @@ resource "google_secret_manager_secret_iam_member" "dispatcher_read_webhook_secr
   member    = "serviceAccount:${google_service_account.stripe_dispatcher.email}"
 }
 
-}
-
 resource "google_cloud_run_v2_service" "stripe_dispatcher" {
   depends_on = [google_project_service.run]
 
