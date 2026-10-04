@@ -64,6 +64,11 @@ resource "google_cloud_run_v2_service" "stripe_dispatcher" {
   location = "us-central1"
   ingress  = "INGRESS_TRAFFIC_ALL"
 
+  # TEMPORARY (until the Stripe cutover): the service's first creation never
+  # completed server-side (the image pull was denied pre-#866), leaving a stub
+  # terraform can only fix by replace. Re-enable after cutover.
+  deletion_protection = false
+
   template {
     service_account = google_service_account.stripe_dispatcher.email
 
