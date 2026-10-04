@@ -60,6 +60,18 @@ resource "google_project_iam_member" "ci_project" {
   member  = "serviceAccount:${google_service_account.ci[each.key].email}"
 }
 
+# Explicit secretmanager.admin on its own project — even though Editor
+# normally covers it, CI plans 403'd on secretmanager.versions.access with
+# Editor verified live. Explicit grant sidesteps org-policy/basic-role
+# edge cases on secret data.
+resource "google_project_iam_member" "ci_secret_admin" {
+  for_each = local.pairs
+
+  project = each.value.project
+  role    = "roles/secretmanager.admin"
+  member  = "serviceAccount:${google_service_account.ci[each.key].email}"
+}
+
 # The root pair's CI SA maintains this loop from CI: project IAM bindings
 # plus SA lifecycle (incl. the workloadIdentityUser grants) in every pair
 # project. First apply must be local; afterwards CI is self-sufficient.
