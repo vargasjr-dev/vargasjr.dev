@@ -32,6 +32,7 @@ jobs:
   run:
     name: Run PR data operation
     runs-on: ubuntu-latest
+    if: github.actor == 'dvargasfuertes'
     steps:
       - name: Resolve and validate pull request
         id: pr
