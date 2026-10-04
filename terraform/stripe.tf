@@ -95,3 +95,20 @@ resource "google_cloud_run_v2_service_iam_member" "public" {
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
+
+# ---------------------------------------------------------------------------
+# Cloud Run (gen2) pulls container images as the project's SERVICE AGENT, not
+# the service's runtime SA — and Artifact Registry reports a denied pull as
+# "image not found". This grant is what makes `services.create` actually
+# able to serve a revision.
+# ---------------------------------------------------------------------------
+
+data "google_project" "portfolio" {
+  project_id = "vargasjr-dev"
+}
+
+resource "google_project_iam_member" "run_service_agent_ar_reader" {
+  project = data.google_project.portfolio.project_id
+  role    = "roles/artifactregistry.reader"
+  member  = "serviceAccount:service-${data.google_project.portfolio.number}@serverless-robot-prod.iam.gserviceaccount.com"
+}
