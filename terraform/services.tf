@@ -51,3 +51,9 @@ resource "google_project_service" "run" {
 resource "google_project_service" "artifactregistry" {
   service = "artifactregistry.googleapis.com"
 }
+
+# Buildpack builds for portfolio service images — dispatcher.yml submits them,
+# so repos carry no Dockerfiles.
+resource "google_project_service" "cloudbuild" {
+  service = "cloudbuild.googleapis.com"
+}

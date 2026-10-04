@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-push-apply:
+  build-push:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,20 +25,10 @@ jobs:
           workload_identity_provider: projects/411402639456/locations/global/workloadIdentityPools/github/providers/github-oidc
           service_account: terraform-apply@vargasjr-dev.iam.gserviceaccount.com
 
-      - name: Configure Docker auth
-        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
-
-      - name: Build and push image
+      - name: Build and push image (buildpacks, no Dockerfile)
         run: |
-          IMAGE=us-central1-docker.pkg.dev/vargasjr-dev/portfolio/stripe-dispatcher
-          docker build -t $IMAGE:${{ github.sha }} -t $IMAGE:latest services/stripe-dispatcher
-          docker push $IMAGE:${{ github.sha }}
-          docker push $IMAGE:latest
-
-      - uses: hashicorp/setup-terraform@v3
-
-      - name: Apply
-        working-directory: terraform
-        run: |
-          terraform init -input=false
-          terraform apply -input=false -auto-approve
+          gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+          gcloud builds submit services/stripe-dispatcher \
+            --pack image=us-central1-docker.pkg.dev/vargasjr-dev/portfolio/stripe-dispatcher:${{ github.sha }}
+          gcloud builds submit services/stripe-dispatcher \
+            --pack image=us-central1-docker.pkg.dev/vargasjr-dev/portfolio/stripe-dispatcher:latest

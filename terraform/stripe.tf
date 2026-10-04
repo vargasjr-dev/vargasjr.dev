@@ -5,21 +5,23 @@ provider "stripe" {
 locals {
   stripe_secret_name = terraform.workspace == "default" ? "STRIPE_API_KEY" : "TEST_STRIPE_API_KEY"
 
-  # run.app URLs are deterministic: service + project number + region.
-  webhook_url = terraform.workspace == "default" ? "https://stripe-dispatcher-411402639456.us-central1.run.app/api/stripe/webhook" : local.sandbox_webhook_url
-
-  sandbox_webhook_url = "https://vargasjr.dev/api/stripe/webhook"
-
-  webhook_secret_target = terraform.workspace == "default" ? ["production"] : ["preview"]
+  # Cloud Build buildpack builds run as the project's default compute service
+  # account — it needs Artifact Registry write to push service images.
+  project_number     = "411402639456"
+  compute_default_sa = "${local.project_number}-compute@developer.gserviceaccount.com"
 }
 
 data "google_secret_manager_secret_version" "stripe_api_key" {
-  project = "vargasjr-dev"
-  secret  = local.stripe_secret_name
+  secret = local.stripe_secret_name
 }
 
+# The endpoint's URL points at the Cloud Run service's own URI output, which
+# means the service cannot also depend on the endpoint (cycle). The signing
+# secret therefore reaches the service through Secret Manager by reference —
+# the version lands after the endpoint exists and the service reads "latest"
+# at revision deployment.
 resource "stripe_webhook_endpoint" "dispatcher" {
-  url = local.webhook_url
+  url = "${google_cloud_run_v2_service.stripe_dispatcher.uri}/api/stripe/webhook"
   enabled_events = [
     "checkout.session.completed",
     "invoice.payment_succeeded",
@@ -44,6 +46,30 @@ resource "google_artifact_registry_repository" "portfolio" {
   description   = "Portfolio service images"
 }
 
+resource "google_secret_manager_secret" "dispatcher_webhook_secret" {
+  secret_id = "STRIPE_WEBHOOK_SECRET"
+
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "dispatcher_webhook_secret" {
+  secret      = google_secret_manager_secret.dispatcher_webhook_secret.name
+  secret_data = stripe_webhook_endpoint.dispatcher.secret
+}
+
+resource "google_secret_manager_secret_iam_member" "dispatcher_read_webhook_secret" {
+  secret_id = google_secret_manager_secret.dispatcher_webhook_secret.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.stripe_dispatcher.email}"
+}
+
+resource "google_project_iam_member" "builds_push_images" {
+  role   = "roles/artifactregistry.writer"
+  member = "serviceAccount:${local.compute_default_sa}"
+}
+
 resource "google_cloud_run_v2_service" "stripe_dispatcher" {
   name     = "stripe-dispatcher"
   location = "us-central1"
@@ -61,8 +87,13 @@ resource "google_cloud_run_v2_service" "stripe_dispatcher" {
       }
 
       env {
-        name  = "STRIPE_WEBHOOK_SECRET"
-        value = stripe_webhook_endpoint.dispatcher.secret
+        name = "STRIPE_WEBHOOK_SECRET"
+
+        value_source {
+          secret_key_ref {
+            secret = google_secret_manager_secret.dispatcher_webhook_secret.secret_id
+          }
+        }
       }
     }
   }
@@ -73,24 +104,4 @@ resource "google_cloud_run_v2_service_iam_member" "public" {
   location = "us-central1"
   role     = "roles/run.invoker"
   member   = "allUsers"
-}
-
-# CI applies this stack as terraform-apply@ — it needs Run + Registry admin
-# and the right to attach the dispatcher SA to the service.
-resource "google_project_iam_member" "ci_run_admin" {
-  project = "vargasjr-dev"
-  role    = "roles/run.admin"
-  member  = "serviceAccount:terraform-apply@vargasjr-dev.iam.gserviceaccount.com"
-}
-
-resource "google_project_iam_member" "ci_artifactregistry_admin" {
-  project = "vargasjr-dev"
-  role    = "roles/artifactregistry.admin"
-  member  = "serviceAccount:terraform-apply@vargasjr-dev.iam.gserviceaccount.com"
-}
-
-resource "google_service_account_iam_member" "ci_dispatcher_sa_user" {
-  service_account_id = google_service_account.stripe_dispatcher.name
-  role               = "roles/iam.serviceAccountUser"
-  member             = "serviceAccount:terraform-apply@vargasjr-dev.iam.gserviceaccount.com"
 }

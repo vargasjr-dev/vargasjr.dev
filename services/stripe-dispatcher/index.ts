@@ -1,22 +1,35 @@
-const http = require("node:http");
-const Stripe = require("stripe");
+import http from "node:http";
+import { z } from "zod";
+import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_API_KEY);
+const stripe = new Stripe(process.env.STRIPE_API_KEY ?? "");
 
-const ROUTES = {
+const ROUTES: Record<string, string> = {
   mycadet: "https://mycadet.ai/api/stripe/webhook",
 };
 
-function projectFromEvent(event) {
-  const object = event?.data?.object ?? {};
+const objectMetadata = z.object({
+  metadata: z.object({ project: z.string() }).optional(),
+  subscription_details: z
+    .object({ metadata: z.object({ project: z.string() }) })
+    .optional(),
+});
+
+function projectFromEvent(event: Stripe.Event): string | null {
+  const parsed = objectMetadata.safeParse(event.data.object);
+  if (!parsed.success) return null;
   return (
-    object?.metadata?.project ??
-    object?.subscription_details?.metadata?.project ??
+    parsed.data.metadata?.project ??
+    parsed.data.subscription_details?.metadata?.project ??
     null
   );
 }
 
-function sendJson(res, status, body) {
+function sendJson(
+  res: http.ServerResponse,
+  status: number,
+  body: unknown,
+): void {
   res.writeHead(status, { "Content-Type": "application/json" });
   res.end(JSON.stringify(body));
 }
@@ -28,21 +41,25 @@ http
       return;
     }
 
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) chunks.push(chunk as Buffer);
     const raw = Buffer.concat(chunks).toString();
 
-    let event;
+    const signatureHeader = req.headers["stripe-signature"];
+    const signature =
+      typeof signatureHeader === "string" ? signatureHeader : "";
+
+    let event: Stripe.Event;
     try {
       event = stripe.webhooks.constructEvent(
         raw,
-        req.headers["stripe-signature"],
-        process.env.STRIPE_WEBHOOK_SECRET,
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET ?? "",
       );
     } catch (err) {
       console.error(
         "[stripe dispatcher] signature verification failed:",
-        err.message,
+        err instanceof Error ? err.message : err,
       );
       sendJson(res, 400, { error: "bad_signature" });
       return;
@@ -64,7 +81,7 @@ http
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Stripe-Signature": req.headers["stripe-signature"],
+        "Stripe-Signature": signature,
         "X-Dispatcher-Project": project,
         "X-Dispatcher-Event": event.type,
       },
@@ -87,4 +104,4 @@ http
 
     sendJson(res, 200, { received: true, project });
   })
-  .listen(process.env.PORT || 8080);
+  .listen(process.env.PORT ?? 8080);
