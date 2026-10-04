@@ -1,5 +1,5 @@
 {
-  "name": "stripe-dispatcher",
+  "name": "@vargasjr-dev/stripe-dispatcher",
   "private": true,
   "type": "module",
   "scripts": {

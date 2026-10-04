@@ -7,9 +7,10 @@ locals {
 
   # Cloud Build buildpack builds run as the project's default compute service
   # account — it needs Artifact Registry write to push service images.
-  project_number     = "411402639456"
-  compute_default_sa = "${local.project_number}-compute@developer.gserviceaccount.com"
+  compute_default_sa = "${data.google_project.portfolio.number}-compute@developer.gserviceaccount.com"
 }
+
+data "google_project" "portfolio" {}
 
 data "google_secret_manager_secret_version" "stripe_api_key" {
   secret = local.stripe_secret_name
