@@ -58,7 +58,10 @@ resource "google_secret_manager_secret_iam_member" "dispatcher_read_webhook_secr
 }
 
 resource "google_cloud_run_v2_service" "stripe_dispatcher" {
-  depends_on = [google_project_service.run]
+  # depends_on (rather than a version reference) so secret_key_ref can keep
+  # the "latest" string that breaks the service -> version -> endpoint ->
+  # service cycle; this only orders creation so "latest" resolves on create.
+  depends_on = [google_project_service.run, google_secret_manager_secret_version.dispatcher_webhook_secret]
 
   name     = "stripe-dispatcher"
   location = "us-central1"
