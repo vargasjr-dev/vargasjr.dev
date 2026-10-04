@@ -71,3 +71,6 @@ terraform/*.tfvars
 
 # Generated at build time from @vellumai/web
 public/assistant/
+
+# service-level installs (root ignore is anchored)
+services/*/node_modules/
