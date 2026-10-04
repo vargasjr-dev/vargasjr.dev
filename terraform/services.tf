@@ -53,3 +53,7 @@ resource "google_project_service" "cloudbuild" {
 resource "google_project_service" "sheets" {
   service = "sheets.googleapis.com"
 }
+
+resource "google_project_service" "gmail" {
+  service = "gmail.googleapis.com"
+}
