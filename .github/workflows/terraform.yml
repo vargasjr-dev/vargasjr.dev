@@ -1,12 +1,4 @@
-# Terraform plan (PRs) / apply (merges to main) for this repo — keyless via
-# Workload Identity Federation. The provider path + service account are
-# hardcoded identifiers (not credentials) provisioned by this repo's own
-# terraform — see terraform/wif.tf.
-#
-# Prereqs that are manual by design: the vargasjr-dev project, billing link,
-# and the gs://vargasjr-dev-tfstate bucket (bootstrap rules — state can't
-# manage its own home). The very first apply also runs locally, since the
-# WIF pool this workflow authenticates through is created BY that apply.
+# Terraform plan (PRs) / apply (main) — keyless via WIF; identifiers provisioned by terraform/wif.tf in this repo.
 
 name: Terraform
 
@@ -21,7 +13,6 @@ on:
 permissions:
   contents: read
   id-token: write
-  pull-requests: write
 
 concurrency:
   group: terraform-${{ github.ref }}
@@ -48,16 +39,7 @@ jobs:
         run: terraform init -input=false
 
       - name: Plan
-        run: |
-          terraform plan -input=false -out=tfplan
-          terraform show -no-color tfplan > plan.txt
-
-      - name: Comment plan on PR
-        if: github.event_name == 'pull_request'
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: terraform
-          path: terraform/plan.txt
+        run: terraform plan -input=false -out=tfplan
 
       - name: Apply
         if: github.event_name == 'push'
