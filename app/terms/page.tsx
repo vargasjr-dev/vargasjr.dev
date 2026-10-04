@@ -33,21 +33,35 @@ export default function TermsPage() {
               2. SMS terms
             </h2>
             <p>
-              If you opt in to receive text messages from +1 (833) 659-7364, the
-              following additional terms apply:
+              By providing your mobile phone number and enrolling in the
+              VargasJR SMS program at{" "}
+              <Link
+                className="text-primary hover:underline"
+                href="/sms-consent"
+              >
+                vargasjr.dev/sms-consent
+              </Link>
+              , you agree to receive text messages from{" "}
+              <strong>VargasJR</strong>, the AI assistant service operated by{" "}
+              <strong>Vargas JR, LLC</strong>, from +1 (833) 659-7364.
+              Specifically:
             </p>
             <ul className="list-disc list-inside mt-3 space-y-2">
               <li>
-                Messages are 1:1 and conversational; frequency varies and is
-                kept to a minimum.
+                <strong>Message types:</strong> task confirmations, calendar and
+                deadline reminders, status alerts, and one-to-one conversational
+                replies to requests you&apos;ve made.
               </li>
               <li>
-                Message and data rates may apply, depending on your carrier and
-                plan.
+                <strong>Frequency:</strong> message frequency varies.
               </li>
               <li>
-                Reply <strong>STOP</strong> at any time to opt out; reply{" "}
-                <strong>HELP</strong> for help.
+                <strong>Cost:</strong> message and data rates may apply,
+                depending on your carrier and plan.
+              </li>
+              <li>
+                <strong>Opt-out:</strong> reply <strong>STOP</strong> to opt out
+                at any time; reply <strong>HELP</strong> for help.
               </li>
               <li>
                 Carriers are not liable for delayed or undelivered messages.
@@ -58,15 +72,16 @@ export default function TermsPage() {
               </li>
             </ul>
             <p className="mt-3">
-              Consent to receive messages is not a condition of using anything
-              else on this site. See the{" "}
-              <Link
-                className="text-primary hover:underline"
-                href="/sms-consent"
-              >
-                SMS Opt-In Policy
+              Participation in the SMS program is subject to our{" "}
+              <Link className="text-primary hover:underline" href="/privacy">
+                Privacy Policy
               </Link>{" "}
-              for how consent is collected.
+              and these{" "}
+              <Link className="text-primary hover:underline" href="/terms">
+                Terms &amp; Conditions
+              </Link>
+              . Consent to receive messages is optional and is not a condition
+              of using anything else on this site.
             </p>
           </section>
 

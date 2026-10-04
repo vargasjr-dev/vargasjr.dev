@@ -41,6 +41,7 @@ terraform plan           # expect: "No changes." — state matches reality
 ```
 
 Notes:
+
 - Import is a state-only operation; no live DNS is modified until you
   explicitly change a record and apply.
 - Proxied records will show their origin content in the committed config.
