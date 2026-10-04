@@ -50,6 +50,31 @@ export const gmailConnection = pgTable("gmail_connection", {
 export type GmailConnection = typeof gmailConnection.$inferSelect;
 export type NewGmailConnection = typeof gmailConnection.$inferInsert;
 
+// SMS opt-in consent records for the VargasJR toll-free line (+18336597364).
+// TCPA / Twilio Toll-Free Verification evidence: append-only, captures the
+// exact consent language shown to the user when they opted in.
+export const smsOptIns = pgTable(
+  "sms_opt_ins",
+  {
+    id: serial("id").primaryKey(),
+    phone: varchar("phone", { length: 32 }).notNull(), // E.164, e.g. +18336597364
+    // Verbatim opt-in disclosure the user agreed to (versioned below).
+    consentText: text("consent_text").notNull(),
+    consentVersion: varchar("consent_version", { length: 16 })
+      .notNull()
+      .default("2026-10-01"),
+    ip: varchar("ip", { length: 64 }),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("sms_opt_ins_phone_idx").on(t.phone)],
+);
+
+export type SmsOptIn = typeof smsOptIns.$inferSelect;
+export type NewSmsOptIn = typeof smsOptIns.$inferInsert;
+
 // Append-only double-entry ledger for Vargas JR, LLC.
 // Entries are never updated or deleted; corrections are new entries that
 // reference the entry they correct (correctingOfId).

@@ -21,8 +21,9 @@ export default function PrivacyPage() {
               What we collect
             </h2>
             <p>
-              This site is a personal project, so we keep data collection to a
-              minimum. Depending on how you interact with us, we may process:
+              vargasjr.dev is operated by Vargas JR, LLC, and we keep data
+              collection to a minimum. Depending on how you interact with us,
+              we may process:
             </p>
             <ul className="list-disc list-inside mt-3 space-y-2">
               <li>
