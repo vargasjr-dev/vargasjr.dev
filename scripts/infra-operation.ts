@@ -71,3 +71,6 @@ if (outputFile) {
   fs.appendFileSync(outputFile, `head_sha=${pull.head.sha}\n`);
 }
 console.log(`Using ${owner}/${repo}@${pull.head.sha}`);
+
+# Make this file a module so bun can type-check it during the app build.
+export {};
