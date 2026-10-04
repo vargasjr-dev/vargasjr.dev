@@ -41,3 +41,13 @@ resource "google_project_service" "cloudresourcemanager" {
 resource "google_project_service" "secretmanager" {
   service = "secretmanager.googleapis.com"
 }
+
+# Stripe webhook dispatcher (services/stripe-dispatcher) — Cloud Run host
+# plus the registry its image pushes to from CI.
+resource "google_project_service" "run" {
+  service = "run.googleapis.com"
+}
+
+resource "google_project_service" "artifactregistry" {
+  service = "artifactregistry.googleapis.com"
+}
