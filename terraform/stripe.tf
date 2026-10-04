@@ -112,3 +112,13 @@ resource "google_project_iam_member" "run_service_agent_ar_reader" {
   role    = "roles/artifactregistry.reader"
   member  = "serviceAccount:service-${data.google_project.portfolio.number}@serverless-robot-prod.iam.gserviceaccount.com"
 }
+
+# The Cloud Run SERVICE AGENT resolves secret_key_ref at deploy time — without
+# this grant it reports the secret as "not found" even when a version exists.
+# (The version stays "latest" on purpose: referencing the version resource's
+# number here would cycle service -> version -> stripe endpoint -> service.)
+resource "google_secret_manager_secret_iam_member" "run_agent_read_webhook_secret" {
+  secret_id = google_secret_manager_secret.dispatcher_webhook_secret.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:service-${data.google_project.portfolio.number}@serverless-robot-prod.iam.gserviceaccount.com"
+}
