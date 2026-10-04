@@ -30,9 +30,13 @@ jobs:
       - id: changed
         name: Detect changed services
         run: |
-          BEFORE="${{ github.event.before }}"
-          if [ -z "$BEFORE" ] || [[ "$BEFORE" == 0* ]]; then BEFORE="$(git rev-parse HEAD~1)"; fi
-          SERVICES="$(git diff --name-only "$BEFORE" "${{ github.sha }}" -- services/ | cut -d/ -f2 | sort -u | grep . || true)"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            SERVICES="$(ls services/)"
+          else
+            BEFORE="${{ github.event.before }}"
+            if [ -z "$BEFORE" ] || [[ "$BEFORE" == 0* ]]; then BEFORE="$(git rev-parse HEAD~1)"; fi
+            SERVICES="$(git diff --name-only "$BEFORE" "${{ github.sha }}" -- services/ | cut -d/ -f2 | sort -u | grep . || true)"
+          fi
           echo "services=$SERVICES" >> "$GITHUB_OUTPUT"
           echo "changed: $SERVICES"
 
