@@ -4,6 +4,7 @@ provider "stripe" {
 
 locals {
   stripe_secret_name = terraform.workspace == "default" ? "STRIPE_API_KEY" : "TEST_STRIPE_API_KEY"
+}
 
 data "google_secret_manager_secret_version" "stripe_api_key" {
   secret = local.stripe_secret_name
