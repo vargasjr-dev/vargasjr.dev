@@ -3,7 +3,9 @@ name: Dispatcher
 on:
   push:
     branches: [main]
-    paths: ["services/**"]
+    paths:
+      - "services/**"
+      - ".github/workflows/dispatcher.yml"
   workflow_dispatch:
 
 permissions:
