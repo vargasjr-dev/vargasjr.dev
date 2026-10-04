@@ -27,6 +27,10 @@ jobs:
           workload_identity_provider: projects/411402639456/locations/global/workloadIdentityPools/github/providers/github-oidc
           service_account: terraform-apply@vargasjr-dev.iam.gserviceaccount.com
 
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          version: latest
+
       - id: changed
         name: Detect changed services
         run: |
