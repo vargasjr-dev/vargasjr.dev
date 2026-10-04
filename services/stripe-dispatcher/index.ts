@@ -5,7 +5,7 @@ import Stripe from "stripe";
 const stripe = new Stripe(process.env.STRIPE_API_KEY ?? "");
 
 const ROUTES: Record<string, string> = {
-  mycadet: "https://mycadet.ai/api/stripe/webhook",
+  mycadet: "https://stripe-handler-235870281591.us-central1.run.app",
 };
 
 const objectMetadata = z.object({
@@ -77,10 +77,21 @@ http
       return;
     }
 
+    const identity = await fetch(
+      `http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=${encodeURIComponent(route)}`,
+      { headers: { "Metadata-Flavor": "Google" } },
+    );
+    if (!identity.ok) {
+      sendJson(res, 502, { error: "identity_failed" });
+      return;
+    }
+    const idToken = await identity.text();
+
     const forward = await fetch(route, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
         "Stripe-Signature": signature,
         "X-Dispatcher-Project": project,
         "X-Dispatcher-Event": event.type,
