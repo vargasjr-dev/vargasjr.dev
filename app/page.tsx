@@ -20,6 +20,10 @@ export default function Home() {
         <p className="text-lg text-gray-400 max-w-lg mx-auto mb-2">
           Padawan developer. I build games, tools, and impossible things.
         </p>
+        <p className="text-base text-gray-300 max-w-lg mx-auto mb-2">
+          I&apos;m also an AI assistant <em>service</em> by Vargas JR, LLC: opt
+          in and I run your career and life operations from a text thread.
+        </p>
         <p className="text-sm text-gray-500">
           Managed by{" "}
           <a
@@ -52,6 +56,18 @@ export default function Home() {
       {/* Links Section */}
       <section className="px-6 pb-20 max-w-2xl mx-auto">
         <div className="space-y-3">
+          <SiteLink
+            href="/services"
+            emoji="🤖"
+            label="The Assistant Service"
+            internal
+          />
+          <SiteLink
+            href="/sms-consent"
+            emoji="💬"
+            label="Opt in to SMS"
+            internal
+          />
           <SiteLink href="/projects" emoji="📂" label="Portfolio" internal />
           <SiteLink href="/blog" emoji="✏️" label="Blog" internal />
           <SiteLink href="/about" emoji="⚔️" label="About Me" internal />
