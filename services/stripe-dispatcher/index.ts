@@ -5,7 +5,7 @@ import Stripe from "stripe";
 const stripe = new Stripe(process.env.STRIPE_API_KEY ?? "");
 
 const ROUTES: Record<string, string> = {
-  mycadet: "https://stripe-handler-235870281591.us-central1.run.app",
+  mycadet: "https://stripe-handler-pntemstfgq-uc.a.run.app",
 };
 
 const objectMetadata = z.object({
