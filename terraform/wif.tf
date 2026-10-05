@@ -83,6 +83,16 @@ resource "google_project_iam_member" "ci_run_admin" {
   member  = "serviceAccount:${google_service_account.ci[each.key].email}"
 }
 
+# Project IAM writes (e.g. service-agent grants in pair repos) are not
+# covered by Editor; each CI SA administers its own project's policy.
+resource "google_project_iam_member" "ci_project_iam_admin" {
+  for_each = local.pairs
+
+  project = each.value.project
+  role    = "roles/resourcemanager.projectIamAdmin"
+  member  = "serviceAccount:${google_service_account.ci[each.key].email}"
+}
+
 resource "google_project_iam_member" "root_ci_project_admin" {
   for_each = local.pairs
 
