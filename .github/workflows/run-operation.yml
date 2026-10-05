@@ -1,0 +1,77 @@
+name: Run PR Operation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+  id-token: write
+
+concurrency:
+  group: production-operation
+  cancel-in-progress: false
+
+jobs:
+  run:
+    name: Run PR operation
+    runs-on: ubuntu-latest
+    if: github.actor == 'dvargasfuertes'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Resolve PR and operation script
+        id: pr
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bun scripts/run-operation.ts
+
+      - name: Check out PR revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.head_sha }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Run data operation
+        if: steps.pr.outputs.kind == 'data'
+        env:
+          DATABASE_URL: ${{ secrets.POSTGRES_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          OPERATION_SCRIPT: ${{ steps.pr.outputs.script }}
+        run: |
+          set -euo pipefail
+          if [ ! -f "$OPERATION_SCRIPT" ]; then
+            echo "Operation script is missing from the PR revision: $OPERATION_SCRIPT" >&2
+            exit 1
+          fi
+          if [ -z "$DATABASE_URL" ]; then
+            echo "DATABASE_URL is not configured in repository secrets." >&2
+            exit 1
+          fi
+          bun "$OPERATION_SCRIPT"
+
+      - name: Authenticate for GCP
+        if: steps.pr.outputs.kind == 'infra'
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/411402639456/locations/global/workloadIdentityPools/github/providers/github-oidc
+          service_account: terraform-apply@vargasjr-dev.iam.gserviceaccount.com
+
+      - name: Set up Terraform
+        if: steps.pr.outputs.kind == 'infra'
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Run infra operation
+        if: steps.pr.outputs.kind == 'infra'
+        env:
+          OPERATION_SCRIPT: ${{ steps.pr.outputs.script }}
+        run: |
+          set -euo pipefail
+          if [ ! -f "$OPERATION_SCRIPT" ]; then
+            echo "Operation script is missing from the PR revision: $OPERATION_SCRIPT" >&2
+            exit 1
+          fi
+          bash "$OPERATION_SCRIPT"
