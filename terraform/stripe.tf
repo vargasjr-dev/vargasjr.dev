@@ -97,6 +97,8 @@ resource "google_cloud_run_v2_service" "stripe_dispatcher" {
 }
 
 resource "google_cloud_run_v2_service_iam_member" "public" {
+  depends_on = [google_project_iam_member.ci_run_admin]
+
   name     = google_cloud_run_v2_service.stripe_dispatcher.name
   location = "us-central1"
   role     = "roles/run.invoker"
