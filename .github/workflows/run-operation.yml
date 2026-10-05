@@ -1,11 +1,3 @@
-# One-off production operations: run a script from an open same-repository PR.
-# The operation PR is never merged — it exists only so the script is reviewable
-# before Vargas dispatches it. Dispatch from the PR's branch: the PR is
-# inferred from that branch, and the script is inferred as the only operation
-# script added in the PR's diff from main. Scripts under scripts/data-migrations/
-# run with bun and the database/resend secrets; scripts under
-# scripts/infra-operations/ run with bash and production GCP access (WIF).
-
 name: Run PR Operation
 
 on:
@@ -26,72 +18,15 @@ jobs:
     runs-on: ubuntu-latest
     if: github.actor == 'dvargasfuertes'
     steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
       - name: Resolve PR and operation script
         id: pr
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { owner, repo } = context.repo;
-            const branch = context.ref_name;
-
-            if (!branch || branch === 'main') {
-              core.setFailed('Dispatch this workflow from the operation branch, not main');
-              return;
-            }
-
-            const { data: pulls } = await github.rest.pulls.list({
-              owner,
-              repo,
-              state: 'open',
-              base: 'main',
-              head: `${owner}:${branch}`,
-            });
-            if (pulls.length !== 1) {
-              core.setFailed(`Expected exactly one open PR from branch ${branch} targeting main; found ${pulls.length}`);
-              return;
-            }
-            const pull = pulls[0];
-            const expectedRepository = `${owner}/${repo}`;
-            if (pull.base.ref !== 'main') {
-              core.setFailed(`The operation PR must target main; it targets ${pull.base.ref}`);
-              return;
-            }
-            if (!pull.head.repo || pull.head.repo.full_name !== expectedRepository) {
-              core.setFailed('The operation PR must come from this repository, not a fork');
-              return;
-            }
-
-            const changedFiles = await github.paginate(
-              github.rest.pulls.listFiles,
-              { owner, repo, pull_number: pull.number },
-            );
-            const dataPattern = /^scripts\/data-migrations\/[^/]+\.(ts|js)$/;
-            const infraPattern = /^scripts\/infra-operations\/[^/]+\.sh$/;
-            const isOperationScript = (file) =>
-              (dataPattern.test(file.filename) || infraPattern.test(file.filename)) &&
-              file.status === 'added' &&
-              !file.filename.includes('..');
-            const allowedSupportingFiles = new Set([
-              '.github/workflows/run-operation.yml',
-              'scripts/data-migrations/README.md',
-              'scripts/infra-operations/README.md',
-            ]);
-            const operationScripts = changedFiles.filter(isOperationScript);
-            const unexpectedFiles = changedFiles.filter(
-              (file) => !isOperationScript(file) && !allowedSupportingFiles.has(file.filename),
-            );
-            if (operationScripts.length !== 1 || unexpectedFiles.length > 0) {
-              core.setFailed(
-                `The PR must add exactly one script under scripts/data-migrations/ or scripts/infra-operations/ and may only modify the runner workflow and READMEs; received ${changedFiles.map((file) => `${file.status}:${file.filename}`).join(', ') || 'no files'}`,
-              );
-              return;
-            }
-
-            const script = operationScripts[0].filename;
-            core.setOutput('kind', dataPattern.test(script) ? 'data' : 'infra');
-            core.setOutput('script', script);
-            core.setOutput('head_sha', pull.head.sha);
-            core.info(`Using ${expectedRepository}@${pull.head.sha} from PR #${pull.number}: ${script}`);
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bun scripts/run-operation.ts
 
       - name: Check out PR revision
         uses: actions/checkout@v4
@@ -99,9 +34,6 @@ jobs:
           ref: ${{ steps.pr.outputs.head_sha }}
           persist-credentials: false
           fetch-depth: 1
-
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
 
       - name: Run data operation
         if: steps.pr.outputs.kind == 'data'
