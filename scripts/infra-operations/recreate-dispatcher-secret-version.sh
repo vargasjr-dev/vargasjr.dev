@@ -1,23 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# One-off heal (v2). The -replace approach failed: replacing the secret
-# version forced a replace of the tainted stripe-dispatcher service, and
-# deletion_protection (correctly) blocked that destroy. The service is a
-# half-created stub and the secret version is gone, so instead: detach both
-# from state, remove the physical stub, and let a plain apply do a clean
-# create of the whole chain (version -> service -> endpoint URL).
 cd terraform
 terraform init -input=false
 
-# Remove the physical stub first. deletion_protection only guards
-# terraform-initiated destroys; this one is deliberate and reviewed, and the
-# stub never served traffic.
 gcloud run services delete stripe-dispatcher \
   --region us-central1 --project vargasjr-dev --quiet || true
 
 terraform state rm google_cloud_run_v2_service.stripe_dispatcher || true
 terraform state rm google_secret_manager_secret_version.dispatcher_webhook_secret || true
+
+KEY=$(gcloud secrets versions access latest --secret=STRIPE_API_KEY --project=vargasjr-dev)
+WHSEC=$(curl -sS "https://api.stripe.com/v1/webhook_endpoints/we_1UMnjhGSojmfFLPRwm4yyS9N" \
+  -H "Authorization: Bearer $KEY" | jq -r .secret)
+if [ -z "$WHSEC" ] || [ "$WHSEC" = "null" ]; then
+  echo "failed to fetch the endpoint secret from Stripe" >&2
+  exit 1
+fi
+printf '%s' "$WHSEC" | gcloud secrets versions add STRIPE_WEBHOOK_SECRET \
+  --project=vargasjr-dev --data-file=-
 
 terraform apply -input=false -auto-approve
 
