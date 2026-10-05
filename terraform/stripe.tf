@@ -71,6 +71,8 @@ resource "google_cloud_run_v2_service" "stripe_dispatcher" {
   location = "us-central1"
   ingress  = "INGRESS_TRAFFIC_ALL"
 
+  invoker_iam_disabled = true
+
   template {
     service_account = google_service_account.stripe_dispatcher.email
 
@@ -94,15 +96,6 @@ resource "google_cloud_run_v2_service" "stripe_dispatcher" {
       }
     }
   }
-}
-
-resource "google_cloud_run_v2_service_iam_member" "public" {
-  depends_on = [google_project_iam_member.ci_run_admin]
-
-  name     = google_cloud_run_v2_service.stripe_dispatcher.name
-  location = "us-central1"
-  role     = "roles/run.invoker"
-  member   = "allUsers"
 }
 
 resource "google_project_iam_member" "run_service_agent_ar_reader" {
