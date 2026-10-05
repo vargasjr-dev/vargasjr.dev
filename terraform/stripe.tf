@@ -4,14 +4,21 @@ provider "stripe" {
 
 locals {
   stripe_secret_name = terraform.workspace == "default" ? "STRIPE_API_KEY" : "TEST_STRIPE_API_KEY"
+  dispatcher_service_name = "stripe-dispatcher"
+  dispatcher_service_url = "https://${local.dispatcher_service_name}-${data.google_project.portfolio.number}.us-central1.run.app"
+  service_agent = "serviceAccount:service-${data.google_project.portfolio.number}@serverless-robot-prod.iam.gserviceaccount.com"
 }
 
 data "google_secret_manager_secret_version" "stripe_api_key" {
   secret = local.stripe_secret_name
 }
 
+data "google_project" "portfolio" {
+  project_id = "vargasjr-dev"
+}
+
 resource "stripe_webhook_endpoint" "dispatcher" {
-  url = "${google_cloud_run_v2_service.stripe_dispatcher.uri}/api/stripe/webhook"
+  url = "${local.dispatcher_service_url}/api/stripe/webhook"
   enabled_events = [
     "checkout.session.completed",
     "invoice.payment_succeeded",
@@ -60,7 +67,7 @@ resource "google_secret_manager_secret_iam_member" "dispatcher_read_webhook_secr
 resource "google_cloud_run_v2_service" "stripe_dispatcher" {
   depends_on = [google_project_service.run]
 
-  name     = "stripe-dispatcher"
+  name     = local.dispatcher_service_name
   location = "us-central1"
   ingress  = "INGRESS_TRAFFIC_ALL"
 
@@ -81,7 +88,7 @@ resource "google_cloud_run_v2_service" "stripe_dispatcher" {
         value_source {
           secret_key_ref {
             secret = google_secret_manager_secret.dispatcher_webhook_secret.secret_id
-            version = "latest"
+            version = google_secret_manager_secret_version.dispatcher_webhook_secret.version
           }
         }
       }
@@ -96,33 +103,12 @@ resource "google_cloud_run_v2_service_iam_member" "public" {
   member   = "allUsers"
 }
 
-# ---------------------------------------------------------------------------
-# Cloud Run (gen2) pulls container images as the project's SERVICE AGENT, not
-# the service's runtime SA — and Artifact Registry reports a denied pull as
-# "image not found". This grant is what makes `services.create` actually
-# able to serve a revision.
-# ---------------------------------------------------------------------------
-
-data "google_project" "portfolio" {
-  project_id = "vargasjr-dev"
-}
-
-# Cloud Run (gen2) resolves container images and secret_key_refs at deploy
-# time as the project's SERVICE AGENT, not the service's runtime SA.
-locals {
-  service_agent = "serviceAccount:service-${data.google_project.portfolio.number}@serverless-robot-prod.iam.gserviceaccount.com"
-}
-
 resource "google_project_iam_member" "run_service_agent_ar_reader" {
   project = data.google_project.portfolio.project_id
   role    = "roles/artifactregistry.reader"
   member  = local.service_agent
 }
 
-# The Cloud Run SERVICE AGENT resolves secret_key_ref at deploy time — without
-# this grant it reports the secret as "not found" even when a version exists.
-# (The version stays "latest" on purpose: referencing the version resource's
-# number here would cycle service -> version -> stripe endpoint -> service.)
 resource "google_secret_manager_secret_iam_member" "run_agent_read_webhook_secret" {
   secret_id = google_secret_manager_secret.dispatcher_webhook_secret.id
   role      = "roles/secretmanager.secretAccessor"
