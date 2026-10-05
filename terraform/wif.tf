@@ -75,6 +75,14 @@ resource "google_project_iam_member" "ci_secret_admin" {
 # The root pair's CI SA maintains this loop from CI: project IAM bindings
 # plus SA lifecycle (incl. the workloadIdentityUser grants) in every pair
 # project. First apply must be local; afterwards CI is self-sufficient.
+resource "google_project_iam_member" "ci_run_admin" {
+  for_each = local.pairs
+
+  project = each.value.project
+  role    = "roles/run.admin"
+  member  = "serviceAccount:${google_service_account.ci[each.key].email}"
+}
+
 resource "google_project_iam_member" "root_ci_project_admin" {
   for_each = local.pairs
 
