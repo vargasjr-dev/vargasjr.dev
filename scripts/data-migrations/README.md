@@ -1,6 +1,6 @@
 # One-time production data operations
 
-Put one-time, narrowly scoped production data repairs or read-only analyses in this directory and run them through `.github/workflows/run-data-migration.yml`.
+Put one-time, narrowly scoped production data repairs or read-only analyses in this directory and run them through the consolidated **Run PR Operation** workflow (`.github/workflows/run-operation.yml`).
 
 ## Workflow
 
@@ -12,14 +12,11 @@ Put one-time, narrowly scoped production data repairs or read-only analyses in t
    - verify the resulting values before exiting;
    - fail instead of guessing when the database state differs from expectations.
 3. Open the PR against `main` in this repository. Fork PRs are intentionally rejected because the workflow executes PR code with production database access.
-4. Manually dispatch **Run PR Data Operation** with:
-   - the open PR number;
-   - the script path, such as `scripts/data-migrations/backfill-email-bodies.ts`;
-   - the credential set the script needs (`database` for `DATABASE_URL`, `resend` for `DATABASE_URL` + `RESEND_API_KEY`).
-5. The workflow runs with repository Actions secrets only — no GitHub environment or approval gate.
+4. Manually dispatch **Run PR Operation** from the PR's branch. No inputs are needed: the PR is inferred from the dispatched branch, and the script is inferred as the only operation script added in the PR's diff from `main`.
+5. The workflow runs with repository Actions secrets only — no GitHub environment or approval gate. Data operations run with `bun` and both `DATABASE_URL` and `RESEND_API_KEY` exposed.
 6. Review the workflow log and the script's before/after assertions.
 
-The workflow checks out the exact PR head SHA, serializes all production data-operation runs, and exposes only the selected credential set to the operation process. It does not merge the PR or apply schema changes.
+The workflow checks out the exact PR head SHA, serializes all production operations (data and infra), and expects the PR to add exactly one operation script — nothing else beyond the runner workflow and READMEs. It does not merge the PR or apply schema changes.
 
 ## Boundaries
 
