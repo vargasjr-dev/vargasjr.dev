@@ -200,15 +200,15 @@ const FALLBACK_PROJECTS: Project[] = [
   },
 
   {
-    slug: "vellymon",
-    name: "Vellymon",
+    slug: "cinderfell",
+    name: "Cinderfell",
     emoji: "🐉",
     tagline:
       "Monster collection game with simultaneous-turn combat, team building, and three win conditions.",
     description:
-      "A 1v1 tactical RPG where both players act simultaneously. Build a roster of 8 vellymons, field 4 on an 8×5 grid, and win by elimination, occupation, or energy accumulation. Features a market with 64 unique vellymons, real-time WebSocket matches, and a full game engine with server-authoritative turn resolution.",
-    url: "https://vellymon.game",
-    repo: "https://github.com/vargasjr-dev/vellymon.game",
+      "A 1v1 tactical RPG where both players act simultaneously. Build a roster of 8 cinderlings, field 4 on an 8×5 grid, and win by elimination, occupation, or energy accumulation. Features a market with 64 unique cinderlings, real-time WebSocket matches, and a full game engine with server-authoritative turn resolution.",
+    url: "https://cinderfell.vercel.app",
+    repo: "https://github.com/vargasjr-dev/cinderfell",
     status: "in-development",
     layer: "life",
   },
