@@ -22,7 +22,7 @@ import prettier from "prettier";
 
 const GITHUB_API = "https://api.github.com";
 const ORG = "vargasjr-dev";
-const REPOS = ["vellymon.game", "vargasjr.dev", "Squad-Party", "personal-os"];
+const REPOS = ["cinderfell", "vargasjr.dev", "Squad-Party", "personal-os"];
 const BLOG_DIR = path.join(process.cwd(), "data", "blog");
 
 interface MergedPR {
