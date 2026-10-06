@@ -98,3 +98,16 @@ patchAsset(
   ],
   "inspect-access",
 );
+
+// Hide Telegram-sourced conversations from the sidebar: every nav list
+// (pinned, groups, recents, channel sections) flows through this shared hook.
+patchAsset(
+  null,
+  [
+    [
+      "{conversations:i.data?.conversations??hK,isLoading:i.isLoading",
+      "{conversations:(i.data?.conversations??hK).filter(e=>e.originChannel!==`telegram`),isLoading:i.isLoading",
+    ],
+  ],
+  "sidebar-hide-telegram",
+);
