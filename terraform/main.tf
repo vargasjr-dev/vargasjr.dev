@@ -41,6 +41,18 @@ module "prod" {
 
   portfolio_project_id = local.portfolio_project_id
   stripe_api_key       = data.google_secret_manager_secret_version.stripe_api_key.secret_data
+  google_client_id     = data.google_secret_manager_secret_version.google_client_id.secret_data
+  google_client_secret = data.google_secret_manager_secret_version.google_client_secret.secret_data
+
+  # A providers argument on a module block disables default inheritance
+  # entirely, so every provider the prod stack touches is passed here —
+  # including the stripe.test alias the test webhook endpoint uses.
+  providers = {
+    google      = google
+    vercel      = vercel
+    stripe      = stripe
+    stripe.test = stripe.test
+  }
 
   depends_on = [module.shared]
 }
