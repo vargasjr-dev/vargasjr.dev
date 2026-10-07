@@ -45,13 +45,14 @@ module "prod" {
   google_client_secret = data.google_secret_manager_secret_version.google_client_secret.secret_data
 
   # A providers argument on a module block disables default inheritance
-  # entirely, so every provider the prod stack touches is passed here —
-  # including the stripe.test alias the test webhook endpoint uses.
+  # entirely, so every provider the prod stack touches is passed here.
+  # The test endpoint's stripe-test local name maps to the aliased
+  # stripe.test configuration (the test restricted key).
   providers = {
     google      = google
     vercel      = vercel
     stripe      = stripe
-    stripe.test = stripe.test
+    stripe-test = stripe.test
   }
 
   depends_on = [module.shared]

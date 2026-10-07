@@ -30,7 +30,7 @@ resource "stripe_webhook_endpoint" "dispatcher" {
 }
 
 resource "stripe_webhook_endpoint" "dispatcher_test" {
-  provider = stripe.test
+  provider = stripe-test
 
   url = "${local.dispatcher_service_url}/api/stripe/webhook"
   enabled_events = [
