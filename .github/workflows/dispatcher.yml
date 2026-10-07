@@ -33,6 +33,8 @@ jobs:
         with:
           version: latest
 
+      - uses: oven-sh/setup-bun@v2
+
       - id: changed
         name: Detect changed services
         run: |
@@ -46,22 +48,8 @@ jobs:
           echo "services=$SERVICES" >> "$GITHUB_OUTPUT"
           echo "changed: $SERVICES"
 
-      - name: Build and push images (buildpacks, no Dockerfile)
+      - name: Build, push, and roll the changed services
         if: steps.changed.outputs.services != ''
-        run: |
-          gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
-          for SERVICE in ${{ steps.changed.outputs.services }}; do
-            IMAGE="us-central1-docker.pkg.dev/vargasjr-dev/portfolio/$SERVICE"
-            gcloud builds submit "services/$SERVICE" --service-account=projects/vargasjr-dev/serviceAccounts/terraform-apply@vargasjr-dev.iam.gserviceaccount.com --default-buckets-behavior=regional-user-owned-bucket --pack image="$IMAGE:${{ github.sha }}"
-            gcloud artifacts docker tags add "$IMAGE:${{ github.sha }}" "$IMAGE:latest"
-          done
-
-      - name: Roll the service revisions (new image -> new revision)
-        if: steps.changed.outputs.services != ''
-        run: |
-          for SERVICE in ${{ steps.changed.outputs.services }}; do
-            gcloud run services update "$SERVICE" \
-              --region us-central1 \
-              --image "us-central1-docker.pkg.dev/vargasjr-dev/portfolio/$SERVICE:${{ github.sha }}" \
-              --quiet
-          done
+        env:
+          SERVICES: ${{ steps.changed.outputs.services }}
+        run: bun scripts/deploy-services.ts
