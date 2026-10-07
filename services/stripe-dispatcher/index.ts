@@ -4,14 +4,21 @@ import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_API_KEY ?? "");
 
-// Each mode gets its own dispatcher service (live + test), all running
+// Each mode gets its own dispatcher service (prod + dev), all running
 // this same image. Terraform passes each instance exactly one signing
-// secret under this single env-var name — the service never needs to
-// know which mode it serves.
+// secret plus the mode it serves.
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? "";
+const MODE = process.env.DISPATCHER_MODE === "dev" ? "dev" : "prod";
 
-const ROUTES: Record<string, string> = {
-  mycadet: "https://stripe-handler-235870281591.us-central1.run.app",
+// Per-mode routes. Cadet's handler is mode-agnostic and its sandbox
+// workspace runs no handler of its own (cadet's modules/dev is Vercel-side
+// only), so both modes point at the same handler today — split them here
+// when cadet grows a sandbox handler.
+const ROUTES: Record<string, Record<"prod" | "dev", string>> = {
+  mycadet: {
+    prod: "https://stripe-handler-235870281591.us-central1.run.app",
+    dev: "https://stripe-handler-235870281591.us-central1.run.app",
+  },
 };
 
 const objectMetadata = z.object({
@@ -70,7 +77,7 @@ http
       return;
     }
 
-    const route = ROUTES[project];
+    const route = ROUTES[project]?.[MODE];
     if (!route) {
       sendJson(res, 200, { received: true, skipped: "no_route", project });
       return;

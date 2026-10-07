@@ -100,7 +100,7 @@ moved {
 
 moved {
   from = google_artifact_registry_repository.portfolio
-  to   = module.prod.google_artifact_registry_repository.portfolio
+  to   = module.shared.google_artifact_registry_repository.portfolio
 }
 
 moved {

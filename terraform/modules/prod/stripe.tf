@@ -9,36 +9,21 @@ data "google_project" "portfolio" {
 }
 
 # ---------------------------------------------------------------------------
-# The LIVE webhook endpoint points at the live dispatcher. The test-mode
-# stack lives root-owned in terraform/stripe-test.tf: one dispatcher
+# The LIVE webhook endpoint points at the prod dispatcher. The dev stack
+# (test-mode endpoint + dispatcher) lives in modules/dev: one dispatcher
 # service per mode, same image, each reading a single signing secret.
-# The dispatcher relays by metadata.project regardless of mode — cadet's
-# handler is mode-agnostic (mode is decided at checkout by the
-# environment).
+# The dispatcher relays by metadata.project — cadet's handler is
+# mode-agnostic (mode is decided at checkout by the environment).
 # ---------------------------------------------------------------------------
 
 resource "stripe_webhook_endpoint" "dispatcher" {
-  url = "${local.dispatcher_service_url}/api/stripe/webhook"
-  enabled_events = [
-    "checkout.session.completed",
-    "invoice.payment_succeeded",
-    "invoice.payment_failed",
-    "customer.subscription.created",
-    "customer.subscription.updated",
-    "customer.subscription.deleted",
-  ]
+  url            = "${local.dispatcher_service_url}/api/stripe/webhook"
+  enabled_events = var.webhook_events
 }
 
 resource "google_service_account" "stripe_dispatcher" {
   account_id   = "stripe-dispatcher"
   display_name = "Stripe dispatcher"
-}
-
-resource "google_artifact_registry_repository" "portfolio" {
-  location      = "us-central1"
-  repository_id = "portfolio"
-  format        = "DOCKER"
-  description   = "Portfolio service images"
 }
 
 # The live endpoint's signing secret, read by the dispatcher through the
@@ -79,11 +64,17 @@ resource "google_cloud_run_v2_service" "stripe_dispatcher" {
     service_account = google_service_account.stripe_dispatcher.email
 
     containers {
+      # Same portfolio AR repo the dev dispatcher pulls from (modules/shared).
       image = "us-central1-docker.pkg.dev/${var.portfolio_project_id}/portfolio/stripe-dispatcher:latest"
 
       env {
         name  = "STRIPE_API_KEY"
         value = var.stripe_api_key
+      }
+
+      env {
+        name  = "DISPATCHER_MODE"
+        value = "prod"
       }
 
       env {

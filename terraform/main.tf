@@ -1,25 +1,26 @@
 # ---------------------------------------------------------------------------
-# Root wiring. The configuration is split into two modules (cadet-style
-# layout, minus the dev module — the portfolio site has no sandbox and
-# likely never will):
+# Root wiring. The configuration is split into three modules (cadet-style
+# layout, minus the workspaces — this repo has a single workspace and a
+# single project, so each module below is instantiated exactly once):
 #
 #   modules/shared — account-level resources (API enablements, the Vargas
-#                    JR service account identity)
-#   modules/prod   — the portfolio's prod stack (live Stripe dispatcher +
-#                    its live webhook endpoint, Vercel env replicas)
+#                    JR service account identity, the AR repo both
+#                    dispatchers pull from, the webhook event list)
+#   modules/prod   — the prod stack (live Stripe dispatcher + its live
+#                    webhook endpoint, Vercel env replicas)
+#   modules/dev    — the sandbox stack (dev Stripe dispatcher + its
+#                    test-mode webhook endpoint)
 #
 # Root-owned (ungated, both here and in cadet's convention): the WIF
 # portfolio loop, the CI secret-reader grants, the vault SM data the
-# providers consume, the run service agent's AR reader, and the test-mode
-# dispatcher stack (stripe-test.tf) — test-mode routing is portfolio-wide
-# sandbox plumbing, not prod traffic.
+# providers and modules consume, and the run service agent's AR reader.
 # ---------------------------------------------------------------------------
 
 locals {
   portfolio_project_id = "vargasjr-dev"
 }
 
-# Enablements + identity — everything account-level.
+# Enablements + identity + shared registry — everything account-level.
 module "shared" {
   source = "./modules/shared"
 
@@ -45,6 +46,7 @@ module "prod" {
   stripe_api_key       = data.google_secret_manager_secret_version.stripe_api_key.secret_data
   google_client_id     = data.google_secret_manager_secret_version.google_client_id.secret_data
   google_client_secret = data.google_secret_manager_secret_version.google_client_secret.secret_data
+  webhook_events       = module.shared.webhook_events
 
   # A providers argument on a module block disables default inheritance
   # entirely, so every provider the prod stack touches is passed here.
@@ -52,6 +54,24 @@ module "prod" {
     google = google
     vercel = vercel
     stripe = stripe
+  }
+
+  depends_on = [module.shared]
+}
+
+# The dev dispatcher serves Stripe TEST mode — the test webhook endpoint
+# lives here with it. Same image as prod (DISPATCHER_MODE selects the
+# route table), one signing secret, its own SA.
+module "dev" {
+  source = "./modules/dev"
+
+  portfolio_project_id = local.portfolio_project_id
+  stripe_api_key       = data.google_secret_manager_secret_version.stripe_test_api_key.secret_data
+  webhook_events       = module.shared.webhook_events
+
+  providers = {
+    google      = google
+    stripe-test = stripe.test
   }
 
   depends_on = [module.shared]

@@ -1,15 +1,3 @@
-# ---------------------------------------------------------------------------
-# The portfolio's MAIN service account for Google integrations — everything
-# that talks to Google as "Vargas JR" runs as this identity. First consumer:
-# Sunday Fundsday finance tracking (Sheets).
-#
-# The SA gets spreadsheet access by being shared on the sheet (Google
-# Drive-level grant, not IAM) — terraform can't do that part. Its key is
-# also minted manually after apply (`gcloud iam service-accounts keys create`)
-# and stored in the vault as `google-cloud:service_account_json` — a full
-# SA private key must never land in terraform state.
-# ---------------------------------------------------------------------------
-
 resource "google_service_account" "vargas_jr" {
   account_id   = "vargas-jr"
   display_name = "Vargas JR"

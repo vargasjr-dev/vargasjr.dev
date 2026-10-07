@@ -1,8 +1,3 @@
-# Project API enablements — account-level, shared by everything in the
-# portfolio (the dispatcher's Cloud Run + AR + Cloud Build, the vault's
-# Secret Manager, the Sheets/Gmail integrations, the WIF machinery).
-# Inherits the root google provider (project = vargasjr-dev).
-
 resource "google_project_service" "storage" {
   service = "storage.googleapis.com"
 }
