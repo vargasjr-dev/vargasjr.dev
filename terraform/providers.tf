@@ -46,3 +46,17 @@ provider "vercel" {
   api_token = data.google_secret_manager_secret_version.vercel_api_token.secret_data
   team      = "team_bhY6xQNSaDzgiVpXhdFPXvZL"
 }
+
+# Stripe: default = the live restricted key; the "test" alias = the test
+# restricted key, used by the test-mode webhook endpoint (root-owned
+# stripe-test.tf).
+# Both keys are rk_* secrets in the vault with webhook_write (the
+# dispatcher's endpoints are terraform-managed).
+provider "stripe" {
+  api_token = data.google_secret_manager_secret_version.stripe_api_key.secret_data
+}
+
+provider "stripe" {
+  alias     = "test"
+  api_token = data.google_secret_manager_secret_version.stripe_test_api_key.secret_data
+}

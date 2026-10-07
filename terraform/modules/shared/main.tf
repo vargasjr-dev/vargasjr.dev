@@ -28,8 +28,7 @@ resource "google_project_service" "cloudresourcemanager" {
 }
 
 # The portfolio's secrets vault lives here — this project is the source of
-# truth for secrets (see secrets.tf). Enablement of its API in MYCADET
-# already exists (STRIPE_API_KEY was created there).
+# truth for secrets (see the root's secrets.tf).
 resource "google_project_service" "secretmanager" {
   service = "secretmanager.googleapis.com"
 }

@@ -4,8 +4,21 @@ import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_API_KEY ?? "");
 
-const ROUTES: Record<string, string> = {
-  mycadet: "https://stripe-handler-235870281591.us-central1.run.app",
+// Each mode gets its own dispatcher service (prod + dev), all running
+// this same image. Terraform passes each instance exactly one signing
+// secret plus the mode it serves.
+const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? "";
+const MODE = process.env.DISPATCHER_MODE === "dev" ? "dev" : "prod";
+
+// Per-mode routes. Cadet's handler is mode-agnostic and its sandbox
+// workspace runs no handler of its own (cadet's modules/dev is Vercel-side
+// only), so both modes point at the same handler today — split them here
+// when cadet grows a sandbox handler.
+const ROUTES: Record<string, Record<"prod" | "dev", string>> = {
+  mycadet: {
+    prod: "https://stripe-handler-235870281591.us-central1.run.app",
+    dev: "https://stripe-handler-235870281591.us-central1.run.app",
+  },
 };
 
 const objectMetadata = z.object({
@@ -51,16 +64,9 @@ http
 
     let event: Stripe.Event;
     try {
-      event = stripe.webhooks.constructEvent(
-        raw,
-        signature,
-        process.env.STRIPE_WEBHOOK_SECRET ?? "",
-      );
-    } catch (err) {
-      console.error(
-        "[stripe dispatcher] signature verification failed:",
-        err instanceof Error ? err.message : err,
-      );
+      event = stripe.webhooks.constructEvent(raw, signature, WEBHOOK_SECRET);
+    } catch {
+      console.error("[stripe dispatcher] signature verification failed");
       sendJson(res, 400, { error: "bad_signature" });
       return;
     }
@@ -71,7 +77,7 @@ http
       return;
     }
 
-    const route = ROUTES[project];
+    const route = ROUTES[project]?.[MODE];
     if (!route) {
       sendJson(res, 200, { received: true, skipped: "no_route", project });
       return;

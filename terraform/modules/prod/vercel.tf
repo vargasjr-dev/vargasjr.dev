@@ -13,7 +13,7 @@
 resource "vercel_project_environment_variable" "google_client_id" {
   project_id = "prj_qMPM1ihlNlPbkUYPm0rMUuCsZguI"
   key        = "GOOGLE_CLIENT_ID"
-  value      = data.google_secret_manager_secret_version.google_client_id.secret_data
+  value      = var.google_client_id
   target     = ["production", "preview"]
 
   # Vercel requires the flag explicitly; sensitive vars can't be read back
@@ -24,7 +24,7 @@ resource "vercel_project_environment_variable" "google_client_id" {
 resource "vercel_project_environment_variable" "google_client_secret" {
   project_id = "prj_qMPM1ihlNlPbkUYPm0rMUuCsZguI"
   key        = "GOOGLE_CLIENT_SECRET"
-  value      = data.google_secret_manager_secret_version.google_client_secret.secret_data
+  value      = var.google_client_secret
   target     = ["production", "preview"]
   sensitive  = true
 }
