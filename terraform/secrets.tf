@@ -49,9 +49,18 @@ resource "google_secret_manager_secret_iam_member" "ci_secret_reader" {
     "VERCEL_API_TOKEN",
     "GOOGLE_CLIENT_ID",
     "GOOGLE_CLIENT_SECRET",
+    "TEST_STRIPE_API_KEY",
   ])
 
   secret_id = "projects/vargasjr-dev/secrets/${each.key}"
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:terraform-apply@vargasjr-dev.iam.gserviceaccount.com"
+}
+
+# The test-mode restricted Stripe key (rk_test_) for the test webhook
+# endpoint's provider alias. Seeded in this project's vault.
+data "google_secret_manager_secret_version" "stripe_test_api_key" {
+  project    = "vargasjr-dev"
+  secret     = "TEST_STRIPE_API_KEY"
+  depends_on = [google_project_service.secretmanager]
 }

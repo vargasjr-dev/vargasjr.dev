@@ -1,3 +1,8 @@
+# Project API enablements — account-level, shared by everything in the
+# portfolio (the dispatcher's Cloud Run + AR + Cloud Build, the vault's
+# Secret Manager, the Sheets/Gmail integrations, the WIF machinery).
+# Inherits the root google provider (project = vargasjr-dev).
+
 resource "google_project_service" "storage" {
   service = "storage.googleapis.com"
 }
@@ -28,8 +33,7 @@ resource "google_project_service" "cloudresourcemanager" {
 }
 
 # The portfolio's secrets vault lives here — this project is the source of
-# truth for secrets (see secrets.tf). Enablement of its API in MYCADET
-# already exists (STRIPE_API_KEY was created there).
+# truth for secrets (see the root's secrets.tf).
 resource "google_project_service" "secretmanager" {
   service = "secretmanager.googleapis.com"
 }

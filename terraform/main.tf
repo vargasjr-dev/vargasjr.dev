@@ -1,34 +1,51 @@
 # ---------------------------------------------------------------------------
-# The portfolio's MAIN service account for Google integrations — everything
-# that talks to Google as "Vargas JR" runs as this identity. First consumer:
-# Sunday Fundsday finance tracking (Sheets).
+# Root wiring. The configuration is split into two modules (cadet-style
+# layout, minus the dev module — the portfolio site has no sandbox and
+# likely never will):
 #
-# The SA gets spreadsheet access by being shared on the sheet (Google
-# Drive-level grant, not IAM) — terraform can't do that part. Its key is
-# also minted manually after apply (`gcloud iam service-accounts keys create`)
-# and stored in the vault as `google-cloud:service_account_json` — a full
-# SA private key must never land in terraform state.
+#   modules/shared — account-level resources (API enablements, the Vargas
+#                    JR service account identity)
+#   modules/prod   — the portfolio's prod stack (Stripe dispatcher + its
+#                    webhook endpoints live AND test, Vercel env replicas)
+#
+# Root-owned (ungated, both here and in cadet's convention): the WIF
+# portfolio loop, the CI secret-reader grants, the vault SM data the
+# providers consume, and the run service agent's AR reader.
 # ---------------------------------------------------------------------------
 
-resource "google_service_account" "vargas_jr" {
-  account_id   = "vargas-jr"
-  display_name = "Vargas JR"
+locals {
+  portfolio_project_id = "vargasjr-dev"
 }
 
-resource "google_project_iam_custom_role" "vargasjr" {
-  role_id     = "vargasjr"
-  title       = "Vargas JR"
-  description = "Created on: 2026-10-03"
-  permissions = ["resourcemanager.projects.get"]
+# Enablements + identity — everything account-level.
+module "shared" {
+  source = "./modules/shared"
+
+  portfolio_project_id = local.portfolio_project_id
 }
 
-resource "google_project_iam_member" "vargas_jr_custom_role" {
-  project = "vargasjr-dev"
-  role    = google_project_iam_custom_role.vargasjr.id
-  member  = "serviceAccount:${google_service_account.vargas_jr.email}"
+# The run service agent pulls images from the portfolio AR repo on deploy.
+# Root-owned like cadet's, so it survives any future module reshuffles.
+resource "google_project_iam_member" "run_service_agent_ar_reader" {
+  project = local.portfolio_project_id
+  role    = "roles/artifactregistry.reader"
+  member  = "serviceAccount:service-${data.google_project.portfolio.number}@serverless-robot-prod.iam.gserviceaccount.com"
+}
+
+data "google_project" "portfolio" {
+  project_id = local.portfolio_project_id
+}
+
+module "prod" {
+  source = "./modules/prod"
+
+  portfolio_project_id = local.portfolio_project_id
+  stripe_api_key       = data.google_secret_manager_secret_version.stripe_api_key.secret_data
+
+  depends_on = [module.shared]
 }
 
 output "vargas_jr_sa" {
   description = "Share Sheets/spreadsheets (and future Google resources) with this email."
-  value       = google_service_account.vargas_jr.email
+  value       = module.shared.vargas_jr_sa
 }

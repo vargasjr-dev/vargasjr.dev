@@ -4,6 +4,15 @@ import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_API_KEY ?? "");
 
+// One endpoint per Stripe mode points at this service (live + test), so a
+// delivery may be signed with either signing secret. Try each and treat
+// the first that verifies as the event's mode. The legacy
+// STRIPE_WEBHOOK_SECRET name is honored for rolling-deploy compatibility.
+const WEBHOOK_SECRETS: { mode: string; secret: string }[] = [
+  { mode: "live", secret: process.env.STRIPE_WEBHOOK_SECRET ?? "" },
+  { mode: "test", secret: process.env.STRIPE_WEBHOOK_SECRET_TEST ?? "" },
+].filter((entry) => entry.secret.length > 0);
+
 const ROUTES: Record<string, string> = {
   mycadet: "https://stripe-handler-235870281591.us-central1.run.app",
 };
@@ -49,18 +58,19 @@ http
     const signature =
       typeof signatureHeader === "string" ? signatureHeader : "";
 
-    let event: Stripe.Event;
-    try {
-      event = stripe.webhooks.constructEvent(
-        raw,
-        signature,
-        process.env.STRIPE_WEBHOOK_SECRET ?? "",
-      );
-    } catch (err) {
-      console.error(
-        "[stripe dispatcher] signature verification failed:",
-        err instanceof Error ? err.message : err,
-      );
+    let event: Stripe.Event | null = null;
+    let verifiedMode: string | null = null;
+    for (const entry of WEBHOOK_SECRETS) {
+      try {
+        event = stripe.webhooks.constructEvent(raw, signature, entry.secret);
+        verifiedMode = entry.mode;
+        break;
+      } catch {
+        // Try the next mode's secret.
+      }
+    }
+    if (!event) {
+      console.error("[stripe dispatcher] signature verification failed against all modes");
       sendJson(res, 400, { error: "bad_signature" });
       return;
     }
@@ -95,6 +105,7 @@ http
         "Stripe-Signature": signature,
         "X-Dispatcher-Project": project,
         "X-Dispatcher-Event": event.type,
+        "X-Dispatcher-Mode": verifiedMode ?? "unknown",
       },
       body: raw,
     });
