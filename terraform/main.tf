@@ -5,12 +5,14 @@
 #
 #   modules/shared — account-level resources (API enablements, the Vargas
 #                    JR service account identity)
-#   modules/prod   — the portfolio's prod stack (Stripe dispatcher + its
-#                    webhook endpoints live AND test, Vercel env replicas)
+#   modules/prod   — the portfolio's prod stack (live Stripe dispatcher +
+#                    its live webhook endpoint, Vercel env replicas)
 #
 # Root-owned (ungated, both here and in cadet's convention): the WIF
 # portfolio loop, the CI secret-reader grants, the vault SM data the
-# providers consume, and the run service agent's AR reader.
+# providers consume, the run service agent's AR reader, and the test-mode
+# dispatcher stack (stripe-test.tf) — test-mode routing is portfolio-wide
+# sandbox plumbing, not prod traffic.
 # ---------------------------------------------------------------------------
 
 locals {
@@ -46,13 +48,10 @@ module "prod" {
 
   # A providers argument on a module block disables default inheritance
   # entirely, so every provider the prod stack touches is passed here.
-  # The test endpoint's stripe-test local name maps to the aliased
-  # stripe.test configuration (the test restricted key).
   providers = {
-    google      = google
-    vercel      = vercel
-    stripe      = stripe
-    stripe-test = stripe.test
+    google = google
+    vercel = vercel
+    stripe = stripe
   }
 
   depends_on = [module.shared]

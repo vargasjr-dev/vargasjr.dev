@@ -48,7 +48,8 @@ provider "vercel" {
 }
 
 # Stripe: default = the live restricted key; the "test" alias = the test
-# restricted key, used by the test-mode webhook endpoint in modules/prod.
+# restricted key, used by the test-mode webhook endpoint (root-owned
+# stripe-test.tf).
 # Both keys are rk_* secrets in the vault with webhook_write (the
 # dispatcher's endpoints are terraform-managed).
 provider "stripe" {

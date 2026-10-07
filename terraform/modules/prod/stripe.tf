@@ -9,29 +9,15 @@ data "google_project" "portfolio" {
 }
 
 # ---------------------------------------------------------------------------
-# Webhook endpoints — ONE per mode, both pointing at the same dispatcher.
-# The live endpoint uses the root's default stripe provider (live key); the
-# test endpoint uses the stripe.test alias declared in the root's
-# providers.tf. The dispatcher verifies the signature against both secrets
-# and relays by metadata.project regardless of mode — cadet's handler is
-# mode-agnostic (mode is decided at checkout by the environment).
+# The LIVE webhook endpoint points at the live dispatcher. The test-mode
+# stack lives root-owned in terraform/stripe-test.tf: one dispatcher
+# service per mode, same image, each reading a single signing secret.
+# The dispatcher relays by metadata.project regardless of mode — cadet's
+# handler is mode-agnostic (mode is decided at checkout by the
+# environment).
 # ---------------------------------------------------------------------------
 
 resource "stripe_webhook_endpoint" "dispatcher" {
-  url = "${local.dispatcher_service_url}/api/stripe/webhook"
-  enabled_events = [
-    "checkout.session.completed",
-    "invoice.payment_succeeded",
-    "invoice.payment_failed",
-    "customer.subscription.created",
-    "customer.subscription.updated",
-    "customer.subscription.deleted",
-  ]
-}
-
-resource "stripe_webhook_endpoint" "dispatcher_test" {
-  provider = stripe-test
-
   url = "${local.dispatcher_service_url}/api/stripe/webhook"
   enabled_events = [
     "checkout.session.completed",
@@ -55,8 +41,8 @@ resource "google_artifact_registry_repository" "portfolio" {
   description   = "Portfolio service images"
 }
 
-# Signing secrets from both endpoints, one SM secret per mode. The
-# dispatcher reads both and tries each when verifying a delivery.
+# The live endpoint's signing secret, read by the dispatcher through the
+# single STRIPE_WEBHOOK_SECRET env var.
 resource "google_secret_manager_secret" "dispatcher_webhook_secret" {
   secret_id = "STRIPE_WEBHOOK_SECRET"
 
@@ -70,39 +56,14 @@ resource "google_secret_manager_secret_version" "dispatcher_webhook_secret" {
   secret_data = stripe_webhook_endpoint.dispatcher.secret
 }
 
-resource "google_secret_manager_secret" "dispatcher_webhook_secret_test" {
-  secret_id = "STRIPE_WEBHOOK_SECRET_TEST"
-
-  replication {
-    auto {}
-  }
-}
-
-resource "google_secret_manager_secret_version" "dispatcher_webhook_secret_test" {
-  secret      = google_secret_manager_secret.dispatcher_webhook_secret_test.name
-  secret_data = stripe_webhook_endpoint.dispatcher_test.secret
-}
-
 resource "google_secret_manager_secret_iam_member" "dispatcher_read_webhook_secret" {
   secret_id = google_secret_manager_secret.dispatcher_webhook_secret.id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.stripe_dispatcher.email}"
 }
 
-resource "google_secret_manager_secret_iam_member" "dispatcher_read_webhook_secret_test" {
-  secret_id = google_secret_manager_secret.dispatcher_webhook_secret_test.id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.stripe_dispatcher.email}"
-}
-
 resource "google_secret_manager_secret_iam_member" "run_agent_read_webhook_secret" {
   secret_id = google_secret_manager_secret.dispatcher_webhook_secret.id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = local.service_agent
-}
-
-resource "google_secret_manager_secret_iam_member" "run_agent_read_webhook_secret_test" {
-  secret_id = google_secret_manager_secret.dispatcher_webhook_secret_test.id
   role      = "roles/secretmanager.secretAccessor"
   member    = local.service_agent
 }
@@ -132,17 +93,6 @@ resource "google_cloud_run_v2_service" "stripe_dispatcher" {
           secret_key_ref {
             secret  = google_secret_manager_secret.dispatcher_webhook_secret.secret_id
             version = google_secret_manager_secret_version.dispatcher_webhook_secret.version
-          }
-        }
-      }
-
-      env {
-        name = "STRIPE_WEBHOOK_SECRET_TEST"
-
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.dispatcher_webhook_secret_test.secret_id
-            version = google_secret_manager_secret_version.dispatcher_webhook_secret_test.version
           }
         }
       }

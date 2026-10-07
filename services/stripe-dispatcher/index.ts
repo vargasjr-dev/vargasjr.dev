@@ -4,14 +4,11 @@ import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_API_KEY ?? "");
 
-// One endpoint per Stripe mode points at this service (live + test), so a
-// delivery may be signed with either signing secret. Try each and treat
-// the first that verifies as the event's mode. The legacy
-// STRIPE_WEBHOOK_SECRET name is honored for rolling-deploy compatibility.
-const WEBHOOK_SECRETS: { mode: string; secret: string }[] = [
-  { mode: "live", secret: process.env.STRIPE_WEBHOOK_SECRET ?? "" },
-  { mode: "test", secret: process.env.STRIPE_WEBHOOK_SECRET_TEST ?? "" },
-].filter((entry) => entry.secret.length > 0);
+// Each mode gets its own dispatcher service (live + test), all running
+// this same image. Terraform passes each instance exactly one signing
+// secret under this single env-var name — the service never needs to
+// know which mode it serves.
+const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? "";
 
 const ROUTES: Record<string, string> = {
   mycadet: "https://stripe-handler-235870281591.us-central1.run.app",
@@ -58,19 +55,11 @@ http
     const signature =
       typeof signatureHeader === "string" ? signatureHeader : "";
 
-    let event: Stripe.Event | null = null;
-    let verifiedMode: string | null = null;
-    for (const entry of WEBHOOK_SECRETS) {
-      try {
-        event = stripe.webhooks.constructEvent(raw, signature, entry.secret);
-        verifiedMode = entry.mode;
-        break;
-      } catch {
-        // Try the next mode's secret.
-      }
-    }
-    if (!event) {
-      console.error("[stripe dispatcher] signature verification failed against all modes");
+    let event: Stripe.Event;
+    try {
+      event = stripe.webhooks.constructEvent(raw, signature, WEBHOOK_SECRET);
+    } catch {
+      console.error("[stripe dispatcher] signature verification failed");
       sendJson(res, 400, { error: "bad_signature" });
       return;
     }
@@ -105,7 +94,6 @@ http
         "Stripe-Signature": signature,
         "X-Dispatcher-Project": project,
         "X-Dispatcher-Event": event.type,
-        "X-Dispatcher-Mode": verifiedMode ?? "unknown",
       },
       body: raw,
     });
