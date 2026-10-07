@@ -10,14 +10,14 @@ const stripe = new Stripe(process.env.STRIPE_API_KEY ?? "");
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? "";
 const MODE = process.env.DISPATCHER_MODE === "dev" ? "dev" : "prod";
 
-// Per-mode routes. Cadet's handler is mode-agnostic and its sandbox
-// workspace runs no handler of its own (cadet's modules/dev is Vercel-side
-// only), so both modes point at the same handler today — split them here
-// when cadet grows a sandbox handler.
+// Per-mode routes. Cadet's handler is mode-agnostic; its sandbox
+// workspace now runs its own dev twin (stripe-handler-dev, mycadet
+// project — mycadet-platform#65), so test-mode relays go there while
+// live-mode relays keep hitting the prod handler.
 const ROUTES: Record<string, Record<"prod" | "dev", string>> = {
   mycadet: {
     prod: "https://stripe-handler-235870281591.us-central1.run.app",
-    dev: "https://stripe-handler-235870281591.us-central1.run.app",
+    dev: "https://stripe-handler-dev-235870281591.us-central1.run.app",
   },
 };
 
