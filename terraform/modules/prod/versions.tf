@@ -22,7 +22,7 @@ terraform {
 
     # The test endpoint's provider alias — the dotted local name must be
     # declared explicitly for the root's stripe.test mapping to be accepted.
-    stripe.test = {
+    "stripe.test" = {
       source = "franckverrot/stripe"
     }
   }
