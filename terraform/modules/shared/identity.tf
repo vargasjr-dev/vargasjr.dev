@@ -16,6 +16,7 @@ resource "google_project_iam_member" "vargas_jr_custom_role" {
   member  = "serviceAccount:${google_service_account.vargas_jr.email}"
 }
 
+
 data "google_project" "portfolio" {
   project_id = var.portfolio_project_id
 }

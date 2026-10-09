@@ -65,6 +65,7 @@ cdktf.out/
 *.tfstate.*
 *.tfplan
 .terraform/
+.terraform.lock.hcl
 terraform/*.tfvars
 .env*.local
 .internal/

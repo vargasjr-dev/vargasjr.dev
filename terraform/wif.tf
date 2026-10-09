@@ -2,7 +2,7 @@
 
 locals {
   portfolio = [
-    { repo = "vargasjr-dev/vargasjr.dev",     project = "vargasjr-dev" },
+    { repo = "vargasjr-dev/vargasjr.dev", project = "vargasjr-dev" },
     { repo = "vargasjr-dev/mycadet-platform", project = "mycadet" },
   ]
 
@@ -132,4 +132,14 @@ moved {
 moved {
   from = google_service_account_iam_member.ci_impersonation["vargasjr-dev/vargasjr.dev"]
   to   = google_service_account_iam_member.ci_impersonation["vargasjr-dev"]
+}
+
+
+# Read-only log access for the Vargas JR identity (the assistant's creds).
+resource "google_project_iam_member" "vargas_jr_logging_viewer" {
+  for_each = local.pairs
+
+  project = each.value.project
+  role    = "roles/logging.viewer"
+  member  = "serviceAccount:${module.shared.vargas_jr_sa}"
 }
