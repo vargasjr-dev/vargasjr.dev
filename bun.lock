@@ -5,7 +5,7 @@
     "": {
       "name": "vargasjr-dev",
       "dependencies": {
-        "@mycadet/web": "0.12.6-dev.202610091338.ee7f3e3",
+        "@mycadet/web": "0.12.7",
         "@neondatabase/serverless": "^1.1.0",
         "@vellumai/web": "0.12.2",
         "@vercel/blob": "^0.23.4",
@@ -245,7 +245,7 @@
 
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.25", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-vNk6aEwybGtawWmy/PzwnGDOjCkLWSD2wqvjGGAgOAwCGWySYXfYoxt00IJkTF+8Lb57DwOb3Aa0o9CApepiYQ=="],
 
-    "@mycadet/web": ["@mycadet/web@0.12.6-dev.202610091338.ee7f3e3", "", {}, "sha512-qrVuzVx8AtcOo/3wwggd1wXjvIzSG07rqdUUgP+tbfgVAKb0F8N0bq+UVUf43V+wS5wUSSdZz2Ofib7jeqKwIQ=="],
+    "@mycadet/web": ["@mycadet/web@0.12.7", "", {}, "sha512-KNRZaV51i+3v5j9F6+mbzRZhhCxbPUyld4ybPTEKpn0Nt+E8PLwfLLGDKl5SIM2MixsWpy+RP8eMdDWkFRJBzg=="],
 
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.0.5", "", { "dependencies": { "@emnapi/core": "^1.5.0", "@emnapi/runtime": "^1.5.0", "@tybys/wasm-util": "^0.10.1" } }, "sha512-TBr9Cf9onSAS2LQ2+QHx6XcC6h9+RIzJgbqG3++9TUZSH204AwEy5jg3BTQ0VATsyoGj4ee49tN/y6rvaOOtcg=="],
 

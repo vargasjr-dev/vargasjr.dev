@@ -16,10 +16,10 @@ import { basename, join } from "path";
 const root = process.cwd();
 
 // Per-package telegram anchor: the minified empty-array const referenced by
-// the shared nav-list hook churns between brands (Yq in @mycadet/web, hK in
+// the shared nav-list hook churns between brands ($q in @mycadet/web, hK in
 // @vellumai/web 0.12.2). Everything else is identical across both.
 const PACKAGES = [
-  { pkg: "@mycadet/web", telegramAnchor: "Yq" },
+  { pkg: "@mycadet/web", telegramAnchor: "$q" },
   { pkg: "@vellumai/web", telegramAnchor: "hK" },
 ];
 
