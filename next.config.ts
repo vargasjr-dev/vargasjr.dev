@@ -1,5 +1,26 @@
 import type { NextConfig } from "next";
 
+// The admin shell ships BOTH SPA bundles side by side (@mycadet/web +
+// @vellumai/web — see scripts/copy-assistant.ts) and can swap between them
+// at runtime. The active bundle rides in the `webClientBundle` cookie
+// (mirrored from the SPA's localStorage key; proxy.ts also resolves it into
+// the x-web-client-bundle request header for the shell route). Each bundle
+// dir keeps its own near-copy of the local API, so every SPA-facing local
+// rewrite comes in a PAIR: the vellum variant fires only when the cookie
+// says vellum, and the cadet default follows it.
+function localApiRewrite(source: string, destination: string) {
+  return [
+    {
+      source,
+      destination: `/api/vellum-local/${destination}`,
+      has: [
+        { type: "cookie" as const, key: "webClientBundle", value: "vellum" },
+      ],
+    },
+    { source, destination: `/api/cadet-local/${destination}` },
+  ];
+}
+
 const nextConfig: NextConfig = {
   // Compress responses
   compress: true,
@@ -44,15 +65,14 @@ const nextConfig: NextConfig = {
       // gateway proxy. Otherwise the /assistant catch-all or gateway rewrite
       // can win intermittently and send health traffic to the assistant.
       beforeFiles: [
-        {
-          source: "/assistant/__local/status/:assistantId",
-          destination: "/api/vellum-local/status/:assistantId",
-        },
-        {
-          source:
-            "/assistant/__gateway/7830/v1/assistants/:assistantId/healthz",
-          destination: "/api/vellum-local/healthz/:assistantId",
-        },
+        ...localApiRewrite(
+          "/assistant/__local/status/:assistantId",
+          "status/:assistantId",
+        ),
+        ...localApiRewrite(
+          "/assistant/__gateway/7830/v1/assistants/:assistantId/healthz",
+          "healthz/:assistantId",
+        ),
       ],
       afterFiles: [
         // Short-circuit mocks for endpoints the SPA fires early in its bootstrap
@@ -76,36 +96,33 @@ const nextConfig: NextConfig = {
           destination: "/api/v1/user/consent",
         },
         ...external,
-        {
-          source: "/assistant/__local/lockfile",
-          destination: "/api/vellum-local/lockfile",
-        },
-        {
-          source: "/assistant/__local/guardian-token/:assistantId",
-          destination: "/api/vellum-local/guardian-token/:assistantId",
-        },
+        ...localApiRewrite("/assistant/__local/lockfile", "lockfile"),
+        ...localApiRewrite(
+          "/assistant/__local/guardian-token/:assistantId",
+          "guardian-token/:assistantId",
+        ),
         // Local assistant status check — SPA's auth-store fires
         // `re(assistantId)` (= `ts(e)` in local-mode.js) to determine if the
-        // local host is reachable. See app/api/vellum-local/status/[assistantId]/route.ts.
-        {
-          source: "/assistant/__local/status/:assistantId",
-          destination: "/api/vellum-local/status/:assistantId",
-        },
+        // local host is reachable. See the status route in
+        // app/api/{vellum,cadet}-local/status/[assistantId]/route.ts.
+        ...localApiRewrite(
+          "/assistant/__local/status/:assistantId",
+          "status/:assistantId",
+        ),
         // Temporary web-local health short-circuit. Keep this before the generic
         // gateway proxy so the heartbeat does not reach the assistant backend.
         // TODO: Remove when the upstream Vellum heartbeat is made efficient.
-        {
-          source:
-            "/assistant/__gateway/7830/v1/assistants/:assistantId/healthz",
-          destination: "/api/vellum-local/healthz/:assistantId",
-        },
+        ...localApiRewrite(
+          "/assistant/__gateway/7830/v1/assistants/:assistantId/healthz",
+          "healthz/:assistantId",
+        ),
         // P() connect flow: gateway token exchange.
         // gatewayPort=7830 → URL = /assistant/__gateway/7830/auth/token.
         // 0.10.x requires numeric gatewayPort; see comment in lockfile route.
-        {
-          source: "/assistant/__gateway/7830/auth/token",
-          destination: "/api/vellum-local/gateway-token",
-        },
+        ...localApiRewrite(
+          "/assistant/__gateway/7830/auth/token",
+          "gateway-token",
+        ),
         // After the connect succeeds, b.url = origin + /assistant/__gateway/7830.
         // The SPA's fetch interceptor prefixes ALL SDK calls with b.url, so every
         // API call becomes /assistant/__gateway/7830/v1/... — proxy them to ngrok.
