@@ -26,26 +26,75 @@ function run(cmd: string[], mustSucceed = false): number {
   return result.status ?? 1;
 }
 
-run(["gcloud", "auth", "configure-docker", "us-central1-docker.pkg.dev", "--quiet"], true);
+run(
+  [
+    "gcloud",
+    "auth",
+    "configure-docker",
+    "us-central1-docker.pkg.dev",
+    "--quiet",
+  ],
+  true,
+);
 
 for (const service of SERVICES) {
   const image = `${REGISTRY}/${service}`;
 
-  run([
-    "gcloud", "builds", "submit", `services/${service}`,
-    `--service-account=projects/${PROJECT}/serviceAccounts/terraform-apply@${PROJECT}.iam.gserviceaccount.com`,
-    "--default-buckets-behavior=regional-user-owned-bucket",
-    "--pack", `image=${image}:${SHA}`,
-  ], true);
-  run(["gcloud", "artifacts", "docker", "tags", "add", `${image}:${SHA}`, `${image}:latest`], true);
+  run(
+    [
+      "gcloud",
+      "builds",
+      "submit",
+      `services/${service}`,
+      `--service-account=projects/${PROJECT}/serviceAccounts/terraform-apply@${PROJECT}.iam.gserviceaccount.com`,
+      "--default-buckets-behavior=regional-user-owned-bucket",
+      "--pack",
+      `image=${image}:${SHA}`,
+    ],
+    true,
+  );
+  run(
+    [
+      "gcloud",
+      "artifacts",
+      "docker",
+      "tags",
+      "add",
+      `${image}:${SHA}`,
+      `${image}:latest`,
+    ],
+    true,
+  );
 
   // New image -> new revision. Dev twins (e.g. stripe-dispatcher-dev) run
   // the same image under a "-dev" service name — roll them too so they
   // don't stay pinned to the image from their creation apply.
   const roll = (name: string) =>
-    run(["gcloud", "run", "services", "update", name, "--region", REGION, "--image", `${image}:${SHA}`, "--quiet"], true);
+    run(
+      [
+        "gcloud",
+        "run",
+        "services",
+        "update",
+        name,
+        "--region",
+        REGION,
+        "--image",
+        `${image}:${SHA}`,
+        "--quiet",
+      ],
+      true,
+    );
   roll(service);
-  const twin = run(["gcloud", "run", "services", "describe", `${service}-dev`, "--region", REGION]);
+  const twin = run([
+    "gcloud",
+    "run",
+    "services",
+    "describe",
+    `${service}-dev`,
+    "--region",
+    REGION,
+  ]);
   if (twin === 0) {
     roll(`${service}-dev`);
   }

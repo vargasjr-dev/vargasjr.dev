@@ -22,6 +22,36 @@ function withDaemonTrailingSlash(pathname: string): string {
   return pathname.endsWith("/") ? pathname : `${pathname}/`;
 }
 
+/**
+ * Resolves the active SPA bundle for this request. Both admin shells ship
+ * side by side (@mycadet/web + @vellumai/web — see scripts/copy-assistant.ts)
+ * and the browser carries the choice as the `webClientBundle` cookie, a
+ * mirror of the SPA's `webClientBundle` localStorage key. An explicitly set
+ * `x-web-client-bundle` header wins (so server-side callers can override);
+ * otherwise the cookie decides. Cadet is the default.
+ */
+function webClientBundle(request: NextRequest): "cadet" | "vellum" {
+  const header = request.headers.get("x-web-client-bundle");
+  if (header === "cadet" || header === "vellum") return header;
+  return request.cookies.get("webClientBundle")?.value === "vellum"
+    ? "vellum"
+    : "cadet";
+}
+
+// Bundle-aware dispatch for the local API: each SPA dist ships its own copy
+// of the near-identical endpoints (app/api/vellum-local + app/api/cadet-local),
+// so gateway-token exchange resolves to whichever bundle's API it belongs to.
+// Shared /v1 mocks are left untouched — both bundles use them identically.
+function bundleLocalPath(
+  localPath: string,
+  bundle: "cadet" | "vellum",
+): string {
+  if (localPath.startsWith("/api/vellum-local/") && bundle === "cadet") {
+    return localPath.replace("/api/vellum-local/", "/api/cadet-local/");
+  }
+  return localPath;
+}
+
 function localApiPath(pathname: string): string | undefined {
   return LOCAL_API_ROUTES.get(pathname.replace(/\/$/, ""));
 }
@@ -52,6 +82,7 @@ const ALLAUTH_SESSION_PATH = /^\/_allauth\/browser\/v1\/auth\/session\/?$/;
 
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+  const bundle = webClientBundle(request);
 
   // Temporary web-local responses for the SPA's reachability probes. These
   // must run before the generic assistant routing below.
@@ -87,7 +118,9 @@ export function proxy(request: NextRequest) {
   // slashless so it maps to the App Router route without another redirect.
   const localPath = localApiPath(pathname);
   if (localPath) {
-    return NextResponse.rewrite(new URL(`${localPath}${search}`, request.url));
+    return NextResponse.rewrite(
+      new URL(`${bundleLocalPath(localPath, bundle)}${search}`, request.url),
+    );
   }
 
   // Everything else is a daemon API request. Normalize it internally so the
@@ -113,7 +146,12 @@ export function proxy(request: NextRequest) {
     );
   }
 
-  return NextResponse.next();
+  // Resolve the active SPA bundle into a request header so the /assistant
+  // shell route (and anything else server-side) can pick which bundle to
+  // serve without re-parsing cookies.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-web-client-bundle", bundle);
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 export const config = {
