@@ -82,3 +82,34 @@ export async function GET(request: NextRequest) {
     token,
   });
 }
+
+// The cadet web client POSTs lockfile mutations back to this endpoint
+// (assistant rename, onboarding stamp, saveLockfileAssistant). The served
+// lockfile is rebuilt from env on every GET, so mutations are acknowledged
+// without persistence — the same effective behavior as @vellumai/web
+// 0.12.2, where runtime changes only lived in localStorage until the next
+// load.
+//
+// The client's helper treats the response body as the result object
+// (`await r.json().catch(() => null) ?? {ok: false}`), so the ack MUST be a
+// JSON object — an empty or non-JSON body reads as failure even on a 200.
+export async function POST() {
+  const cookieStore = await cookies();
+  if (!cookieStore.get("admin_session")?.value) {
+    logHandshake({
+      route: "lockfile",
+      method: "POST",
+      status: 401,
+      detail: "no admin_session cookie",
+    });
+    return new NextResponse(null, { status: 401 });
+  }
+
+  logHandshake({
+    route: "lockfile",
+    method: "POST",
+    status: 200,
+    detail: "acknowledged lockfile mutation (not persisted)",
+  });
+  return NextResponse.json({ ok: true });
+}

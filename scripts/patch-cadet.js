@@ -1,5 +1,5 @@
 /**
- * Applies the intentional @vellumai/web customizations used by vargasjr.dev.
+ * Applies the intentional @mycadet/web customizations used by vargasjr.dev.
  *
  * These patches target stable minified code rather than hashed filenames:
  * the main bundle changed name every release (index-*.js in 0.11.9–0.12.1,
@@ -11,7 +11,7 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from "fs";
 import { basename, join } from "path";
 
 const root = process.cwd();
-const assetsDir = join(root, "node_modules/@vellumai/web/dist/assets");
+const assetsDir = join(root, "node_modules/@mycadet/web/dist/assets");
 
 function jsAssets() {
   if (!existsSync(assetsDir)) return [];
@@ -25,7 +25,7 @@ function patchAsset(prefix, patches, label) {
     ? jsAssets().filter((f) => basename(f).startsWith(prefix))
     : jsAssets();
   if (files.length === 0) {
-    console.warn(`patch-vellum: [${label}] no matching asset files`);
+    console.warn(`patch-cadet: [${label}] no matching asset files`);
     return false;
   }
 
@@ -65,17 +65,17 @@ function patchFile(file, patches, label) {
 
   writeFileSync(file, content, "utf8");
   console.log(
-    `patch-vellum: [${label}] ${applied}/${patches.length} patches applied to ${basename(file)}`,
+    `patch-cadet: [${label}] ${applied}/${patches.length} patches applied to ${basename(file)}`,
   );
   if (applied < patches.length) {
     console.warn(
-      `patch-vellum: [${label}] ${patches.length - applied} pattern(s) not found in ${basename(file)} — needs a retarget`,
+      `patch-cadet: [${label}] ${patches.length - applied} pattern(s) not found in ${basename(file)} — needs a retarget`,
     );
   }
   return applied === patches.length;
 }
 
-// Vellum 0.11.9's command palette still limits Recent to five conversations.
+// The command palette still limits Recent to five conversations.
 patchAsset(
   null,
   [
@@ -87,9 +87,8 @@ patchAsset(
   "command-palette-recent-limit",
 );
 
-// Vellum gates Inspect/developer access through the user's isStaff flag.
-// 0.11.9 computed it in one minified helper (ck/zk); 0.12.1 moved it into
-// two parse sites, so force both to true.
+// The client gates Inspect/developer access through the user's isStaff flag.
+// The two minified parse sites below force it to true.
 patchAsset(
   null,
   [
@@ -101,12 +100,14 @@ patchAsset(
 
 // Hide Telegram-sourced conversations from the sidebar: every nav list
 // (pinned, groups, recents, channel sections) flows through this shared hook.
+// Anchor re-derived for @mycadet/web — same shape, the minified empty-array
+// const is Yq (was hK in @vellumai/web 0.12.2).
 patchAsset(
   null,
   [
     [
-      "{conversations:i.data?.conversations??hK,isLoading:i.isLoading",
-      "{conversations:(i.data?.conversations??hK).filter(e=>e.originChannel!==`telegram`),isLoading:i.isLoading",
+      "{conversations:i.data?.conversations??Yq,isLoading:i.isLoading",
+      "{conversations:(i.data?.conversations??Yq).filter(e=>e.originChannel!==`telegram`),isLoading:i.isLoading",
     ],
   ],
   "sidebar-hide-telegram",

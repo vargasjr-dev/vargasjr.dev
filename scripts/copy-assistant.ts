@@ -1,5 +1,5 @@
 /**
- * Copies @vellumai/web/dist → public/assistant/
+ * Copies @mycadet/web/dist → public/assistant/
  * Run as part of the build: "prebuild": "bun scripts/copy-assistant.ts"
  *
  * The SPA's index.html hardcodes /assistant/ as its base path, so the
@@ -11,13 +11,13 @@
 import { cp, mkdir, readFile, readdir, rm, writeFile } from "fs/promises";
 import { join } from "path";
 
-const srcDir = join(process.cwd(), "node_modules/@vellumai/web/dist");
+const srcDir = join(process.cwd(), "node_modules/@mycadet/web/dist");
 const destDir = join(process.cwd(), "public/assistant");
 
 await rm(destDir, { recursive: true, force: true });
 await mkdir(destDir, { recursive: true });
 await cp(srcDir, destDir, { recursive: true });
-console.log("✅ Copied @vellumai/web/dist → public/assistant/");
+console.log("✅ Copied @mycadet/web/dist → public/assistant/");
 
 // Patch the SPA bundle for self-hosted mode.
 // vercel.json overrides buildCommand, bypassing package.json build scripts,
@@ -67,7 +67,7 @@ const patches: Array<{
 ];
 
 // ── index.html: inject feature flag overrides ──────────────────────────────
-// Injects window.__VELLUM_FLAG_OVERRIDES__ before </head> so the flag is
+// Injects window.__CADET_FLAG_OVERRIDES__ before </head> so the flag is
 // baked in at build time and can't be reverted by server-side values.
 //
 // `self-hosted-assistant` (defaultEnabled: false in feature-flag-catalog):
@@ -79,7 +79,7 @@ const patches: Array<{
 // assistants (not the desktop-app-only fallback).
 const indexHtmlPath = join(destDir, "index.html");
 const indexHtml = await readFile(indexHtmlPath, "utf-8");
-const flagScript = `<script>window.__VELLUM_FLAG_OVERRIDES__={"settings-developer-nav":true,"developer-menu-items":true,"self-hosted-assistant":true}</script>`;
+const flagScript = `<script>window.__CADET_FLAG_OVERRIDES__={"settings-developer-nav":true,"developer-menu-items":true,"self-hosted-assistant":true}</script>`;
 if (indexHtml.includes(flagScript)) {
   console.log("⏭️  Already patched: index.html (feature flag overrides)");
 } else {
@@ -87,7 +87,7 @@ if (indexHtml.includes(flagScript)) {
     indexHtmlPath,
     indexHtml.replace("</head>", `${flagScript}</head>`),
   );
-  console.log("🩹 Patched: index.html — injected __VELLUM_FLAG_OVERRIDES__");
+  console.log("🩹 Patched: index.html — injected __CADET_FLAG_OVERRIDES__");
 }
 
 // ── index.html: preload lockfile + token into localStorage so local-mode handshake fires ──
@@ -99,13 +99,13 @@ if (indexHtml.includes(flagScript)) {
 // `initSession` skips the local-mode branch, and SDK calls 401.
 //
 // Fix: inject a synchronous IIFE into <head> that writes the lockfile to
-// `localStorage['vellum:local:lockfile']` BEFORE the SPA module loads.
+// `localStorage['cadet:local:lockfile']` BEFORE the SPA module loads.
 // Synchronous matters here — the SPA module is `defer`-loaded by default,
 // so our IIFE runs first and populates localStorage before `initSession`
 // ever fires.
 //
-// We ALSO write `localStorage['vellum:gw:token']` so the ge-bootstrap IIFE
-// in local-mode.js picks up the token at module load — without this, the
+// We ALSO write `localStorage['cadet:gw:token']` so the gateway bootstrap
+// IIFE in local-mode.js picks up the token at module load — without this, the
 // auth-store fires `/v1/conversations/` etc. BEFORE the handshake
 // (`fe()` → POST `/auth/token` → `_e()`) completes, so `Rn()` (= Ln) returns
 // null when C5() runs → Authorization header gets DELETED → 401 from daemon.
@@ -151,7 +151,7 @@ if (!assistantId) {
   // ge-bootstrap IIFE treats expiresAt as a hint and warns if expired, but
   // still uses the token. Real token rotation happens server-side via the
   // handshake endpoint (which sets a fresh 2-hour expiresAt).
-  const lockfileScript = `<script>(function(){try{var p=${JSON.stringify(lockfilePayload)};localStorage.setItem("vellum:local:lockfile",JSON.stringify(p));if(p.token){localStorage.setItem("vellum:gw:token",p.token);localStorage.setItem("vellum:gw:expiresAt","4070908800")}}catch(e){}})();</script>`;
+  const lockfileScript = `<script>(function(){try{var p=${JSON.stringify(lockfilePayload)};localStorage.setItem("cadet:local:lockfile",JSON.stringify(p));if(p.token){localStorage.setItem("cadet:gw:token",p.token);localStorage.setItem("cadet:gw:expiresAt","4070908800")}}catch(e){}})();</script>`;
 
   if (indexHtml.includes(lockfileScript)) {
     console.log("⏭️  Already patched: index.html (lockfile preload)");
