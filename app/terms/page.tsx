@@ -43,7 +43,7 @@ export default function TermsPage() {
               </Link>
               , you agree to receive text messages from{" "}
               <strong>VargasJR</strong>, the AI assistant service operated by{" "}
-              <strong>Vargas JR, LLC</strong>, from +1 (833) 659-7364.
+              <strong>Vargas JR, LLC</strong>, from +1 (941) 263-2823.
               Specifically:
             </p>
             <ul className="list-disc list-inside mt-3 space-y-2">

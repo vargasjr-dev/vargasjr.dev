@@ -13,7 +13,7 @@ export const GET = () => {
     "N:;Vargas JR;;;",
     "FN:Vargas JR",
     "ORG:VargasJR LLC",
-    "TEL;TYPE=CELL:+18336597438",
+    "TEL;TYPE=CELL:+19412632823",
     "EMAIL:hello@vargasjr.dev",
     "URL:https://vargasjr.dev",
     `PHOTO;ENCODING=b;TYPE=JPEG:${photoBase64}`,
