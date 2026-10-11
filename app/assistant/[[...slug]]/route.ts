@@ -11,11 +11,10 @@ import { join } from "path";
  * TWO shells:
  *   - cadet (default): a thin document that loads the cadet gateway DIRECTLY
  *     in a full-viewport iframe — no @mycadet/web bundle ships in this repo
- *     at all. The gateway URL comes from MYCADET_GATEWAY_URL at request
- *     time, falling back to VELLUM_API_URL (the same ngrok tunnel the site
- *     already proxies /v1 traffic to). The gateway serves its own web
- *     bundle and API on its own origin, so nothing is proxied or patched
- *     here.
+ *     at all. The gateway URL comes from CADET_GATEWAY_URL at request time
+ *     (set on Vercel to the gateway's ngrok URL). The gateway serves its own
+ *     web bundle and API on its own origin, so nothing is proxied or
+ *     patched here.
  *   - vellum: @vellumai/web, the inline revert shell (see
  *     scripts/copy-assistant.ts), kept for an instant revert.
  *
@@ -60,15 +59,11 @@ function escapeHtmlAttr(value: string): string {
 const pillScript = `<script>/*web-bundle-pill*/(function(){try{var K="webClientBundle";function cur(){return localStorage.getItem(K)==="vellum"?"vellum":"cadet"}var b=document.createElement("button");function render(){b.textContent="web: "+cur()}function toggle(){var n=cur()==="vellum"?"cadet":"vellum";localStorage.setItem(K,n);document.cookie=K+"="+n+";path=/;max-age=31536000;samesite=lax";location.reload()}render();b.style.cssText="position:fixed;bottom:10px;right:10px;z-index:2147483647;opacity:.5;background:#111;color:#eee;border:1px solid #555;border-radius:999px;font:11px ui-monospace,SFMono-Regular,monospace;padding:4px 10px;cursor:pointer";b.onclick=toggle;b.onmouseenter=function(){b.style.opacity="1"};b.onmouseleave=function(){b.style.opacity=".5"};document.body.appendChild(b)}catch(e){}})();</script>`;
 
 function cadetShellHtml(): NextResponse {
-  const gatewayUrl = (
-    process.env.MYCADET_GATEWAY_URL ??
-    process.env.VELLUM_API_URL ??
-    ""
-  ).trim();
+  const gatewayUrl = process.env.CADET_GATEWAY_URL ?? "";
 
   const body = gatewayUrl
     ? `<iframe src="${escapeHtmlAttr(gatewayUrl)}" title="cadet assistant" allow="clipboard-read; clipboard-write" style="border:0;height:100%;width:100%"></iframe>`
-    : `<p style="font:14px ui-monospace,SFMono-Regular,monospace;padding:2rem">cadet gateway not configured — set MYCADET_GATEWAY_URL (the gateway's ngrok URL) to load it here.</p>`;
+    : `<p style="font:14px ui-monospace,SFMono-Regular,monospace;padding:2rem">cadet gateway not configured — set CADET_GATEWAY_URL (the gateway's ngrok URL) to load it here.</p>`;
 
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>web: cadet</title><style>html,body{margin:0;padding:0;height:100%}</style></head><body>${body}${pillScript}</body></html>`;
 
