@@ -8,7 +8,7 @@ import { smsOptIns } from "@/db/schema";
 const OPT_IN_DISCLOSURE =
   "By checking this box and submitting my phone number, I agree to receive " +
   "text messages from VargasJR, the AI assistant service operated by " +
-  "Vargas JR, LLC, from the toll-free number +1 (833) 659-7364. Messages " +
+  "Vargas JR, LLC, from +1 (941) 263-2823. Messages " +
   "include task confirmations, calendar and deadline reminders, status " +
   "alerts, and one-to-one conversational replies to requests I've made. " +
   "Message frequency varies. Message and data rates may apply. Reply STOP " +
@@ -16,8 +16,8 @@ const OPT_IN_DISCLOSURE =
   "use any other part of vargasjr.dev.";
 const CONSENT_VERSION = "2026-10-01";
 
-// Normalize common US formats to E.164: (833) 659-7364, 833-659-7364,
-// 1 833 659 7364, +18336597364 -> +18336597364
+// Normalize common US formats to E.164: (941) 263-2823, 941-263-2823,
+// 1 941 263 2823, +19412632823 -> +19412632823
 function normalizePhone(input: string): string | null {
   const digits = input.replace(/\D/g, "");
   if (digits.length === 10) return `+1${digits}`;

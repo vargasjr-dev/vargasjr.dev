@@ -25,7 +25,7 @@ export default function SmsConsentPage() {
               VargasJR is an AI assistant service operated by Vargas JR, LLC.
               Enter your phone number below to receive task confirmations,
               calendar and deadline reminders, status alerts, and one-to-one
-              conversational replies from <strong>+1 (833) 659-7364</strong>.
+              conversational replies from <strong>+1 (941) 263-2823</strong>.
             </p>
             <p className="mt-2">
               Opting in is <strong>optional</strong> — SMS is a separate,
