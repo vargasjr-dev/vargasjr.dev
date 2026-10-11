@@ -23,10 +23,11 @@ function withDaemonTrailingSlash(pathname: string): string {
 }
 
 /**
- * Resolves the active SPA bundle for this request. Both admin shells ship
- * side by side (@mycadet/web + @vellumai/web — see scripts/copy-assistant.ts)
- * and the browser carries the choice as the `webClientBundle` cookie, a
- * mirror of the SPA's `webClientBundle` localStorage key. An explicitly set
+ * Resolves the active SPA bundle for this request. The vellum shell ships
+ * inline (see scripts/copy-assistant.ts) and the cadet shell is a gateway
+ * iframe (app/assistant/[[...slug]]/route.ts). The browser carries the
+ * choice as the `webClientBundle` cookie, a mirror of the SPA's
+ * `webClientBundle` localStorage key. An explicitly set
  * `x-web-client-bundle` header wins (so server-side callers can override);
  * otherwise the cookie decides. Cadet is the default.
  */
@@ -36,20 +37,6 @@ function webClientBundle(request: NextRequest): "cadet" | "vellum" {
   return request.cookies.get("webClientBundle")?.value === "vellum"
     ? "vellum"
     : "cadet";
-}
-
-// Bundle-aware dispatch for the local API: each SPA dist ships its own copy
-// of the near-identical endpoints (app/api/vellum-local + app/api/cadet-local),
-// so gateway-token exchange resolves to whichever bundle's API it belongs to.
-// Shared /v1 mocks are left untouched — both bundles use them identically.
-function bundleLocalPath(
-  localPath: string,
-  bundle: "cadet" | "vellum",
-): string {
-  if (localPath.startsWith("/api/vellum-local/") && bundle === "cadet") {
-    return localPath.replace("/api/vellum-local/", "/api/cadet-local/");
-  }
-  return localPath;
 }
 
 function localApiPath(pathname: string): string | undefined {
@@ -118,9 +105,7 @@ export function proxy(request: NextRequest) {
   // slashless so it maps to the App Router route without another redirect.
   const localPath = localApiPath(pathname);
   if (localPath) {
-    return NextResponse.rewrite(
-      new URL(`${bundleLocalPath(localPath, bundle)}${search}`, request.url),
-    );
+    return NextResponse.rewrite(new URL(`${localPath}${search}`, request.url));
   }
 
   // Everything else is a daemon API request. Normalize it internally so the

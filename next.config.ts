@@ -1,23 +1,18 @@
 import type { NextConfig } from "next";
 
-// The admin shell ships BOTH SPA bundles side by side (@mycadet/web +
-// @vellumai/web — see scripts/copy-assistant.ts) and can swap between them
-// at runtime. The active bundle rides in the `webClientBundle` cookie
-// (mirrored from the SPA's localStorage key; proxy.ts also resolves it into
-// the x-web-client-bundle request header for the shell route). Each bundle
-// dir keeps its own near-copy of the local API, so every SPA-facing local
-// rewrite comes in a PAIR: the vellum variant fires only when the cookie
-// says vellum, and the cadet default follows it.
+// Only @vellumai/web ships as an inlined SPA bundle (see
+// scripts/copy-assistant.ts); the cadet shell is a gateway iframe served by
+// app/assistant/[[...slug]]/route.ts. The active bundle rides in the
+// `webClientBundle` cookie (mirrored from the SPA's localStorage key;
+// proxy.ts also resolves it into the x-web-client-bundle request header for
+// the shell route), and every SPA-facing local rewrite targets the
+// vellum-local API — the only bundle that still calls these paths.
 function localApiRewrite(source: string, destination: string) {
   return [
     {
       source,
       destination: `/api/vellum-local/${destination}`,
-      has: [
-        { type: "cookie" as const, key: "webClientBundle", value: "vellum" },
-      ],
     },
-    { source, destination: `/api/cadet-local/${destination}` },
   ];
 }
 

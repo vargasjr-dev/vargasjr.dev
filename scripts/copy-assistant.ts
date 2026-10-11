@@ -1,53 +1,40 @@
 /**
- * Copies BOTH admin-shell SPA bundles → public/assistant/:
- *   @mycadet/web/dist → index.html (the default shell) + assets/
- *   @vellumai/web/dist → vellum.html (the revert shell) + assets merged in
+ * Copies the @vellumai/web SPA bundle → public/assistant/:
+ *   @vellumai/web/dist → vellum.html (the inline revert shell) + assets/
  *
  * Run as part of the build: "prebuild": "bun scripts/copy-assistant.ts"
  *
- * Both SPA index files hardcode /assistant/ as their base path, so the
+ * The SPA index file hardcodes /assistant/ as its base path, so the
  * contents must live at public/assistant/ for Next.js static serving.
- * Asset filenames are content-hashed, so the two dists' assets coexist in
- * the shared assets/ dir without colliding; only the shell document
- * differs, and the vellum one is kept as vellum.html next to index.html.
  * Which shell a request gets is decided at serve time (see
  * app/assistant/[[...slug]]/route.ts + proxy.ts) from the
- * `webClientBundle` localStorage key — keeping @vellumai/web installed
- * means we can revert to it with one click if cadet misbehaves.
+ * `webClientBundle` cookie — the cadet shell is NOT an inlined bundle
+ * anymore: it is a gateway iframe generated at request time, so this repo
+ * no longer installs @mycadet/web at all.
  *
- * After copying, applies patches to BOTH bundles so self-hosted
- * (docker/cloud) mode works without a gateway port.
+ * After copying, applies the vellum patches so self-hosted (docker/cloud)
+ * mode works without a gateway port.
  */
 import { cp, mkdir, readFile, readdir, rm, writeFile } from "fs/promises";
 import { join } from "path";
 
 const destDir = join(process.cwd(), "public/assistant");
-const cadetSrc = join(process.cwd(), "node_modules/@mycadet/web/dist");
 const vellumSrc = join(process.cwd(), "node_modules/@vellumai/web/dist");
 
 await rm(destDir, { recursive: true, force: true });
 await mkdir(destDir, { recursive: true });
-await cp(cadetSrc, destDir, { recursive: true });
-console.log(
-  "✅ Copied @mycadet/web/dist → public/assistant/ (default shell: index.html)",
-);
-
-// Merge the vellum dist in without clobbering anything cadet already
-// copied (cadet is the default shell, so its files win any name
-// collision — content-hashed assets shouldn't collide anyway). The vellum
-// index.html is held out of the merge and saved as vellum.html instead.
-const vellumIndexHtml = await readFile(join(vellumSrc, "index.html"), "utf-8");
-await cp(vellumSrc, destDir, {
-  recursive: true,
-  force: false, // existing files (cadet's) are kept as-is
-  errorOnExist: false,
-});
+await cp(vellumSrc, destDir, { recursive: true });
+// The dist's own index.html is held out of the static layer and served as
+// vellum.html — /assistant/ itself is the dynamic shell route (cadet
+// gateway iframe by default, vellum.html when the cookie says so).
+const vellumIndexHtml = await readFile(join(destDir, "index.html"), "utf-8");
+await rm(join(destDir, "index.html"));
 await writeFile(join(destDir, "vellum.html"), vellumIndexHtml);
 console.log(
-  "✅ Merged @vellumai/web/dist → public/assistant/ (revert shell: vellum.html)",
+  "✅ Copied @vellumai/web/dist → public/assistant/ (inline shell: vellum.html)",
 );
 
-// Patch the SPA bundles for self-hosted mode.
+// Patch the SPA bundle for self-hosted mode.
 // vercel.json overrides buildCommand, bypassing package.json build scripts,
 // so patches must be applied here after copying.
 //
@@ -69,8 +56,7 @@ const patches: Array<{
 }> = [
   // The main bundle's hash-prefix churns across releases (index-*.js in
   // 0.11.9–0.12.1, app-*.js in 0.12.2+), so filePrefix null scans every
-  // asset .js — a patch applies wherever its pattern lives, in EITHER
-  // bundle's files (both dists are merged into assets/).
+  // asset .js — a patch applies wherever its pattern lives.
   // Command palette: recent conversations 5 → 20.
   {
     filePrefix: null,
@@ -100,20 +86,21 @@ const patches: Array<{
 // the user-facing switch. The browser can't put it on the wire itself, so
 // the sync snippet mirrors it into a cookie of the same name on every load
 // — proxy.ts then resolves that cookie into the x-web-client-bundle request
-// header, which the shell route and the local-API dispatch read.
-// `?bundle=vellum|cadet` in the URL is the server-side escape hatch: the
-// snippet persists it to localStorage (and thus the cookie) even when the
-// pill can't render, so a broken bundle can always be swapped.
+// header, which the shell route reads. `?bundle=vellum|cadet` in the URL is
+// the server-side escape hatch: the snippet persists it to localStorage
+// (and thus the cookie) even when the pill can't render, so a broken shell
+// can always be swapped.
 const bundleSyncScript = `<script>/*web-bundle-switch*/(function(){try{var K="webClientBundle";var m=location.search.match(/[?&]bundle=(vellum|cadet)(?=&|#|$)/);if(m)localStorage.setItem(K,m[1]);var v=localStorage.getItem(K)==="vellum"?"vellum":"cadet";localStorage.setItem(K,v);document.cookie=K+"="+v+";path=/;max-age=31536000;samesite=lax"}catch(e){}})();</script>`;
 
 // The click-to-switch pill: bottom-right, shows the active bundle, one
-// click toggles it and reloads. Injected into both shells so the switch is
-// always visible regardless of which one is active.
+// click toggles it and reloads. Injected into the vellum shell here; the
+// cadet gateway shell (generated in app/assistant/[[...slug]]/route.ts)
+// carries a copy of the same snippet.
 const switchPillScript = `<script>/*web-bundle-pill*/(function(){try{var K="webClientBundle";function cur(){return localStorage.getItem(K)==="vellum"?"vellum":"cadet"}var b=document.createElement("button");function render(){b.textContent="web: "+cur()}function toggle(){var n=cur()==="vellum"?"cadet":"vellum";localStorage.setItem(K,n);document.cookie=K+"="+n+";path=/;max-age=31536000;samesite=lax";location.reload()}render();b.style.cssText="position:fixed;bottom:10px;right:10px;z-index:2147483647;opacity:.5;background:#111;color:#eee;border:1px solid #555;border-radius:999px;font:11px ui-monospace,SFMono-Regular,monospace;padding:4px 10px;cursor:pointer";b.onclick=toggle;b.onmouseenter=function(){b.style.opacity="1"};b.onmouseleave=function(){b.style.opacity=".5"};document.body.appendChild(b)}catch(e){}})();</script>`;
 
-// Flag overrides — injected as BOTH globals since each brand reads its own
-// name (__VELLUM_FLAG_OVERRIDES__ in @vellumai/web, __CADET_FLAG_OVERRIDES__
-// in @mycadet/web; the flag KEYS themselves are unchanged).
+// Flag overrides — the vellum bundle reads __VELLUM_FLAG_OVERRIDES__ (the
+// cadet iframe is served by the gateway on its own origin and never sees
+// anything injected here).
 //
 // `self-hosted-assistant` (defaultEnabled: false in feature-flag-catalog):
 // enables self-hosted assistant support in the web client. Without this,
@@ -127,9 +114,9 @@ const flagOverrides = JSON.stringify({
   "developer-menu-items": true,
   "self-hosted-assistant": true,
 });
-const flagScript = `<script>window.__VELLUM_FLAG_OVERRIDES__=${flagOverrides};window.__CADET_FLAG_OVERRIDES__=${flagOverrides}</script>`;
+const flagScript = `<script>window.__VELLUM_FLAG_OVERRIDES__=${flagOverrides}</script>`;
 
-// ── shell documents: preload lockfile + token into localStorage ────────────
+// ── shell document: preload lockfile + token into localStorage ─────────────
 // In 0.8.x AND 0.10.x, the SPA never fetches /assistant/__local/lockfile on
 // startup — `Q()` (0.10.x) / `G()` (0.8.x) only reads localStorage and falls
 // back to the empty default. The local-mode handshake (`oe()` → `Ms()` →
@@ -159,9 +146,6 @@ const flagScript = `<script>window.__VELLUM_FLAG_OVERRIDES__=${flagOverrides};wi
 // as locally-hosted. Without it, xs() returns false → ks() returns false →
 // As() returns undefined → oe() returns false → the handshake never fires
 // and assistantState stays 'initializing' forever (stuck skeleton).
-//
-// Written to BOTH localStorage namespaces (vellum:* and cadet:*) since
-// either bundle may be served; extra keys are inert to the other bundle.
 //
 // Idempotent: skip if lockfile already in localStorage (preserves any
 // runtime updates the SPA made).
@@ -194,17 +178,15 @@ if (!assistantId) {
   // ge-bootstrap IIFE treats expiresAt as a hint and warns if expired, but
   // still uses the token. Real token rotation happens server-side via the
   // handshake endpoint (which sets a fresh 2-hour expiresAt).
-  lockfileScript = `<script>(function(){try{var p=${JSON.stringify(lockfilePayload)};var s=JSON.stringify(p);localStorage.setItem("cadet:local:lockfile",s);localStorage.setItem("vellum:local:lockfile",s);if(p.token){localStorage.setItem("cadet:gw:token",p.token);localStorage.setItem("vellum:gw:token",p.token);localStorage.setItem("cadet:gw:expiresAt","4070908800");localStorage.setItem("vellum:gw:expiresAt","4070908800")}}catch(e){}})();</script>`;
+  lockfileScript = `<script>(function(){try{var p=${JSON.stringify(lockfilePayload)};var s=JSON.stringify(p);localStorage.setItem("vellum:local:lockfile",s);if(p.token){localStorage.setItem("vellum:gw:token",p.token);localStorage.setItem("vellum:gw:expiresAt","4070908800")}}catch(e){}})();</script>`;
 }
 
-// ── shell documents: inject SPA→parent navigation emitter ──────────────────
+// ── shell document: inject SPA→parent navigation emitter ──────────────────
 // The SPA uses path-based browser history (React Router on the `history` lib).
 // history.pushState/replaceState fire NO event a parent frame can observe, so
 // when the SPA navigates inside the admin iframe the parent browser URL stays
 // stuck. This script monkeypatches those primitives + listens for
 // popstate/hashchange and postMessages the parent with the new path + nav type.
-//
-// Bundle-independent — works identically in both shells.
 //
 // Runs before the SPA module (classic <script> in <head> vs. the deferred
 // module bundle), so the patches are in place before the router boots. The
@@ -213,11 +195,8 @@ if (!assistantId) {
 // Idempotent: skip if the marker comment is already present.
 const navEmitterScript = `<script>/*vellum-nav-emitter*/(function(){var M={source:'vellum-spa-nav'};function emit(nav){try{parent.postMessage(Object.assign({},M,{nav:nav,path:location.pathname+location.search+location.hash}),'*')}catch(e){}}['pushState','replaceState'].forEach(function(m){var orig=history[m];history[m]=function(){var r=orig.apply(this,arguments);emit(m==='pushState'?'push':'replace');return r}});window.addEventListener('popstate',function(){emit('pop')});window.addEventListener('hashchange',function(){emit('pop')})})();</script>`;
 
-// Inject everything into both shell documents.
-const shells: Array<{ file: string }> = [
-  { file: "index.html" },
-  { file: "vellum.html" },
-];
+// Inject everything into the vellum shell document.
+const shells: Array<{ file: string }> = [{ file: "vellum.html" }];
 
 for (const { file } of shells) {
   const htmlPath = join(destDir, file);
