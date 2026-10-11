@@ -1,15 +1,12 @@
 /**
- * Applies the intentional @mycadet/web + @vellumai/web customizations used
- * by vargasjr.dev.
+ * Applies the intentional @vellumai/web customizations used by vargasjr.dev.
  *
- * Both SPA bundles are installed side by side (see copy-assistant.ts) so we
- * can flip between them at runtime. The goal is for the cadet bundle to load
- * here soundly unpatched, so it carries only the sidebar telegram filter;
- * the vellum fallback bundle keeps its full customization set. Patches
- * target stable minified code rather than hashed filenames: the main bundle
- * changed name every release (index-*.js in 0.11.9–0.12.1, app-*.js in
- * 0.12.2+), so patches scan every asset .js for their pattern unless a
- * prefix is given.
+ * @vellumai/web is the only inline SPA bundle (see copy-assistant.ts) — the
+ * cadet shell loads the gateway directly in an iframe and needs no install
+ * or patches here. Patches target stable minified code rather than hashed
+ * filenames: the main bundle changed name every release (index-*.js in
+ * 0.11.9–0.12.1, app-*.js in 0.12.2+), so patches scan every asset .js for
+ * their pattern unless a prefix is given.
  */
 
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "fs";
@@ -18,14 +15,9 @@ import { basename, join } from "path";
 const root = process.cwd();
 
 // Per-package telegram anchor: the minified empty-array const referenced by
-// the shared nav-list hook churns between brands ($q in @mycadet/web, hK in
-// @vellumai/web 0.12.2).
+// the shared nav-list hook churns between brands (hK in @vellumai/web
+// 0.12.2).
 const PACKAGES = [
-  {
-    pkg: "@mycadet/web",
-    telegramAnchor: "$q",
-    patches: ["sidebar-hide-telegram"],
-  },
   {
     pkg: "@vellumai/web",
     telegramAnchor: "hK",

@@ -8,20 +8,25 @@ import { join } from "path";
  * routing, so on a hard reload of a deep link the browser needs the shell
  * back — without this route, Next 404s and the SPA never boots.
  *
- * TWO shells ship side by side (see scripts/copy-assistant.ts):
- *   - index.html  = @mycadet/web (the default bundle)
- *   - vellum.html = @vellumai/web (kept for an instant revert)
- * Both reference the same shared /assistant/assets/* dir (content-hashed
- * filenames don't collide across dists).
+ * TWO shells:
+ *   - cadet (default): a thin document that loads the cadet gateway DIRECTLY
+ *     in a full-viewport iframe — no @mycadet/web bundle ships in this repo
+ *     at all. The gateway URL comes from MYCADET_GATEWAY_URL at request
+ *     time, falling back to VELLUM_API_URL (the same ngrok tunnel the site
+ *     already proxies /v1 traffic to). The gateway serves its own web
+ *     bundle and API on its own origin, so nothing is proxied or patched
+ *     here.
+ *   - vellum: @vellumai/web, the inline revert shell (see
+ *     scripts/copy-assistant.ts), kept for an instant revert.
  *
- * Which shell is served follows the runtime bundle switch: the SPA's
- * `webClientBundle` localStorage key ("cadet" | "vellum") is mirrored into a
- * same-named cookie by an injected snippet, and proxy.ts (middleware)
+ * Which shell is served follows the runtime bundle switch: the
+ * `webClientBundle` localStorage key ("cadet" | "vellum") is mirrored into
+ * a same-named cookie by an injected snippet, and proxy.ts (middleware)
  * resolves that cookie into the `x-web-client-bundle` request header. This
  * route prefers the header, falls back to reading the cookie directly, and
- * defaults to cadet. `?bundle=vellum|cadet` is the server-side escape hatch
- * — it sets the cookie and sheds the param, so a bundle that won't even
- * boot can still be swapped without touching localStorage.
+ * defaults to cadet. `?bundle=vellum|cadet` is the server-side escape
+ * hatch — it sets the cookie and sheds the param, so a shell that won't
+ * even boot can still be swapped without touching localStorage.
  *
  * Static assets under /assistant/assets/*, /assistant/fonts/*, etc. are
  * served by Next's public-file layer before this dynamic route is reached,
@@ -39,6 +44,40 @@ function cookieValue(header: string | null, name: string): string | undefined {
     if (key === name) return decodeURIComponent(rest.join("="));
   }
   return undefined;
+}
+
+function escapeHtmlAttr(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// The same click-to-switch pill copy-assistant.ts injects into vellum.html —
+// duplicated here because the cadet shell is generated at request time, not
+// at build time. Keep the two in sync.
+const pillScript = `<script>/*web-bundle-pill*/(function(){try{var K="webClientBundle";function cur(){return localStorage.getItem(K)==="vellum"?"vellum":"cadet"}var b=document.createElement("button");function render(){b.textContent="web: "+cur()}function toggle(){var n=cur()==="vellum"?"cadet":"vellum";localStorage.setItem(K,n);document.cookie=K+"="+n+";path=/;max-age=31536000;samesite=lax";location.reload()}render();b.style.cssText="position:fixed;bottom:10px;right:10px;z-index:2147483647;opacity:.5;background:#111;color:#eee;border:1px solid #555;border-radius:999px;font:11px ui-monospace,SFMono-Regular,monospace;padding:4px 10px;cursor:pointer";b.onclick=toggle;b.onmouseenter=function(){b.style.opacity="1"};b.onmouseleave=function(){b.style.opacity=".5"};document.body.appendChild(b)}catch(e){}})();</script>`;
+
+function cadetShellHtml(): NextResponse {
+  const gatewayUrl = (
+    process.env.MYCADET_GATEWAY_URL ??
+    process.env.VELLUM_API_URL ??
+    ""
+  ).trim();
+
+  const body = gatewayUrl
+    ? `<iframe src="${escapeHtmlAttr(gatewayUrl)}" title="cadet assistant" allow="clipboard-read; clipboard-write" style="border:0;height:100%;width:100%"></iframe>`
+    : `<p style="font:14px ui-monospace,SFMono-Regular,monospace;padding:2rem">cadet gateway not configured — set MYCADET_GATEWAY_URL (the gateway's ngrok URL) to load it here.</p>`;
+
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>web: cadet</title><style>html,body{margin:0;padding:0;height:100%}</style></head><body>${body}${pillScript}</body></html>`;
+
+  return new NextResponse(html, {
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-cache",
+    },
+  });
 }
 
 export async function GET(
@@ -75,11 +114,13 @@ export async function GET(
       ? header
       : cookieValue(req.headers.get("cookie"), "webClientBundle");
 
-  const shell = requested === "vellum" ? "vellum.html" : "index.html";
+  if (requested !== "vellum") {
+    return cadetShellHtml();
+  }
 
   try {
     const html = await readFile(
-      join(process.cwd(), "public", "assistant", shell),
+      join(process.cwd(), "public", "assistant", "vellum.html"),
       "utf-8",
     );
     return new NextResponse(html, {
