@@ -59,7 +59,25 @@ function escapeHtmlAttr(value: string): string {
 const pillScript = `<script>/*web-bundle-pill*/(function(){try{var K="webClientBundle";function cur(){return localStorage.getItem(K)==="vellum"?"vellum":"cadet"}var b=document.createElement("button");function render(){b.textContent="web: "+cur()}function toggle(){var n=cur()==="vellum"?"cadet":"vellum";localStorage.setItem(K,n);document.cookie=K+"="+n+";path=/;max-age=31536000;samesite=lax";location.reload()}render();b.style.cssText="position:fixed;bottom:10px;right:10px;z-index:2147483647;opacity:.5;background:#111;color:#eee;border:1px solid #555;border-radius:999px;font:11px ui-monospace,SFMono-Regular,monospace;padding:4px 10px;cursor:pointer";b.onclick=toggle;b.onmouseenter=function(){b.style.opacity="1"};b.onmouseleave=function(){b.style.opacity=".5"};document.body.appendChild(b)}catch(e){}})();</script>`;
 
 function cadetShellHtml(): NextResponse {
-  const gatewayUrl = process.env.CADET_GATEWAY_URL ?? "";
+  let gatewayUrl = process.env.CADET_GATEWAY_URL ?? "";
+
+  // The gateway process itself serves no bundle — everything but webhooks,
+  // audio, and A2A discovery sits behind edge auth, so a bare hit 401s. The
+  // web bundle lives one layer out: the cadet web ingress serves it
+  // publicly at /assistant/ (and / 302s there), while the platform
+  // gateway's /assistant 302s to /web/<newest>/assistant/. Append that
+  // canonical route when the configured URL carries no path of its own.
+  if (gatewayUrl) {
+    try {
+      const parsed = new URL(gatewayUrl);
+      if (parsed.pathname === "/" || parsed.pathname === "") {
+        gatewayUrl = `${parsed.origin}/assistant/`;
+      }
+    } catch {
+      // Not a valid absolute URL — hand it to the iframe as-is and let the
+      // failure be visible instead of guessing.
+    }
+  }
 
   const body = gatewayUrl
     ? `<iframe src="${escapeHtmlAttr(gatewayUrl)}" title="cadet assistant" allow="clipboard-read; clipboard-write" style="border:0;height:100%;width:100%"></iframe>`
