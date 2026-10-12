@@ -16,30 +16,29 @@ data "google_secret_manager_secret_version" "cloudflare_api_token" {
   project = "vargasjr-dev"
   secret  = "CLOUDFLARE_API_TOKEN"
 
-  # Same-apply ordering: the vault API must be on before we read from it.
-  # The enablements moved into modules/shared, so the dependency hangs off
-  # the module now.
-  depends_on = [module.shared]
+  # These reads must evaluate at PLAN time — the plan-phase vercel/stripe/
+  # cloudflare providers authenticate with them. A depends_on = [module.shared]
+  # deferred them to apply whenever shared had pending changes, leaving the
+  # providers token-less and the plan red (nil-panic + 401s). The vault API is
+  # long-established in this project; a from-scratch apply should enable
+  # secretmanager first.
 }
 
 data "google_secret_manager_secret_version" "vercel_api_token" {
-  project    = "vargasjr-dev"
-  secret     = "VERCEL_API_TOKEN"
-  depends_on = [module.shared]
+  project = "vargasjr-dev"
+  secret  = "VERCEL_API_TOKEN"
 }
 
 # The Gmail OAuth client for this app (cloned into this project during the
 # GCP home migration). Consumed by the deployed site via Vercel env vars.
 data "google_secret_manager_secret_version" "google_client_id" {
-  project    = "vargasjr-dev"
-  secret     = "GOOGLE_CLIENT_ID"
-  depends_on = [module.shared]
+  project = "vargasjr-dev"
+  secret  = "GOOGLE_CLIENT_ID"
 }
 
 data "google_secret_manager_secret_version" "google_client_secret" {
-  project    = "vargasjr-dev"
-  secret     = "GOOGLE_CLIENT_SECRET"
-  depends_on = [module.shared]
+  project = "vargasjr-dev"
+  secret  = "GOOGLE_CLIENT_SECRET"
 }
 
 # The CI identity reads this repo's vault directly at apply time — same
@@ -63,15 +62,13 @@ resource "google_secret_manager_secret_iam_member" "ci_secret_reader" {
 # in stripe.tf (with a workspace-conditional secret name); the module split
 # keeps the read at the root — the providers and module.prod consume it.
 data "google_secret_manager_secret_version" "stripe_api_key" {
-  project    = "vargasjr-dev"
-  secret     = "STRIPE_API_KEY"
-  depends_on = [module.shared]
+  project = "vargasjr-dev"
+  secret  = "STRIPE_API_KEY"
 }
 
 # The test-mode restricted Stripe key (rk_test_) for the test webhook
 # endpoint's provider alias. Seeded in this project's vault.
 data "google_secret_manager_secret_version" "stripe_test_api_key" {
-  project    = "vargasjr-dev"
-  secret     = "TEST_STRIPE_API_KEY"
-  depends_on = [module.shared]
+  project = "vargasjr-dev"
+  secret  = "TEST_STRIPE_API_KEY"
 }

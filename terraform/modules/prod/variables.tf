@@ -20,3 +20,7 @@ variable "google_client_secret" {
 variable "webhook_events" {
   type = list(string)
 }
+
+variable "portfolio_project_number" {
+  type = number
+}

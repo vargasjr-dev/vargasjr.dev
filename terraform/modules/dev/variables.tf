@@ -10,3 +10,7 @@ variable "stripe_api_key" {
 variable "webhook_events" {
   type = list(string)
 }
+
+variable "portfolio_project_number" {
+  type = number
+}
