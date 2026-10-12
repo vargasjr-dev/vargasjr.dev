@@ -1,11 +1,7 @@
 locals {
   dispatcher_service_name = "stripe-dispatcher"
-  dispatcher_service_url  = "https://${local.dispatcher_service_name}-${data.google_project.portfolio.number}.us-central1.run.app"
-  service_agent           = "serviceAccount:service-${data.google_project.portfolio.number}@serverless-robot-prod.iam.gserviceaccount.com"
-}
-
-data "google_project" "portfolio" {
-  project_id = var.portfolio_project_id
+  dispatcher_service_url  = "https://${local.dispatcher_service_name}-${var.portfolio_project_number}.us-central1.run.app"
+  service_agent           = "serviceAccount:service-${var.portfolio_project_number}@serverless-robot-prod.iam.gserviceaccount.com"
 }
 
 # ---------------------------------------------------------------------------

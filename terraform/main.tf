@@ -42,11 +42,12 @@ data "google_project" "portfolio" {
 module "prod" {
   source = "./modules/prod"
 
-  portfolio_project_id = local.portfolio_project_id
-  stripe_api_key       = data.google_secret_manager_secret_version.stripe_api_key.secret_data
-  google_client_id     = data.google_secret_manager_secret_version.google_client_id.secret_data
-  google_client_secret = data.google_secret_manager_secret_version.google_client_secret.secret_data
-  webhook_events       = module.shared.webhook_events
+  portfolio_project_id     = local.portfolio_project_id
+  portfolio_project_number = data.google_project.portfolio.number
+  stripe_api_key           = data.google_secret_manager_secret_version.stripe_api_key.secret_data
+  google_client_id         = data.google_secret_manager_secret_version.google_client_id.secret_data
+  google_client_secret     = data.google_secret_manager_secret_version.google_client_secret.secret_data
+  webhook_events           = module.shared.webhook_events
 
   # A providers argument on a module block disables default inheritance
   # entirely, so every provider the prod stack touches is passed here.
@@ -65,9 +66,10 @@ module "prod" {
 module "dev" {
   source = "./modules/dev"
 
-  portfolio_project_id = local.portfolio_project_id
-  stripe_api_key       = data.google_secret_manager_secret_version.stripe_test_api_key.secret_data
-  webhook_events       = module.shared.webhook_events
+  portfolio_project_id     = local.portfolio_project_id
+  portfolio_project_number = data.google_project.portfolio.number
+  stripe_api_key           = data.google_secret_manager_secret_version.stripe_test_api_key.secret_data
+  webhook_events           = module.shared.webhook_events
 
   providers = {
     google      = google

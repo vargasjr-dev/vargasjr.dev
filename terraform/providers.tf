@@ -21,6 +21,11 @@ terraform {
       source  = "franckverrot/stripe"
       version = "~> 1.9"
     }
+
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
 }
 

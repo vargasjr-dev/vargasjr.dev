@@ -66,9 +66,6 @@ for (const service of SERVICES) {
     true,
   );
 
-  // New image -> new revision. Dev twins (e.g. stripe-dispatcher-dev) run
-  // the same image under a "-dev" service name — roll them too so they
-  // don't stay pinned to the image from their creation apply.
   const roll = (name: string) =>
     run(
       [
@@ -85,7 +82,19 @@ for (const service of SERVICES) {
       ],
       true,
     );
-  roll(service);
+
+  // New image -> new revision. Terraform owns first creation (the merge
+  // apply), so a service that doesn't exist yet is skipped, not failed.
+  // Dev twins (e.g. stripe-dispatcher-dev) run the same image under a
+  // "-dev" service name — roll them too so they don't stay pinned to the
+  // image from their creation apply.
+  const exists =
+    run(["gcloud", "run", "services", "describe", service, "--region", REGION]) === 0;
+  if (exists) {
+    roll(service);
+  } else {
+    console.log(`${service}: not created yet — terraform owns first creation`);
+  }
   const twin = run([
     "gcloud",
     "run",

@@ -45,7 +45,11 @@ jobs:
             if [ -z "$BEFORE" ] || [[ "$BEFORE" == 0* ]]; then BEFORE="$(git rev-parse HEAD~1)"; fi
             SERVICES="$(git diff --name-only "$BEFORE" "${{ github.sha }}" -- services/ | cut -d/ -f2 | sort -u | grep . || true)"
           fi
-          echo "services=$SERVICES" >> "$GITHUB_OUTPUT"
+          {
+            echo "services<<EOF"
+            echo "$SERVICES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
           echo "changed: $SERVICES"
 
       - name: Build, push, and roll the changed services
