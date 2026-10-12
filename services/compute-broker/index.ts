@@ -4,11 +4,13 @@ import { createBroker } from "./broker";
 import { createServer } from "./server";
 import { metadataAccessToken } from "./gcp-auth";
 
-const project = process.env.GCP_PROJECT ?? "vargasjr-dev";
-const zone = process.env.ZONE ?? "us-central1-a";
-const stateBucket = process.env.STATE_BUCKET ?? "";
+// Deployment constants live in source; terraform provisions the matching
+// state bucket and maps broker.vargasjr.dev. BROKER_TOKEN is the only env.
+const project = "vargasjr-dev";
+const zone = "us-central1-a";
+const stateBucket = "vargasjr-dev-compute-broker-state";
+const brokerUrl = "https://broker.vargasjr.dev";
 const brokerToken = process.env.BROKER_TOKEN ?? "";
-const brokerUrl = process.env.BROKER_PUBLIC_URL ?? "";
 
 // Optional read token for worker clones of private repositories. Absent
 // locally or unset in Secret Manager → workers can only clone public repos.
@@ -34,7 +36,6 @@ async function readOptionalSecret(name: string): Promise<string | undefined> {
 }
 
 async function main(): Promise<void> {
-  if (stateBucket.length === 0) throw new Error("STATE_BUCKET is required");
   if (brokerToken.length === 0) throw new Error("BROKER_TOKEN is required");
 
   const githubToken = await readOptionalSecret("COMPUTE_BROKER_GITHUB_TOKEN");
@@ -45,6 +46,8 @@ async function main(): Promise<void> {
     githubToken,
   });
 
+  // PORT is injected by Cloud Run — the platform's container contract, not
+  // configuration.
   const port = Number(process.env.PORT ?? 8080);
   createServer({ broker, brokerToken }).listen(port, () => {
     console.log(`[compute-broker] listening on port ${port}`);

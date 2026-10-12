@@ -7,6 +7,10 @@ import { EXECUTION_PROFILE_SCHEMA_VERSION } from "./contract";
 // provisions; a profile without a backend answers dispatches with
 // profile_backend_unavailable (macos-qa needs a Mac backend to exist).
 
+// Global ceiling on per-profile concurrency: the broker's worker fleet stays
+// bounded no matter what a profile declares.
+export const MAX_PROFILE_CONCURRENCY = 4;
+
 export interface ExecutionProfile {
   schemaVersion: number;
   name: string;
@@ -95,6 +99,14 @@ export const EXECUTION_PROFILES: Record<string, ExecutionProfile> = {
     ],
   },
 };
+
+for (const [name, profile] of Object.entries(EXECUTION_PROFILES)) {
+  if (profile.limits.maxConcurrentTasks > MAX_PROFILE_CONCURRENCY) {
+    throw new Error(
+      `Execution profile ${name} declares maxConcurrentTasks=${profile.limits.maxConcurrentTasks}, above the global limit of ${MAX_PROFILE_CONCURRENCY}.`,
+    );
+  }
+}
 
 export const INSTANCE_BACKENDS: Record<string, InstanceBackend> = {
   "linux-dev": {

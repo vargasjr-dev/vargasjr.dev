@@ -9,6 +9,7 @@ import {
   type StartTaskRequest,
 } from "./contract";
 import { createBroker, type Broker, type BrokerOptions } from "./broker";
+import { EXECUTION_PROFILES, MAX_PROFILE_CONCURRENCY } from "./profiles";
 import { createServer } from "./server";
 import type {
   BrokerTaskRecord,
@@ -668,4 +669,13 @@ test("worker startup script quotes refs and carries the clone token", () => {
     /git clone 'https:\/\/github\.com\/vargasjr-dev\/vargasjr\.dev\.git' repo/,
   );
   assert.doesNotMatch(anonymous, /x-access-token/);
+});
+
+test("execution profiles respect the global concurrency limit", () => {
+  for (const [name, profile] of Object.entries(EXECUTION_PROFILES)) {
+    assert.ok(
+      profile.limits.maxConcurrentTasks <= MAX_PROFILE_CONCURRENCY,
+      `${name} declares ${profile.limits.maxConcurrentTasks} concurrent tasks`,
+    );
+  }
 });

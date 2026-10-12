@@ -115,6 +115,8 @@ resource "google_cloud_run_v2_service" "compute_broker" {
     containers {
       image = "us-central1-docker.pkg.dev/${var.portfolio_project_id}/portfolio/compute-broker:latest"
 
+      # BROKER_TOKEN is the only env the service reads — every other
+      # deployment value is a constant in services/compute-broker/index.ts.
       env {
         name = "BROKER_TOKEN"
 
@@ -124,26 +126,6 @@ resource "google_cloud_run_v2_service" "compute_broker" {
             version = google_secret_manager_secret_version.compute_broker_token.version
           }
         }
-      }
-
-      env {
-        name  = "GCP_PROJECT"
-        value = var.portfolio_project_id
-      }
-
-      env {
-        name  = "ZONE"
-        value = "us-central1-a"
-      }
-
-      env {
-        name  = "STATE_BUCKET"
-        value = google_storage_bucket.compute_broker_state.name
-      }
-
-      env {
-        name  = "BROKER_PUBLIC_URL"
-        value = "https://compute-broker-${data.google_project.broker_portfolio.number}.us-central1.run.app"
       }
     }
   }
@@ -155,6 +137,20 @@ resource "google_cloud_run_v2_service" "compute_broker" {
   ]
 }
 
-output "compute_broker_url" {
-  value = "https://compute-broker-${data.google_project.broker_portfolio.number}.us-central1.run.app"
+# The force plugin and the worker startup script hardcode the broker URL in
+# source, so the custom domain mapping lives here. Its DNS record is
+# root-owned (terraform/broker-dns.tf): the cloudflare provider's token is
+# read by a data source that depends on this module, so a cloudflare
+# resource inside it would cycle the graph.
+resource "google_cloud_run_domain_mapping" "compute_broker" {
+  name     = "broker.vargasjr.dev"
+  location = google_cloud_run_v2_service.compute_broker.location
+
+  metadata {
+    namespace = var.portfolio_project_id
+  }
+
+  spec {
+    route_name = google_cloud_run_v2_service.compute_broker.name
+  }
 }
