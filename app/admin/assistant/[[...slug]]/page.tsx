@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
+
+import {
+  ASSISTANT_RETURN_KEY,
+  parentToSpa,
+  spaToParent,
+} from "@/lib/assistant-navigation";
 
 /**
  * Admin shell that hosts the @vellumai/web SPA inside an iframe and keeps the
@@ -28,67 +34,37 @@ import { useRouter, usePathname } from "next/navigation";
  *   window.location and re-resolves without a full reload.
  */
 
-const SPA_PREFIX = "/assistant";
-const PARENT_PREFIX = "/admin/assistant";
-
-/** Canonical form: exactly one trailing slash. */
-function normalizeSlash(path: string): string {
-  return path.endsWith("/") ? path : path + "/";
-}
-
-/** /assistant/conversations/123/ → /admin/assistant/conversations/123/ */
-function spaToParent(spaPath: string): string {
-  const normalized = normalizeSlash(spaPath);
-  if (normalized === normalizeSlash(SPA_PREFIX))
-    return normalizeSlash(PARENT_PREFIX);
-  return (
-    normalizeSlash(PARENT_PREFIX) +
-    normalized.slice(normalizeSlash(SPA_PREFIX).length)
-  );
-}
-
-/** /admin/assistant/conversations/123/ → /assistant/conversations/123/ */
-function parentToSpa(parentPath: string): string {
-  const normalized = normalizeSlash(parentPath);
-  if (normalized === normalizeSlash(PARENT_PREFIX))
-    return normalizeSlash(SPA_PREFIX);
-  return (
-    normalizeSlash(SPA_PREFIX) +
-    normalized.slice(normalizeSlash(PARENT_PREFIX).length)
-  );
-}
-
-/** Full URL string (pathname+search+hash) in canonical form for comparison. */
 function fullUrl(): string {
   return (
-    normalizeSlash(window.location.pathname) +
-    window.location.search +
-    window.location.hash
+    window.location.pathname + window.location.search + window.location.hash
   );
 }
 
 export default function AssistantPage() {
   const [ready, setReady] = useState(false);
   const router = useRouter();
-  const pathname = usePathname();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   // Suppresses the message-listener update when WE drove the iframe (back/fwd).
   const suppressSync = useRef(false);
 
-  // Compute the initial iframe src directly from pathname so the iframe is
-  // only ever mounted once at the correct URL. Using useState(initializer) so
-  // this runs synchronously on the first render — before the iframe mounts —
-  // avoiding a double-load where the iframe first boots at /assistant/ and then
-  // immediately gets a new src pointing at the actual conversation.
-  const [iframeSrc, setIframeSrc] = useState<string>(() =>
-    parentToSpa(pathname ?? PARENT_PREFIX),
-  );
+  const [iframeSrc, setIframeSrc] = useState<string | null>(null);
+  useEffect(() => {
+    setIframeSrc(parentToSpa(fullUrl()));
+  }, []);
 
   // ── Auth gate ───────────────────────────────────────────────────────────
   useEffect(() => {
+    const goToLogin = () => {
+      try {
+        sessionStorage.setItem(ASSISTANT_RETURN_KEY, fullUrl());
+      } catch {
+        /* Storage is unavailable; login still works. */
+      }
+      router.replace("/admin");
+    };
     const token = localStorage.getItem("admin_token");
     if (!token) {
-      router.replace("/admin");
+      goToLogin();
       return;
     }
     // Re-validate the HttpOnly admin_session cookie on every mount — localStorage
@@ -104,11 +80,11 @@ export default function AssistantPage() {
           setReady(true);
         } else {
           localStorage.removeItem("admin_token");
-          router.replace("/admin");
+          goToLogin();
         }
       })
       .catch(() => {
-        router.replace("/admin");
+        goToLogin();
       });
   }, [router]);
 
@@ -120,10 +96,20 @@ export default function AssistantPage() {
     function onMessage(event: MessageEvent) {
       const iframe = iframeRef.current;
       if (!iframe || !iframe.contentWindow) return;
-      if (event.source !== iframe.contentWindow) return;
+      if (
+        event.source !== iframe.contentWindow ||
+        event.origin !== window.location.origin
+      )
+        return;
 
       const data = event.data;
-      if (!data || data.source !== "vellum-spa-nav") return;
+      if (
+        !data ||
+        data.source !== "vellum-spa-nav" ||
+        typeof data.path !== "string" ||
+        !data.path.startsWith("/assistant/")
+      )
+        return;
 
       // If we just drove the iframe, let its echo through and no-op.
       if (suppressSync.current) {
@@ -148,7 +134,7 @@ export default function AssistantPage() {
       const iframe = iframeRef.current;
       if (!iframe || !iframe.contentWindow) return;
 
-      const spaPath = parentToSpa(window.location.pathname);
+      const spaPath = parentToSpa(fullUrl());
       const w = iframe.contentWindow;
 
       // Preserve history.state (the history lib's internal idx) or the
@@ -165,9 +151,11 @@ export default function AssistantPage() {
 
     window.addEventListener("message", onMessage);
     window.addEventListener("popstate", onPopState);
+    window.addEventListener("hashchange", onPopState);
     return () => {
       window.removeEventListener("message", onMessage);
       window.removeEventListener("popstate", onPopState);
+      window.removeEventListener("hashchange", onPopState);
     };
   }, [ready]);
 
@@ -184,13 +172,15 @@ export default function AssistantPage() {
           <p className="text-gray-500 text-sm">Loading...</p>
         </div>
       )}
-      <iframe
-        ref={iframeRef}
-        src={iframeSrc}
-        className="w-full h-full border-0"
-        title="VargasJR Assistant"
-        allow="microphone; camera; clipboard-write"
-      />
+      {iframeSrc && (
+        <iframe
+          ref={iframeRef}
+          src={iframeSrc}
+          className="w-full h-full border-0"
+          title="VargasJR Assistant"
+          allow="microphone; camera; clipboard-write"
+        />
+      )}
     </main>
   );
 }
