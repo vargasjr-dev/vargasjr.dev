@@ -137,6 +137,17 @@ test("Cadet refresh and assets bypass legacy mocks without cross-origin redirect
     );
     assert.equal(response.headers.get("location"), null);
   }
+  const refresh = proxy(
+    new NextRequest("https://site.example/v1/guardian/refresh", {
+      headers: {
+        cookie: "admin_session=website-only; cadet_web_refresh=fixture",
+      },
+    }),
+  );
+  assert.equal(
+    refresh.headers.get("x-middleware-request-cookie"),
+    "cadet_web_refresh=fixture",
+  );
   const legacy = proxy(
     new NextRequest("https://site.example/v1/assistants/", {
       headers: { cookie: "webClientBundle=vellum" },
