@@ -1,3 +1,4 @@
+import { gatewayAssistantUrl } from "@/lib/assistant-navigation";
 import { type NextRequest, NextResponse } from "next/server";
 
 const apiUrl = process.env.VELLUM_API_URL;
@@ -70,6 +71,27 @@ const ALLAUTH_SESSION_PATH = /^\/_allauth\/browser\/v1\/auth\/session\/?$/;
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const bundle = webClientBundle(request);
+
+  const gatewayUrl = process.env.CADET_GATEWAY_URL;
+  const cadetAsset =
+    pathname.startsWith("/assistant/") &&
+    (pathname.split("/").at(-1) ?? "").includes(".");
+  const cadetApi =
+    pathname === "/v1" ||
+    pathname.startsWith("/v1/") ||
+    pathname === "/v2" ||
+    pathname.startsWith("/v2/") ||
+    pathname.startsWith("/auth/");
+  if (bundle === "cadet" && gatewayUrl && (cadetAsset || cadetApi)) {
+    // Preserve API paths exactly and bypass the legacy Vellum mocks. The
+    // browser sees its own origin, including Set-Cookie from the gateway.
+    const headers = new Headers(request.headers);
+    headers.set("ngrok-skip-browser-warning", "1");
+    return NextResponse.rewrite(
+      new URL(gatewayAssistantUrl(gatewayUrl, pathname + search)),
+      { request: { headers } },
+    );
+  }
 
   // Temporary web-local responses for the SPA's reachability probes. These
   // must run before the generic assistant routing below.

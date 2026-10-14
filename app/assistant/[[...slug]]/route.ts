@@ -10,12 +10,11 @@ import { gatewayAssistantUrl } from "@/lib/assistant-navigation";
  * back — without this route, Next 404s and the SPA never boots.
  *
  * TWO shells:
- *   - cadet (default): a thin document that loads the cadet gateway DIRECTLY
- *     in a full-viewport iframe — no @mycadet/web bundle ships in this repo
- *     at all. The gateway URL comes from CADET_GATEWAY_URL at request time
- *     (set on Vercel to the gateway's ngrok URL). The gateway serves its own
- *     web bundle and API on its own origin, so nothing is proxied or
- *     patched here.
+ *   - cadet (default): the gateway's current HTML, served on this site's
+ *     origin. Assets and API requests are forwarded to CADET_GATEWAY_URL
+ *     by proxy.ts. This keeps refresh cookies first-party inside the admin
+ *     frame; the injected history bridge synchronizes navigation.
+ *     No @mycadet/web bundle is installed in this repository.
  *   - vellum: @vellumai/web, the inline revert shell (see
  *     scripts/copy-assistant.ts), kept for an instant revert.
  *
@@ -28,10 +27,8 @@ import { gatewayAssistantUrl } from "@/lib/assistant-navigation";
  * hatch — it sets the cookie and sheds the param, so a shell that won't
  * even boot can still be swapped without touching localStorage.
  *
- * Static assets under /assistant/assets/*, /assistant/fonts/*, etc. are
- * served by Next's public-file layer before this dynamic route is reached,
- * so those are unaffected. The __local/__gateway rewrites in next.config.ts
- * also run before filesystem/dynamic routes, so API traffic is untouched.
+ * Cadet assets and APIs are routed to the gateway by proxy.ts before the
+ * filesystem layer. Vellum retains its public assets and legacy API rewrites.
  *
  * Guard: any slug segment starting with `__` or containing `.` is 404'd —
  * defense-in-depth so this catch-all can't shadow API/asset paths.
@@ -51,30 +48,51 @@ function cookieValue(header: string | null, name: string): string | undefined {
 // at build time. Keep the two in sync.
 const pillScript = `<script>/*web-bundle-pill*/(function(){try{var K="webClientBundle";function cur(){return localStorage.getItem(K)==="vellum"?"vellum":"cadet"}var b=document.createElement("button");function render(){b.textContent="web: "+cur()}function toggle(){var n=cur()==="vellum"?"cadet":"vellum";localStorage.setItem(K,n);document.cookie=K+"="+n+";path=/;max-age=31536000;samesite=lax";location.reload()}render();b.style.cssText="position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:2147483647;opacity:.5;background:#111;color:#eee;border:1px solid #555;border-radius:999px;font:11px ui-monospace,SFMono-Regular,monospace;padding:4px 10px;cursor:pointer";b.onclick=toggle;b.onmouseenter=function(){b.style.opacity="1"};b.onmouseleave=function(){b.style.opacity=".5"};document.body.appendChild(b)}catch(e){}})();</script>`;
 
-function cadetShellHtml(spaPath: string): NextResponse {
-  const gatewayUrl = process.env.CADET_GATEWAY_URL ?? "";
+// Navigation stays in the same-origin admin frame so the HttpOnly gateway
+// refresh cookie remains first-party across reloads.
+const navigationBridge = `<script>(function(){function send(nav){if(parent!==window)parent.postMessage({source:"vellum-spa-nav",nav:nav,path:location.pathname+location.search+location.hash},location.origin)}["pushState","replaceState"].forEach(function(name){var original=history[name];history[name]=function(){var result=original.apply(this,arguments);send(name==="pushState"?"push":"replace");return result}});addEventListener("popstate",function(){send("pop")});addEventListener("hashchange",function(){send("replace")});send("replace")})();</script>`;
 
-  const target = gatewayUrl ? gatewayAssistantUrl(gatewayUrl, spaPath) : "";
-  const encodedTarget = JSON.stringify(target).replace(/</g, "\\u003c");
-  const prefix = target
-    ? new URL(target).pathname.slice(
-        0,
-        -new URL(spaPath, "https://site.example").pathname.length,
-      )
-    : "";
-  const encodedPrefix = JSON.stringify(prefix).replace(/</g, "\\u003c");
-  const body = gatewayUrl
-    ? `<iframe id="cadet-gateway" title="cadet assistant" allow="microphone; camera; clipboard-read; clipboard-write" style="border:0;height:100%;width:100%"></iframe><script>(function(){var target=new URL(${encodedTarget});function navigate(){target.pathname=${encodedPrefix}+location.pathname;target.search=location.search;target.hash=location.hash;document.getElementById("cadet-gateway").src=target.href}navigate();addEventListener("hashchange",navigate);addEventListener("popstate",navigate)})();</script>`
-    : `<p style="font:14px ui-monospace,SFMono-Regular,monospace;padding:2rem">cadet gateway not configured — set CADET_GATEWAY_URL (the gateway's ngrok URL) to load it here.</p>`;
-
-  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>web: cadet</title><style>html,body{margin:0;padding:0;height:100%}</style></head><body>${body}${pillScript}</body></html>`;
-
-  return new NextResponse(html, {
-    headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "no-cache",
-    },
-  });
+async function cadetShellHtml(spaPath: string): Promise<NextResponse> {
+  const gatewayUrl = process.env.CADET_GATEWAY_URL;
+  if (!gatewayUrl)
+    return new NextResponse("Cadet gateway is not configured", { status: 503 });
+  try {
+    const upstream = await fetch(gatewayAssistantUrl(gatewayUrl, spaPath), {
+      cache: "no-store",
+      headers: { "ngrok-skip-browser-warning": "1" },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (
+      !upstream.ok ||
+      !upstream.headers.get("content-type")?.includes("text/html")
+    ) {
+      return new NextResponse("Cadet gateway did not return its web client", {
+        status: 502,
+      });
+    }
+    const html = await upstream.text();
+    // Vercel HTTP rewrites do not carry WebSocket upgrades. Cadet authenticates
+    // these connections with its actor token, so keep them on the gateway.
+    const socketBase = JSON.stringify(
+      gatewayAssistantUrl(gatewayUrl, "/"),
+    ).replace(/</g, "\\u003c");
+    const socketBridge = `<script>(function(){if(!window.WebSocket)return;var Native=window.WebSocket;window.WebSocket=class extends Native{constructor(url,protocols){var target=new URL(url,location.href);if(target.host===location.host&&(target.protocol==="ws:"||target.protocol==="wss:")&&(target.pathname.startsWith("/v1/")||target.pathname.startsWith("/v2/"))){var base=new URL(${socketBase});base.protocol=base.protocol==="http:"?"ws:":"wss:";base.pathname=base.pathname.replace(/\\/$/,"")+target.pathname;base.search=target.search;base.hash=target.hash;url=base.href}super(url,protocols)}}})();</script>`;
+    const scripts = navigationBridge + socketBridge;
+    const document = html.includes("</head>")
+      ? html.replace("</head>", scripts + "</head>")
+      : scripts + html;
+    return new NextResponse(
+      document.replace("</body>", pillScript + "</body>"),
+      {
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store",
+        },
+      },
+    );
+  } catch {
+    return new NextResponse("Cadet gateway is unavailable", { status: 502 });
+  }
 }
 
 export async function GET(
