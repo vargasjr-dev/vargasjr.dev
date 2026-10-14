@@ -89,7 +89,15 @@ for (const service of SERVICES) {
   // "-dev" service name — roll them too so they don't stay pinned to the
   // image from their creation apply.
   const exists =
-    run(["gcloud", "run", "services", "describe", service, "--region", REGION]) === 0;
+    run([
+      "gcloud",
+      "run",
+      "services",
+      "describe",
+      service,
+      "--region",
+      REGION,
+    ]) === 0;
   if (exists) {
     roll(service);
   } else {
