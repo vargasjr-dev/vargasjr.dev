@@ -35,3 +35,40 @@ export function assistantReturnPath(value: string | null): string | null {
 }
 
 export const ASSISTANT_RETURN_KEY = "adminAssistantReturnTo";
+
+export const ASSISTANT_GATEWAY_ORIGIN = "https://assistant.vargasjr.dev";
+
+export function assistantFrameUrl(
+  parentPath: string,
+  bundle = "cadet",
+): string {
+  const spaPath = parentToSpa(parentPath);
+  return bundle === "vellum"
+    ? spaPath
+    : gatewayAssistantUrl(ASSISTANT_GATEWAY_ORIGIN, spaPath);
+}
+
+export function assistantNavigationMessage(
+  value: unknown,
+): { path: string; nav: "push" | "replace" | "pop" } | null {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    !("source" in value) ||
+    !("path" in value) ||
+    !("nav" in value)
+  )
+    return null;
+  if (value.source !== "cadet-spa-nav" && value.source !== "vellum-spa-nav")
+    return null;
+  if (typeof value.path !== "string" || !value.path.startsWith("/assistant/"))
+    return null;
+  if (value.nav !== "push" && value.nav !== "replace" && value.nav !== "pop")
+    return null;
+  try {
+    spaToParent(value.path);
+  } catch {
+    return null;
+  }
+  return { path: value.path, nav: value.nav };
+}

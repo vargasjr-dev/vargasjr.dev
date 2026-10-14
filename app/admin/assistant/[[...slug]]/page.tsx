@@ -6,32 +6,17 @@ import { useRouter } from "next/navigation";
 import {
   ASSISTANT_RETURN_KEY,
   parentToSpa,
+  assistantFrameUrl,
+  assistantNavigationMessage,
   spaToParent,
 } from "@/lib/assistant-navigation";
 
 /**
- * Admin shell that hosts the @vellumai/web SPA inside an iframe and keeps the
- * parent browser URL in sync with the SPA's internal route.
- *
- * URL mapping: the SPA mounts under /assistant/... and the admin shell mirrors
- * that under /admin/assistant/... — so /assistant/conversations/123/ ↔
- * /admin/assistant/conversations/123/. On reload of a deep admin URL, the
- * catch-all route renders here, the iframe src is set to the matching SPA path,
- * and the assistant catch-all (app/assistant/[[...slug]]/route.ts) serves
- * index.html so the SPA boots at the right screen.
- *
- * Sync protocol (SPA → parent):
- *   copy-assistant.ts injects a script into the SPA's index.html that
- *   monkeypatches history.pushState/replaceState + listens for
- *   popstate/hashchange, and postMessages the parent with { source:
- *   'vellum-spa-nav', nav: 'push'|'replace'|'pop', path }. The parent mirrors
- *   the URL using pushState (for 'push') or replaceState (for 'replace'/'pop').
- *
- * Sync protocol (parent → SPA, back/forward):
- *   The parent's popstate listener derives the SPA path from the current
- *   browser URL and drives the iframe via replaceState(preserve state) +
- *   synthetic PopStateEvent — the SPA's history-lib router re-reads
- *   window.location and re-resolves without a full reload.
+ * One iframe loads Cadet directly from its same-site HTTPS subdomain.
+ * Vellum's optional fallback stays on the website origin. Navigation messages
+ * are accepted only from the active frame and its exact origin. Cadet must
+ * emit the navigation protocol itself; the website cannot inject scripts or
+ * read history across origins. Parent back/forward reloads a cross-origin frame.
  */
 
 function fullUrl(): string {
@@ -44,12 +29,14 @@ export default function AssistantPage() {
   const [ready, setReady] = useState(false);
   const router = useRouter();
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  // Suppresses the message-listener update when WE drove the iframe (back/fwd).
-  const suppressSync = useRef(false);
-
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
   useEffect(() => {
-    setIframeSrc(parentToSpa(fullUrl()));
+    setIframeSrc(
+      assistantFrameUrl(
+        fullUrl(),
+        localStorage.getItem("webClientBundle") ?? "cadet",
+      ),
+    );
   }, []);
 
   // ── Auth gate ───────────────────────────────────────────────────────────
@@ -98,24 +85,12 @@ export default function AssistantPage() {
       if (!iframe || !iframe.contentWindow) return;
       if (
         event.source !== iframe.contentWindow ||
-        event.origin !== window.location.origin
+        event.origin !== new URL(iframe.src, window.location.href).origin
       )
         return;
 
-      const data = event.data;
-      if (
-        !data ||
-        data.source !== "vellum-spa-nav" ||
-        typeof data.path !== "string" ||
-        !data.path.startsWith("/assistant/")
-      )
-        return;
-
-      // If we just drove the iframe, let its echo through and no-op.
-      if (suppressSync.current) {
-        suppressSync.current = false;
-        return;
-      }
+      const data = assistantNavigationMessage(event.data);
+      if (!data) return;
 
       const parentUrl = spaToParent(data.path);
       const current = fullUrl();
@@ -134,17 +109,17 @@ export default function AssistantPage() {
       const iframe = iframeRef.current;
       if (!iframe || !iframe.contentWindow) return;
 
+      const currentFrame = new URL(iframe.src, window.location.href);
       const spaPath = parentToSpa(fullUrl());
+      if (currentFrame.origin !== window.location.origin) {
+        setIframeSrc(new URL(spaPath, currentFrame.origin).href);
+        return;
+      }
       const w = iframe.contentWindow;
-
-      // Preserve history.state (the history lib's internal idx) or the
-      // router's back/forward bookkeeping corrupts.
       try {
         w.history.replaceState(w.history.state, "", spaPath);
         w.dispatchEvent(new PopStateEvent("popstate"));
-        suppressSync.current = true;
       } catch {
-        // Cross-origin or not-yet-loaded — fall back to a full src reload.
         setIframeSrc(spaPath);
       }
     }

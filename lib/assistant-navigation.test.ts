@@ -1,8 +1,10 @@
 import { afterEach, test } from "node:test";
 import assert from "node:assert/strict";
-import { JSDOM } from "jsdom";
+
 import {
   assistantReturnPath,
+  assistantFrameUrl,
+  assistantNavigationMessage,
   gatewayAssistantUrl,
   parentToSpa,
   spaToParent,
@@ -45,35 +47,88 @@ test("gateway paths retain the configured host prefix and the pairing route", ()
   );
 });
 
-test("the shell hands the browser-only fragment to the gateway iframe", async () => {
-  process.env.CADET_GATEWAY_URL = "https://gateway.example/instance-1";
-  const response = await GET(
-    new Request("https://site.example/assistant/pair/"),
-    { params: Promise.resolve({ slug: ["pair"] }) },
+test("the admin frame loads the fixed same-site Cadet domain with the pairing fragment", () => {
+  assert.equal(
+    assistantFrameUrl(
+      "/admin/assistant/pair/?returnTo=%2Fassistant%2F#device_code=CODE-123",
+    ),
+    "https://assistant.vargasjr.dev/assistant/pair/?returnTo=%2Fassistant%2F#device_code=CODE-123",
   );
-  const dom = new JSDOM(await response.text(), {
-    url: "https://site.example/assistant/pair/#device_code=CODE-123",
-    runScripts: "dangerously",
-  });
+  assert.equal(
+    assistantFrameUrl(
+      "/admin/assistant/conversations/123/?view=chat#message-1",
+    ),
+    "https://assistant.vargasjr.dev/assistant/conversations/123/?view=chat#message-1",
+  );
+  assert.equal(
+    assistantFrameUrl("/admin/assistant/conversations/123/", "vellum"),
+    "/assistant/conversations/123/",
+  );
+});
+
+test("Cadet shell URLs redirect to its domain without fetching or proxying", async () => {
+  const fetch = globalThis.fetch;
+  globalThis.fetch = async () => {
+    throw new Error("The website must not fetch Cadet HTML");
+  };
   try {
-    const iframe = dom.window.document.getElementById("cadet-gateway");
-    assert.equal(
-      iframe?.getAttribute("src"),
-      "https://gateway.example/instance-1/assistant/pair/#device_code=CODE-123",
+    const response = await GET(
+      new Request(
+        "https://site.example/assistant/conversations/123/?view=chat",
+      ),
+      { params: Promise.resolve({ slug: ["conversations", "123"] }) },
     );
-    dom.window.history.replaceState(
-      null,
-      "",
-      "/assistant/conversations/123/?view=chat#message-1",
-    );
-    dom.window.dispatchEvent(new dom.window.PopStateEvent("popstate"));
+    assert.equal(response.status, 307);
     assert.equal(
-      iframe?.getAttribute("src"),
-      "https://gateway.example/instance-1/assistant/conversations/123/?view=chat#message-1",
+      response.headers.get("location"),
+      "https://assistant.vargasjr.dev/assistant/conversations/123/?view=chat",
     );
   } finally {
-    dom.window.close();
+    globalThis.fetch = fetch;
   }
+});
+
+test("navigation messages validate the protocol and assistant path", () => {
+  assert.deepEqual(
+    assistantNavigationMessage({
+      source: "cadet-spa-nav",
+      nav: "push",
+      path: "/assistant/conversations/123/",
+    }),
+    { nav: "push", path: "/assistant/conversations/123/" },
+  );
+  assert.equal(
+    assistantNavigationMessage({
+      source: "cadet-spa-nav",
+      nav: "push",
+      path: "/assistant/../../admin/",
+    }),
+    null,
+  );
+  assert.equal(
+    assistantNavigationMessage({
+      source: "cadet-spa-nav",
+      nav: "push",
+      path: "https://evil.example/assistant/",
+    }),
+    null,
+  );
+  assert.equal(
+    assistantNavigationMessage({
+      source: "other",
+      nav: "push",
+      path: "/assistant/",
+    }),
+    null,
+  );
+  assert.equal(
+    assistantNavigationMessage({
+      source: "cadet-spa-nav",
+      nav: "other",
+      path: "/assistant/",
+    }),
+    null,
+  );
 });
 
 test("login resumes only a local assistant path", () => {
