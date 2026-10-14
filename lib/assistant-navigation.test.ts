@@ -1,21 +1,18 @@
 import { afterEach, test } from "node:test";
 import assert from "node:assert/strict";
-import { JSDOM } from "jsdom";
+
 import {
   assistantReturnPath,
+  assistantFrameUrl,
+  assistantNavigationMessage,
   gatewayAssistantUrl,
   parentToSpa,
   spaToParent,
 } from "./assistant-navigation";
 import { GET } from "../app/assistant/[[...slug]]/route";
 
-import { NextRequest } from "next/server";
-import { proxy } from "../proxy";
-
-const originalFetch = globalThis.fetch;
 const originalGateway = process.env.CADET_GATEWAY_URL;
 afterEach(() => {
-  globalThis.fetch = originalFetch;
   if (originalGateway === undefined) delete process.env.CADET_GATEWAY_URL;
   else process.env.CADET_GATEWAY_URL = originalGateway;
 });
@@ -50,112 +47,87 @@ test("gateway paths retain the configured host prefix and the pairing route", ()
   );
 });
 
-test("gateway HTML runs on the site origin and reports navigation including pairing fragments", async () => {
-  process.env.CADET_GATEWAY_URL = "https://gateway.example/instance-1";
-  const fetched: string[] = [];
-  globalThis.fetch = async (input) => {
-    fetched.push(String(input));
-    return new Response(
-      "<html><head></head><body><main>Cadet</main></body></html>",
-      { headers: { "Content-Type": "text/html" } },
-    );
-  };
-  const response = await GET(
-    new Request("https://site.example/assistant/pair/"),
-    { params: Promise.resolve({ slug: ["pair"] }) },
+test("the admin frame loads the fixed same-site Cadet domain with the pairing fragment", () => {
+  assert.equal(
+    assistantFrameUrl(
+      "/admin/assistant/pair/?returnTo=%2Fassistant%2F#device_code=CODE-123",
+    ),
+    "https://assistant.vargasjr.dev/assistant/pair/?returnTo=%2Fassistant%2F#device_code=CODE-123",
   );
-  const messages: Array<{ path: string; nav: string }> = [];
-  const sockets: string[] = [];
-  const dom = new JSDOM(await response.text(), {
-    url: "https://site.example/assistant/pair/#device_code=CODE-123",
-    runScripts: "dangerously",
-    beforeParse(window) {
-      Object.defineProperty(window, "WebSocket", {
-        value: class {
-          constructor(url: string) {
-            sockets.push(String(url));
-          }
-        },
-        writable: true,
-      });
-      Object.defineProperty(window, "parent", {
-        value: {
-          postMessage(message: { path: string; nav: string }, origin: string) {
-            assert.equal(origin, "https://site.example");
-            messages.push(message);
-          },
-        },
-      });
-    },
-  });
+  assert.equal(
+    assistantFrameUrl(
+      "/admin/assistant/conversations/123/?view=chat#message-1",
+    ),
+    "https://assistant.vargasjr.dev/assistant/conversations/123/?view=chat#message-1",
+  );
+  assert.equal(
+    assistantFrameUrl("/admin/assistant/conversations/123/", "vellum"),
+    "/assistant/conversations/123/",
+  );
+});
+
+test("Cadet shell URLs redirect to its domain without fetching or proxying", async () => {
+  const fetch = globalThis.fetch;
+  globalThis.fetch = async () => {
+    throw new Error("The website must not fetch Cadet HTML");
+  };
   try {
-    assert.deepEqual(fetched, [
-      "https://gateway.example/instance-1/assistant/pair/",
-    ]);
-    assert.equal(dom.window.document.querySelector("iframe"), null);
-    assert.equal(messages[0].path, "/assistant/pair/#device_code=CODE-123");
-    dom.window.history.pushState(
-      { idx: 1 },
-      "",
-      "/assistant/conversations/123/?view=chat#message-1",
+    const response = await GET(
+      new Request(
+        "https://site.example/assistant/conversations/123/?view=chat",
+      ),
+      { params: Promise.resolve({ slug: ["conversations", "123"] }) },
     );
+    assert.equal(response.status, 307);
     assert.equal(
-      messages.at(-1)?.path,
-      "/assistant/conversations/123/?view=chat#message-1",
+      response.headers.get("location"),
+      "https://assistant.vargasjr.dev/assistant/conversations/123/?view=chat",
     );
-    assert.equal(messages.at(-1)?.nav, "push");
-    dom.window.history.replaceState(
-      { idx: 1 },
-      "",
-      "/assistant/conversations/456/",
-    );
-    assert.equal(messages.at(-1)?.nav, "replace");
-    assert.equal(dom.window.history.state.idx, 1);
-    new dom.window.WebSocket("wss://site.example/v1/live-voice?token=fixture");
-    assert.equal(
-      sockets[0],
-      "wss://gateway.example/instance-1/v1/live-voice?token=fixture",
-    );
-    new dom.window.WebSocket("wss://external.example/events");
-    assert.equal(sockets[1], "wss://external.example/events");
   } finally {
-    dom.window.close();
+    globalThis.fetch = fetch;
   }
 });
 
-test("Cadet refresh and assets bypass legacy mocks without cross-origin redirects", () => {
-  process.env.CADET_GATEWAY_URL = "https://gateway.example/instance-1";
-  for (const path of [
-    "/v1/guardian/refresh",
-    "/v1/assistants/",
-    "/assistant/assets/app.js",
-  ]) {
-    const response = proxy(new NextRequest("https://site.example" + path));
-    assert.equal(
-      response.headers.get("x-middleware-rewrite"),
-      "https://gateway.example/instance-1" + path,
-    );
-    assert.equal(response.headers.get("location"), null);
-  }
-  const refresh = proxy(
-    new NextRequest("https://site.example/v1/guardian/refresh", {
-      headers: {
-        cookie: "admin_session=website-only; cadet_web_refresh=fixture",
-      },
+test("navigation messages validate the protocol and assistant path", () => {
+  assert.deepEqual(
+    assistantNavigationMessage({
+      source: "cadet-spa-nav",
+      nav: "push",
+      path: "/assistant/conversations/123/",
     }),
+    { nav: "push", path: "/assistant/conversations/123/" },
   );
   assert.equal(
-    refresh.headers.get("x-middleware-request-cookie"),
-    "cadet_web_refresh=fixture",
-  );
-  const legacy = proxy(
-    new NextRequest("https://site.example/v1/assistants/", {
-      headers: { cookie: "webClientBundle=vellum" },
+    assistantNavigationMessage({
+      source: "cadet-spa-nav",
+      nav: "push",
+      path: "/assistant/../../admin/",
     }),
+    null,
   );
   assert.equal(
-    legacy.headers.get("x-middleware-rewrite"),
-    "https://site.example/api/v1/assistants",
+    assistantNavigationMessage({
+      source: "cadet-spa-nav",
+      nav: "push",
+      path: "https://evil.example/assistant/",
+    }),
+    null,
+  );
+  assert.equal(
+    assistantNavigationMessage({
+      source: "other",
+      nav: "push",
+      path: "/assistant/",
+    }),
+    null,
+  );
+  assert.equal(
+    assistantNavigationMessage({
+      source: "cadet-spa-nav",
+      nav: "other",
+      path: "/assistant/",
+    }),
+    null,
   );
 });
 

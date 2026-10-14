@@ -1,4 +1,3 @@
-import { gatewayAssistantUrl } from "@/lib/assistant-navigation";
 import { type NextRequest, NextResponse } from "next/server";
 
 const apiUrl = process.env.VELLUM_API_URL;
@@ -71,34 +70,6 @@ const ALLAUTH_SESSION_PATH = /^\/_allauth\/browser\/v1\/auth\/session\/?$/;
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const bundle = webClientBundle(request);
-
-  const gatewayUrl = process.env.CADET_GATEWAY_URL;
-  const cadetAsset =
-    pathname.startsWith("/assistant/") &&
-    (pathname.split("/").at(-1) ?? "").includes(".");
-  const cadetApi =
-    pathname === "/v1" ||
-    pathname.startsWith("/v1/") ||
-    pathname === "/v2" ||
-    pathname.startsWith("/v2/") ||
-    pathname.startsWith("/auth/");
-  if (bundle === "cadet" && gatewayUrl && (cadetAsset || cadetApi)) {
-    // Preserve API paths exactly and bypass the legacy Vellum mocks. The
-    // browser sees its own origin, including Set-Cookie from the gateway.
-    const headers = new Headers(request.headers);
-    // Website admin/session cookies belong to this site, not the gateway.
-    const gatewayCookies = (headers.get("cookie") ?? "")
-      .split(";")
-      .map((part) => part.trim())
-      .filter((part) => part.split("=", 1)[0] === "cadet_web_refresh");
-    if (gatewayCookies.length) headers.set("cookie", gatewayCookies.join("; "));
-    else headers.delete("cookie");
-    headers.set("ngrok-skip-browser-warning", "1");
-    return NextResponse.rewrite(
-      new URL(gatewayAssistantUrl(gatewayUrl, pathname + search)),
-      { request: { headers } },
-    );
-  }
 
   // Temporary web-local responses for the SPA's reachability probes. These
   // must run before the generic assistant routing below.

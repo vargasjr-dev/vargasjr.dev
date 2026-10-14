@@ -1,9 +1,8 @@
 import type { NextConfig } from "next";
 
 // Only @vellumai/web ships as an inlined SPA bundle (see
-// scripts/copy-assistant.ts); Cadet HTML is served on this site origin by
-// app/assistant/[[...slug]]/route.ts, with assets and APIs forwarded by proxy.ts.
-// The active bundle rides in the
+// scripts/copy-assistant.ts); the cadet shell is a gateway iframe served by
+// app/assistant/[[...slug]]/route.ts. The active bundle rides in the
 // `webClientBundle` cookie (mirrored from the SPA's localStorage key;
 // proxy.ts also resolves it into the x-web-client-bundle request header for
 // the shell route), and every SPA-facing local rewrite targets the
