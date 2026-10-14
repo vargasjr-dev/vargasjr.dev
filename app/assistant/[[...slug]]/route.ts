@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 import { join } from "path";
+import { gatewayAssistantUrl } from "@/lib/assistant-navigation";
 
 /**
  * Serves the assistant SPA shell at any deep path under /assistant/ (e.g.
@@ -45,24 +46,25 @@ function cookieValue(header: string | null, name: string): string | undefined {
   return undefined;
 }
 
-function escapeHtmlAttr(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
 // The same click-to-switch pill copy-assistant.ts injects into vellum.html —
 // duplicated here because the cadet shell is generated at request time, not
 // at build time. Keep the two in sync.
 const pillScript = `<script>/*web-bundle-pill*/(function(){try{var K="webClientBundle";function cur(){return localStorage.getItem(K)==="vellum"?"vellum":"cadet"}var b=document.createElement("button");function render(){b.textContent="web: "+cur()}function toggle(){var n=cur()==="vellum"?"cadet":"vellum";localStorage.setItem(K,n);document.cookie=K+"="+n+";path=/;max-age=31536000;samesite=lax";location.reload()}render();b.style.cssText="position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:2147483647;opacity:.5;background:#111;color:#eee;border:1px solid #555;border-radius:999px;font:11px ui-monospace,SFMono-Regular,monospace;padding:4px 10px;cursor:pointer";b.onclick=toggle;b.onmouseenter=function(){b.style.opacity="1"};b.onmouseleave=function(){b.style.opacity=".5"};document.body.appendChild(b)}catch(e){}})();</script>`;
 
-function cadetShellHtml(): NextResponse {
+function cadetShellHtml(spaPath: string): NextResponse {
   const gatewayUrl = process.env.CADET_GATEWAY_URL ?? "";
 
+  const target = gatewayUrl ? gatewayAssistantUrl(gatewayUrl, spaPath) : "";
+  const encodedTarget = JSON.stringify(target).replace(/</g, "\\u003c");
+  const prefix = target
+    ? new URL(target).pathname.slice(
+        0,
+        -new URL(spaPath, "https://site.example").pathname.length,
+      )
+    : "";
+  const encodedPrefix = JSON.stringify(prefix).replace(/</g, "\\u003c");
   const body = gatewayUrl
-    ? `<iframe src="${escapeHtmlAttr(gatewayUrl)}" title="cadet assistant" allow="clipboard-read; clipboard-write" style="border:0;height:100%;width:100%"></iframe>`
+    ? `<iframe id="cadet-gateway" title="cadet assistant" allow="microphone; camera; clipboard-read; clipboard-write" style="border:0;height:100%;width:100%"></iframe><script>(function(){var target=new URL(${encodedTarget});function navigate(){target.pathname=${encodedPrefix}+location.pathname;target.search=location.search;target.hash=location.hash;document.getElementById("cadet-gateway").src=target.href}navigate();addEventListener("hashchange",navigate);addEventListener("popstate",navigate)})();</script>`
     : `<p style="font:14px ui-monospace,SFMono-Regular,monospace;padding:2rem">cadet gateway not configured — set CADET_GATEWAY_URL (the gateway's ngrok URL) to load it here.</p>`;
 
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>web: cadet</title><style>html,body{margin:0;padding:0;height:100%}</style></head><body>${body}${pillScript}</body></html>`;
@@ -110,7 +112,7 @@ export async function GET(
       : cookieValue(req.headers.get("cookie"), "webClientBundle");
 
   if (requested !== "vellum") {
-    return cadetShellHtml();
+    return cadetShellHtml(url.pathname + url.search);
   }
 
   try {

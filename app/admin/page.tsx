@@ -1,9 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  ASSISTANT_RETURN_KEY,
+  assistantReturnPath,
+} from "@/lib/assistant-navigation";
 
 export default function AdminPage() {
+  const router = useRouter();
+  const resumeAssistant = useCallback(() => {
+    const path = assistantReturnPath(
+      sessionStorage.getItem(ASSISTANT_RETURN_KEY),
+    );
+    sessionStorage.removeItem(ASSISTANT_RETURN_KEY);
+    if (path) router.replace(path);
+  }, [router]);
   const [token, setToken] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -12,8 +25,9 @@ export default function AdminPage() {
   useEffect(() => {
     if (localStorage.getItem("admin_token")) {
       setAuthed(true);
+      resumeAssistant();
     }
-  }, []);
+  }, [resumeAssistant]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -32,6 +46,7 @@ export default function AdminPage() {
     if (data.valid) {
       localStorage.setItem("admin_token", token);
       setAuthed(true);
+      resumeAssistant();
     } else {
       setError("Invalid token.");
     }
