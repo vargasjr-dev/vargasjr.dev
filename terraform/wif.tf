@@ -3,7 +3,7 @@
 locals {
   portfolio = [
     { repo = "vargasjr-dev/vargasjr.dev", project = "vargasjr-dev" },
-    { repo = "vargasjr-dev/mycadet-platform", project = "mycadet" },
+    { repo = "vargasjr-dev/mycadet-cloud", project = "mycadet" },
   ]
 
   pairs = { for p in local.portfolio : p.project => p }
@@ -43,12 +43,20 @@ resource "google_service_account" "ci" {
 }
 
 # One binding per pair: only that repo's Actions tokens may impersonate it.
+# create_before_destroy: the member attribute is ForceNew, so a repo rename
+# here replaces the binding — creating the new principalSet grant BEFORE
+# destroying the old one keeps both repo names valid during the transition
+# (no CI lockout window while the rename lands).
 resource "google_service_account_iam_member" "ci_impersonation" {
   for_each = local.pairs
 
   service_account_id = google_service_account.ci[each.key].name
   role               = "roles/iam.workloadIdentityUser"
   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/${each.value.repo}"
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # Each CI SA administers its own project's infrastructure.
