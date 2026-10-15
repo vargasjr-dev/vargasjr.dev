@@ -38,14 +38,8 @@ export const ASSISTANT_RETURN_KEY = "adminAssistantReturnTo";
 
 export const ASSISTANT_GATEWAY_ORIGIN = "https://assistant.vargasjr.dev";
 
-export function assistantFrameUrl(
-  parentPath: string,
-  bundle = "cadet",
-): string {
-  const spaPath = parentToSpa(parentPath);
-  return bundle === "vellum"
-    ? spaPath
-    : gatewayAssistantUrl(ASSISTANT_GATEWAY_ORIGIN, spaPath);
+export function assistantFrameUrl(parentPath: string): string {
+  return gatewayAssistantUrl(ASSISTANT_GATEWAY_ORIGIN, parentToSpa(parentPath));
 }
 
 export function assistantNavigationMessage(
@@ -60,10 +54,8 @@ export function assistantNavigationMessage(
   )
     return null;
   // "mycadet-web-nav" is the remote-gateway cadet SPA's bridge protocol
-  // (mycadet-temp clients/web/src/lib/auth/remote-gateway-nav-bridge.ts);
-  // "vellum-spa-nav" is the copied vellum bundle's injected emitter.
-  if (value.source !== "mycadet-web-nav" && value.source !== "vellum-spa-nav")
-    return null;
+  // (mycadet-temp clients/web/src/lib/auth/remote-gateway-nav-bridge.ts).
+  if (value.source !== "mycadet-web-nav") return null;
   if (typeof value.path !== "string" || !value.path.startsWith("/assistant/"))
     return null;
   if (value.nav !== "push" && value.nav !== "replace" && value.nav !== "pop")
