@@ -59,7 +59,10 @@ export function assistantNavigationMessage(
     !("nav" in value)
   )
     return null;
-  if (value.source !== "cadet-spa-nav" && value.source !== "vellum-spa-nav")
+  // "mycadet-web-nav" is the remote-gateway cadet SPA's bridge protocol
+  // (mycadet-temp clients/web/src/lib/auth/remote-gateway-nav-bridge.ts);
+  // "vellum-spa-nav" is the copied vellum bundle's injected emitter.
+  if (value.source !== "mycadet-web-nav" && value.source !== "vellum-spa-nav")
     return null;
   if (typeof value.path !== "string" || !value.path.startsWith("/assistant/"))
     return null;

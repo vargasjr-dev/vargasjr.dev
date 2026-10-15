@@ -91,7 +91,7 @@ test("Cadet shell URLs redirect to its domain without fetching or proxying", asy
 test("navigation messages validate the protocol and assistant path", () => {
   assert.deepEqual(
     assistantNavigationMessage({
-      source: "cadet-spa-nav",
+      source: "mycadet-web-nav",
       nav: "push",
       path: "/assistant/conversations/123/",
     }),
@@ -99,7 +99,7 @@ test("navigation messages validate the protocol and assistant path", () => {
   );
   assert.equal(
     assistantNavigationMessage({
-      source: "cadet-spa-nav",
+      source: "mycadet-web-nav",
       nav: "push",
       path: "/assistant/../../admin/",
     }),
@@ -107,7 +107,7 @@ test("navigation messages validate the protocol and assistant path", () => {
   );
   assert.equal(
     assistantNavigationMessage({
-      source: "cadet-spa-nav",
+      source: "mycadet-web-nav",
       nav: "push",
       path: "https://evil.example/assistant/",
     }),
@@ -121,9 +121,20 @@ test("navigation messages validate the protocol and assistant path", () => {
     }),
     null,
   );
+
+  // The copied-cadet bundle's protocol is retired: the remote-gateway SPA
+  // speaks "mycadet-web-nav" and nothing emits "cadet-spa-nav" anymore.
   assert.equal(
     assistantNavigationMessage({
       source: "cadet-spa-nav",
+      nav: "push",
+      path: "/assistant/",
+    }),
+    null,
+  );
+  assert.equal(
+    assistantNavigationMessage({
+      source: "mycadet-web-nav",
       nav: "other",
       path: "/assistant/",
     }),
