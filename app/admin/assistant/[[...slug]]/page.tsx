@@ -13,10 +13,10 @@ import {
 
 /**
  * One iframe loads Cadet directly from its same-site HTTPS subdomain.
- * Vellum's optional fallback stays on the website origin. Navigation messages
- * are accepted only from the active frame and its exact origin. Cadet must
- * emit the navigation protocol itself; the website cannot inject scripts or
- * read history across origins. Parent back/forward reloads a cross-origin frame.
+ * Navigation messages are accepted only from the active frame and its exact
+ * origin. Cadet must emit the navigation protocol itself; the website cannot
+ * inject scripts or read history across origins. Parent back/forward reloads
+ * a cross-origin frame.
  */
 
 function fullUrl(): string {
@@ -31,12 +31,7 @@ export default function AssistantPage() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
   useEffect(() => {
-    setIframeSrc(
-      assistantFrameUrl(
-        fullUrl(),
-        localStorage.getItem("webClientBundle") ?? "cadet",
-      ),
-    );
+    setIframeSrc(assistantFrameUrl(fullUrl()));
   }, []);
 
   // ── Auth gate ───────────────────────────────────────────────────────────

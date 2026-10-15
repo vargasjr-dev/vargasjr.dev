@@ -60,10 +60,6 @@ test("the admin frame loads the fixed same-site Cadet domain with the pairing fr
     ),
     "https://assistant.vargasjr.dev/assistant/conversations/123/?view=chat#message-1",
   );
-  assert.equal(
-    assistantFrameUrl("/admin/assistant/conversations/123/", "vellum"),
-    "/assistant/conversations/123/",
-  );
 });
 
 test("Cadet shell URLs redirect to its domain without fetching or proxying", async () => {
@@ -76,7 +72,6 @@ test("Cadet shell URLs redirect to its domain without fetching or proxying", asy
       new Request(
         "https://site.example/assistant/conversations/123/?view=chat",
       ),
-      { params: Promise.resolve({ slug: ["conversations", "123"] }) },
     );
     assert.equal(response.status, 307);
     assert.equal(
