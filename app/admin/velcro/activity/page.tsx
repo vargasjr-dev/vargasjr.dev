@@ -26,14 +26,19 @@ export default function ActivityPage() {
   const [customerId, setCustomerId] = useState("");
 
   const load = useCallback(async () => {
-    const res = await velcroFetch(`activity${unreadOnly ? "?unread=1" : ""}`);
-    if (!res) return;
-    const data = await res.json();
-    setItems(data.items ?? []);
-    const customersRes = await velcroFetch("customers");
-    if (customersRes) {
-      const customersData = await customersRes.json();
-      setCustomers(customersData.customers ?? []);
+    try {
+      const res = await velcroFetch(`activity${unreadOnly ? "?unread=1" : ""}`);
+      if (!res) return;
+      const data = await res.json();
+      setItems(data.items ?? []);
+      const customersRes = await velcroFetch("customers");
+      if (customersRes) {
+        const customersData = await customersRes.json();
+        setCustomers(customersData.customers ?? []);
+      }
+    } catch {
+      // A failed fetch must never leave the spinner hanging.
+      setError("Couldn't load activity — is the API up? Try again.");
     }
     setLoading(false);
   }, [unreadOnly]);
