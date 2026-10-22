@@ -18,6 +18,12 @@ export default {
     "gmail_connection",
     "accounting_entries",
     "accounting_entry_edits",
+    "velcro_customers",
+    "velcro_customer_accounts",
+    "velcro_cases",
+    "velcro_case_events",
+    "velcro_case_links",
+    "velcro_activity_items",
   ],
   dbCredentials: {
     url: databaseUrl,
