@@ -16,6 +16,7 @@ export default {
   tablesFilter: [
     "emails",
     "gmail_connection",
+    "sms_opt_ins",
     "accounting_entries",
     "accounting_entry_edits",
     "velcro_customers",
