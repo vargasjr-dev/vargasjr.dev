@@ -7,18 +7,42 @@ import {
   velcroCases,
   velcroCustomers,
 } from "@/db/schema";
+import { compareCasesForWork } from "@/lib/velcro";
 
 function isAuthorized(request: Request): boolean {
   return request.headers.get("x-admin-token") === process.env.ADMIN_TOKEN;
 }
 
-// GET /api/admin/velcro/cases — list cases, newest first, with customer names.
+// GET /api/admin/velcro/cases — list cases with customer names.
+//
+// Query params (both optional, for the CLI worklist):
+//   ?status=open|closed — filter by status; omit for all.
+//   ?order=priority     — work-queue order (open first, manual priority
+//                         high → low, newest first on ties). Omit for the
+//                         default newest-first.
 export async function GET(request: Request) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const cases = await db
+  const params = new URL(request.url).searchParams;
+  const status = params.get("status");
+  const order = params.get("order");
+
+  if (status !== null && status !== "open" && status !== "closed") {
+    return NextResponse.json(
+      { error: "status must be 'open' or 'closed'" },
+      { status: 400 },
+    );
+  }
+  if (order !== null && order !== "priority") {
+    return NextResponse.json(
+      { error: "order must be 'priority'" },
+      { status: 400 },
+    );
+  }
+
+  const rows = await db
     .select({
       id: velcroCases.id,
       title: velcroCases.title,
@@ -33,6 +57,12 @@ export async function GET(request: Request) {
     .from(velcroCases)
     .leftJoin(velcroCustomers, eq(velcroCases.customerId, velcroCustomers.id))
     .orderBy(desc(velcroCases.createdAt), desc(velcroCases.id));
+
+  const cases =
+    status !== null ? rows.filter((c) => c.status === status) : rows;
+  if (order === "priority") {
+    cases.sort(compareCasesForWork);
+  }
 
   return NextResponse.json({ cases });
 }
