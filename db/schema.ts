@@ -7,6 +7,7 @@ import {
   serial,
   date,
   integer,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export const emails = pgTable(
@@ -133,3 +134,146 @@ export const accountingEntryEdits = pgTable(
 
 export type AccountingEntryEdit = typeof accountingEntryEdits.$inferSelect;
 export type NewAccountingEntryEdit = typeof accountingEntryEdits.$inferInsert;
+
+// VELCRO — Vargas' Eternal Ledger of Customer Response Operations.
+// Manual-first CRM shell: customers are PEOPLE only for now (may change),
+// cases are fully manual (open/close by hand, manual 0-100 priority), and the
+// activity feed is a thin shell (no ingestion machinery in v1 — it will be
+// refactored once Vellum's Velcro source code is available).
+
+// A customer = one human being. Interactions with them across channels are
+// tracked as customer accounts, not as separate customers.
+export const velcroCustomers = pgTable(
+  "velcro_customers",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 128 }).notNull(),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("velcro_customers_name_idx").on(t.name)],
+);
+
+// One place we interact with a person: their email address, phone number,
+// GitHub handle, Slack id, etc.
+export const velcroCustomerAccounts = pgTable(
+  "velcro_customer_accounts",
+  {
+    id: serial("id").primaryKey(),
+    customerId: integer("customer_id")
+      .notNull()
+      .references(() => velcroCustomers.id, { onDelete: "cascade" }),
+    // e.g. "email", "sms", "github", "slack" — free-form, new channels are
+    // just new values.
+    channel: varchar("channel", { length: 32 }).notNull(),
+    // The identifier on that channel (address, phone, username...).
+    handle: varchar("handle", { length: 256 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("velcro_accounts_customer_idx").on(t.customerId),
+    uniqueIndex("velcro_accounts_channel_handle_key").on(t.channel, t.handle),
+  ],
+);
+
+export const velcroCases = pgTable(
+  "velcro_cases",
+  {
+    id: serial("id").primaryKey(),
+    title: text("title").notNull(),
+    // Manual 0-100 priority score set by Vargas.
+    priority: integer("priority").notNull().default(50),
+    // "open" | "closed"; opening and closing is manual.
+    status: varchar("status", { length: 16 }).notNull().default("open"),
+    customerId: integer("customer_id").references(() => velcroCustomers.id, {
+      onDelete: "set null",
+    }),
+    // Free-text description of what the case is currently blocked on.
+    blockedOn: text("blocked_on"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("velcro_cases_status_idx").on(t.status),
+    index("velcro_cases_priority_idx").on(t.priority),
+  ],
+);
+
+// Append-only history for a case: notes and actions as they happen.
+export const velcroCaseEvents = pgTable(
+  "velcro_case_events",
+  {
+    id: serial("id").primaryKey(),
+    caseId: integer("case_id")
+      .notNull()
+      .references(() => velcroCases.id, { onDelete: "cascade" }),
+    // "note" | "action"
+    kind: varchar("kind", { length: 16 }).notNull().default("note"),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("velcro_case_events_case_idx").on(t.caseId)],
+);
+
+// External related links for a case (Stripe payment, PR, doc, anything).
+export const velcroCaseLinks = pgTable(
+  "velcro_case_links",
+  {
+    id: serial("id").primaryKey(),
+    caseId: integer("case_id")
+      .notNull()
+      .references(() => velcroCases.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    label: varchar("label", { length: 256 }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("velcro_case_links_case_idx").on(t.caseId)],
+);
+
+// Thin activity feed — v1 is a shell: manual adds only, no ingestion. The
+// data model is deliberately minimal; it will be refactored once Vellum's
+// Velcro source code lands.
+export const velcroActivityItems = pgTable(
+  "velcro_activity_items",
+  {
+    id: serial("id").primaryKey(),
+    // Where it came from — "manual" for v1; future channels POST here.
+    source: varchar("source", { length: 32 }).notNull().default("manual"),
+    externalId: varchar("external_id", { length: 128 }),
+    title: text("title").notNull(),
+    body: text("body"),
+    customerId: integer("customer_id").references(() => velcroCustomers.id, {
+      onDelete: "set null",
+    }),
+    // Set when Vargas marks the item as read; null = unread.
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("velcro_activity_created_idx").on(t.createdAt)],
+);
+
+export type VelcroCustomer = typeof velcroCustomers.$inferSelect;
+export type NewVelcroCustomer = typeof velcroCustomers.$inferInsert;
+export type VelcroCustomerAccount = typeof velcroCustomerAccounts.$inferSelect;
+export type NewVelcroCustomerAccount =
+  typeof velcroCustomerAccounts.$inferInsert;
+export type VelcroCase = typeof velcroCases.$inferSelect;
+export type NewVelcroCase = typeof velcroCases.$inferInsert;
+export type VelcroCaseEvent = typeof velcroCaseEvents.$inferSelect;
+export type NewVelcroCaseEvent = typeof velcroCaseEvents.$inferInsert;
+export type VelcroCaseLink = typeof velcroCaseLinks.$inferSelect;
+export type NewVelcroCaseLink = typeof velcroCaseLinks.$inferInsert;
+export type VelcroActivityItem = typeof velcroActivityItems.$inferSelect;
+export type NewVelcroActivityItem = typeof velcroActivityItems.$inferInsert;
