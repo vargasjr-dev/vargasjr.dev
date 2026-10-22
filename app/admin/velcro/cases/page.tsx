@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { velcroFetch, type VelcroCase, type VelcroCustomer } from "../api";
+import CustomerPicker from "../customer-picker";
 
 // Priority badge coloring — fully manual, Vargas sets the number.
 function priorityTone(priority: number): string {
@@ -28,18 +29,23 @@ export default function CasesPage() {
   // Create form — everything manual: priority defaults to 50, no auto logic.
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState("50");
-  const [customerId, setCustomerId] = useState("");
+  const [customerId, setCustomerId] = useState<number | null>(null);
   const [blockedOn, setBlockedOn] = useState("");
 
   const load = useCallback(async () => {
-    const casesRes = await velcroFetch("cases");
-    if (!casesRes) return;
-    const casesData = await casesRes.json();
-    setCases(casesData.cases ?? []);
-    const customersRes = await velcroFetch("customers");
-    if (customersRes) {
-      const customersData = await customersRes.json();
-      setCustomers(customersData.customers ?? []);
+    try {
+      const casesRes = await velcroFetch("cases");
+      if (!casesRes) return;
+      const casesData = await casesRes.json();
+      setCases(casesData.cases ?? []);
+      const customersRes = await velcroFetch("customers");
+      if (customersRes) {
+        const customersData = await customersRes.json();
+        setCustomers(customersData.customers ?? []);
+      }
+    } catch {
+      // A failed fetch must never leave the spinner hanging.
+      setError("Couldn't load cases — is the API up? Try again.");
     }
     setLoading(false);
   }, []);
@@ -61,7 +67,7 @@ export default function CasesPage() {
       body: JSON.stringify({
         title,
         priority: parseInt(priority, 10) || 0,
-        customerId: customerId ? Number(customerId) : null,
+        customerId,
         blockedOn: blockedOn || null,
       }),
     });
@@ -74,7 +80,7 @@ export default function CasesPage() {
     }
     setTitle("");
     setPriority("50");
-    setCustomerId("");
+    setCustomerId(null);
     setBlockedOn("");
     setCreating(false);
     load();
@@ -168,18 +174,12 @@ export default function CasesPage() {
             onChange={(e) => setPriority(e.target.value)}
             className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:border-[#3ba4dc]"
           />
-          <select
+          <CustomerPicker
+            customers={customers}
             value={customerId}
-            onChange={(e) => setCustomerId(e.target.value)}
-            className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:border-[#3ba4dc]"
-          >
-            <option value="">No customer</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+            onChange={setCustomerId}
+            onCustomersChanged={load}
+          />
         </div>
         <input
           placeholder="Blocked on (what's holding it up)"

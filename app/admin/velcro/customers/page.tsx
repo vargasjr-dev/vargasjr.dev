@@ -26,10 +26,15 @@ export default function CustomersPage() {
   const [accountHandle, setAccountHandle] = useState("");
 
   const load = useCallback(async () => {
-    const res = await velcroFetch("customers");
-    if (!res) return;
-    const data = await res.json();
-    setCustomers(data.customers ?? []);
+    try {
+      const res = await velcroFetch("customers");
+      if (!res) return;
+      const data = await res.json();
+      setCustomers(data.customers ?? []);
+    } catch {
+      // A failed fetch must never leave the spinner hanging.
+      setError("Couldn't load customers — is the API up? Try again.");
+    }
     setLoading(false);
   }, []);
 

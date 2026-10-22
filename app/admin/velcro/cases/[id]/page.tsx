@@ -10,6 +10,7 @@ import {
   type VelcroCaseLink,
   type VelcroCustomer,
 } from "../../api";
+import CustomerPicker from "../../customer-picker";
 
 type CaseDetail = {
   case: VelcroCase;
@@ -36,7 +37,7 @@ export default function CaseDetailPage() {
 
   // Editable fields, applied on save.
   const [priority, setPriority] = useState("");
-  const [customerId, setCustomerId] = useState("");
+  const [customerId, setCustomerId] = useState<number | null>(null);
   const [blockedOn, setBlockedOn] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -50,22 +51,27 @@ export default function CaseDetailPage() {
   const [linkLabel, setLinkLabel] = useState("");
 
   const load = useCallback(async () => {
-    const res = await velcroFetch(`cases/${caseId}`);
-    if (!res) return;
-    if (res.status === 404) {
-      setNotFound(true);
-      setLoading(false);
-      return;
-    }
-    const data = await res.json();
-    setDetail(data);
-    setPriority(String(data.case.priority));
-    setCustomerId(data.case.customerId ? String(data.case.customerId) : "");
-    setBlockedOn(data.case.blockedOn ?? "");
-    const customersRes = await velcroFetch("customers");
-    if (customersRes) {
-      const customersData = await customersRes.json();
-      setCustomers(customersData.customers ?? []);
+    try {
+      const res = await velcroFetch(`cases/${caseId}`);
+      if (!res) return;
+      if (res.status === 404) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
+      const data = await res.json();
+      setDetail(data);
+      setPriority(String(data.case.priority));
+      setCustomerId(data.case.customerId ?? null);
+      setBlockedOn(data.case.blockedOn ?? "");
+      const customersRes = await velcroFetch("customers");
+      if (customersRes) {
+        const customersData = await customersRes.json();
+        setCustomers(customersData.customers ?? []);
+      }
+    } catch {
+      // A failed fetch must never leave the spinner hanging.
+      setError("Couldn't load the case — is the API up? Try again.");
     }
     setLoading(false);
   }, [caseId]);
@@ -86,7 +92,7 @@ export default function CaseDetailPage() {
       method: "PATCH",
       body: JSON.stringify({
         priority: parseInt(priority, 10) || 0,
-        customerId: customerId ? Number(customerId) : null,
+        customerId,
         blockedOn: blockedOn || null,
       }),
     });
@@ -251,18 +257,12 @@ export default function CaseDetailPage() {
           </div>
           <div>
             <label className="block text-xs text-gray-400 mb-1">Customer</label>
-            <select
+            <CustomerPicker
+              customers={customers}
               value={customerId}
-              onChange={(e) => setCustomerId(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:border-[#3ba4dc]"
-            >
-              <option value="">No customer</option>
-              {customers.map((cu) => (
-                <option key={cu.id} value={cu.id}>
-                  {cu.name}
-                </option>
-              ))}
-            </select>
+              onChange={setCustomerId}
+              onCustomersChanged={load}
+            />
           </div>
           <div>
             <label className="block text-xs text-gray-400 mb-1">
