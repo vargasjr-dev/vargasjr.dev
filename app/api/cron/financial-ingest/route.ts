@@ -26,6 +26,13 @@ import { categoryFromMercury } from "@/lib/ledger";
 //                         Defaults to every account on the organization.
 //   MERCURY_LEDGER_ACCOUNT — ledger account name for the bank. Default "cash".
 //
+// Manual backfill: authorized callers may pass ?days=N to look back further
+// than the daily 7-day window (capped at 365), e.g.
+//   curl -H "x-admin-token: $ADMIN_TOKEN" ".../api/cron/financial-ingest?days=45"
+// The scheduler never sends query params, so nightly runs always use the
+// default lookback. Re-pulling overlap is harmless — inserts no-op on
+// existing externalIds.
+//
 // Idempotency: every entry is stamped with externalId = "mercury:<txId>" and
 // inserted with ON CONFLICT DO NOTHING, so re-runs never duplicate rows. The
 // ledger stays append-only — corrections are manual entries via the UI.
@@ -53,9 +60,10 @@ async function ingestAccount(
   accountId: string,
   accountName: string,
   ledgerAccount: string,
+  lookbackDays: number = LOOKBACK_DAYS,
 ): Promise<{ account: string; fetched: number; inserted: number }> {
   const start = new Date();
-  start.setUTCDate(start.getUTCDate() - LOOKBACK_DAYS);
+  start.setUTCDate(start.getUTCDate() - lookbackDays);
   const startParam = start.toISOString().slice(0, 10);
 
   // Page through transactions (Mercury caps a page at 1000).
@@ -108,6 +116,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // ?days=N — manual backfill window (see header comment). Defaults to the
+  // nightly lookback when absent or invalid.
+  const daysParam = new URL(request.url).searchParams.get("days");
+  const days = daysParam ? Number.parseInt(daysParam, 10) : NaN;
+  const lookbackDays =
+    Number.isFinite(days) && days > 0 ? Math.min(days, 365) : LOOKBACK_DAYS;
+
   const apiKey = process.env.MERCURY_API_KEY;
   if (!apiKey) {
     // Graceful no-op until the Mercury token is configured, so the daily
@@ -134,7 +149,12 @@ export async function GET(request: Request) {
     for (const account of accounts) {
       try {
         results.push(
-          await ingestAccount(account.id, account.name, ledgerAccount),
+          await ingestAccount(
+            account.id,
+            account.name,
+            ledgerAccount,
+            lookbackDays,
+          ),
         );
       } catch (error) {
         // One bad account shouldn't block the others.
