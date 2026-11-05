@@ -149,7 +149,12 @@ export async function GET(request: Request) {
     for (const account of accounts) {
       try {
         results.push(
-          await ingestAccount(account.id, account.name, ledgerAccount, lookbackDays),
+          await ingestAccount(
+            account.id,
+            account.name,
+            ledgerAccount,
+            lookbackDays,
+          ),
         );
       } catch (error) {
         // One bad account shouldn't block the others.
