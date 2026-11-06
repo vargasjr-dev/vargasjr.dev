@@ -3,11 +3,128 @@ import { put } from "@vercel/blob";
 import { db } from "@/db";
 import { emails } from "@/db/schema";
 import { createHmac, timingSafeEqual } from "crypto";
+import {
+  ALLOWED_FORWARDER,
+  extractForwardedSender,
+  fromAddress,
+  htmlToText,
+} from "@/lib/email-filter-request";
+import { createGmailFilter, findOrCreateVargasJrLabel } from "@/lib/gmail-auth";
+
+// Cold Neon connects + Google token refresh can be slow; give the webhook room.
+export const maxDuration = 60;
 
 const VARGAS_ADDRESS = "vargas@vargasjr.dev";
 const HELLO_ADDRESS = "hello@vargasjr.dev";
 const SUPPORT_ADDRESS = "support@mycadet.ai";
+const FILTER_ADDRESS = "filter@vargasjr.dev";
 const FORWARD_TO = "dvargasfuertes@gmail.com";
+
+// filter@vargasjr.dev — Vargas forwards an email and the ORIGINAL sender
+// becomes a Gmail filter (archived + VargasJR label). Only forwards from
+// his work Gmail are honored; anything else is logged and dropped.
+async function sendNotice(subject: string, text: string): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return;
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: VARGAS_ADDRESS,
+      to: [FORWARD_TO],
+      subject,
+      text,
+    }),
+  });
+  if (!res.ok) {
+    console.warn(`[filter@] notice send failed (${res.status})`);
+  }
+}
+
+async function handleFilterRequest(
+  data: Record<string, unknown>,
+  messageId: string,
+): Promise<void> {
+  const from = (data.from as string) ?? "";
+  if (fromAddress(from) !== ALLOWED_FORWARDER) {
+    console.warn(
+      `[filter@] ignoring forward from ${from} — only ${ALLOWED_FORWARDER} may create filters`,
+    );
+    return;
+  }
+
+  // The webhook payload is metadata-only; fetch the full body.
+  let text = (data.text as string) ?? (data.plain_text as string) ?? "";
+  let html = (data.html as string) ?? "";
+  if (messageId) {
+    try {
+      const contentRes = await fetch(
+        `https://api.resend.com/emails/receiving/${messageId}`,
+        { headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}` } },
+      );
+      if (contentRes.ok) {
+        const content = (await contentRes.json()) as {
+          html?: string | null;
+          text?: string | null;
+        };
+        html = content.html ?? html;
+        text = content.text ?? text;
+      } else {
+        console.warn(
+          `[filter@] receiving fetch failed (${contentRes.status}) for ${messageId}`,
+        );
+      }
+    } catch (err) {
+      console.warn(`[filter@] receiving fetch error for ${messageId}:`, err);
+    }
+  }
+
+  const sender = extractForwardedSender(text || htmlToText(html));
+  if (!sender) {
+    await sendNotice(
+      "filter@: no sender found",
+      "I couldn't find a forwarded message header in that email — no filter was created. Forward it with Gmail's inline forward so the original From: header is included.",
+    );
+    return;
+  }
+
+  let labelNote = "";
+  let labelId: string | null = null;
+  try {
+    labelId = await findOrCreateVargasJrLabel();
+  } catch {
+    labelNote =
+      " (couldn't attach the VargasJR label — reconnect on /admin/gmail to grant the labels scope)";
+  }
+
+  try {
+    await createGmailFilter({
+      criteria: { from: sender },
+      action: {
+        ...(labelId ? { addLabelIds: [labelId] } : {}),
+        // archive (remove from INBOX) + mark as read (remove UNREAD)
+        removeLabelIds: ["INBOX", "UNREAD"],
+      },
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    await sendNotice(
+      `filter@: filter for ${sender} failed`,
+      `Gmail rejected the filter: ${msg}`,
+    );
+    console.error(`[filter@] create failed for ${sender}:`, msg);
+    return;
+  }
+
+  await sendNotice(
+    `Filter created: ${sender}`,
+    `Anything from ${sender} will now be archived and labeled VargasJR${labelNote}.`,
+  );
+  console.log(`[filter@] created filter for ${sender}`);
+}
 
 async function forwardEmail(data: Record<string, unknown>): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
@@ -155,8 +272,19 @@ export async function POST(req: NextRequest) {
   // ── Routing ──────────────────────────────────────────────────────────────
   // vargas@ → forward to personal Gmail
   // support@mycadet.ai → forward to personal Gmail
+  // filter@ → create a Gmail filter from the forwarded sender
+  //           (only dvargasfuertes@gmail.com may trigger this)
   // hello@  → store in DB (webhook inbox)
   // other   → drop
+  if (to === FILTER_ADDRESS) {
+    try {
+      await handleFilterRequest(data, messageId);
+    } catch (err) {
+      console.error("[filter@] unexpected failure:", err);
+    }
+    return NextResponse.json({ ok: true });
+  }
+
   if (to === VARGAS_ADDRESS || to === SUPPORT_ADDRESS) {
     await forwardEmail(data);
     console.log(
