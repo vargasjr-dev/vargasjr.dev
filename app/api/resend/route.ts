@@ -91,13 +91,11 @@ async function handleFilterRequest(
     return;
   }
 
-  let labelNote = "";
   let labelId: string | null = null;
   try {
     labelId = await findOrCreateVargasJrLabel();
   } catch {
-    labelNote =
-      " (couldn't attach the VargasJR label — reconnect on /admin/gmail to grant the labels scope)";
+    // no labels scope — the filter still archives + marks as read
   }
 
   try {
@@ -119,10 +117,6 @@ async function handleFilterRequest(
     return;
   }
 
-  await sendNotice(
-    `Filter created: ${sender}`,
-    `Anything from ${sender} will now be archived and labeled VargasJR${labelNote}.`,
-  );
   console.log(`[filter@] created filter for ${sender}`);
 }
 
