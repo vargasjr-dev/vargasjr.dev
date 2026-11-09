@@ -300,6 +300,15 @@ export async function listGmailLabels(): Promise<GmailLabel[]> {
   return data.labels ?? [];
 }
 
+/** Looks up the VargasJR label id without creating it (null when absent). */
+export async function findVargasJrLabel(): Promise<string | null> {
+  const labels = await listGmailLabels();
+  const existing = labels.find(
+    (l) => l.type === "user" && l.name === VARGASJR_LABEL_NAME,
+  );
+  return existing?.id ?? null;
+}
+
 /** Finds the VargasJR label, creating it if it doesn't exist yet. */
 export async function findOrCreateVargasJrLabel(): Promise<string> {
   const labels = await listGmailLabels();
