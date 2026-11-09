@@ -3,6 +3,7 @@ import {
   createGmailFilter,
   deleteGmailFilter,
   findOrCreateVargasJrLabel,
+  findVargasJrLabel,
   listGmailFilters,
 } from "@/lib/gmail-auth";
 
@@ -15,13 +16,21 @@ export const maxDuration = 60;
  *  Vargas's personal Gmail and must never be shown or touched from here. */
 const MANAGED_FORWARD_TO = "hello@vargasjr.dev";
 
-function isManaged(filter: {
-  action?: { forward?: string; forwardTo?: string };
-}): boolean {
-  return (
+/** filter@vargasjr.dev creates archive+label filters (no forward action);
+ *  those carry the VargasJR label and are ours too. */
+function isManaged(
+  filter: {
+    action?: { forward?: string; forwardTo?: string; addLabelIds?: string[] };
+  },
+  labelId: string | null,
+): boolean {
+  if (
     filter.action?.forward?.toLowerCase() === MANAGED_FORWARD_TO ||
     filter.action?.forwardTo?.toLowerCase() === MANAGED_FORWARD_TO
-  );
+  ) {
+    return true;
+  }
+  return !!labelId && (filter.action?.addLabelIds ?? []).includes(labelId);
 }
 
 function isAdmin(request: Request): boolean {
@@ -60,7 +69,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   try {
-    const managed = (await listGmailFilters()).filter(isManaged);
+    const labelId = await findVargasJrLabel().catch(() => null);
+    const managed = (await listGmailFilters()).filter((f) =>
+      isManaged(f, labelId),
+    );
     managed.sort(compareFilters);
     const totalPages = Math.max(1, Math.ceil(managed.length / PAGE_SIZE));
     const url = new URL(request.url);
@@ -75,6 +87,7 @@ export async function GET(request: Request) {
       page,
       pageSize: PAGE_SIZE,
       totalPages,
+      labelId,
     });
   } catch (e) {
     return NextResponse.json(
@@ -150,9 +163,10 @@ export async function DELETE(request: Request) {
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
   try {
+    const labelId = await findVargasJrLabel().catch(() => null);
     const all = await listGmailFilters();
     const target = all.find((f) => f.id === id);
-    if (!target || !isManaged(target)) {
+    if (!target || !isManaged(target, labelId)) {
       return NextResponse.json(
         { error: "not a VargasJR-managed filter" },
         { status: 403 },

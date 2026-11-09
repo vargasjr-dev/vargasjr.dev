@@ -32,6 +32,7 @@ export default function GmailAdminPage() {
     email: string | null;
   } | null>(null);
   const [filters, setFilters] = useState<GmailFilter[] | null>(null);
+  const [vargasjrLabelId, setVargasjrLabelId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageInfo, setPageInfo] = useState({ total: 0, totalPages: 1 });
   const [forwarding, setForwarding] = useState<ForwardingAddress[]>([]);
@@ -83,6 +84,7 @@ export default function GmailAdminPage() {
             .catch(() => ({})),
         ]);
         setFilters(f.filters ?? []);
+        setVargasjrLabelId(f.labelId ?? null);
         setPageInfo({
           total: f.total ?? 0,
           totalPages: f.totalPages ?? 1,
@@ -283,7 +285,12 @@ export default function GmailAdminPage() {
                         <p className="text-gray-500 text-xs mt-1">
                           {f.action.forward || f.action.forwardTo
                             ? `forwards to ${f.action.forward || f.action.forwardTo}`
-                            : `labels: ${[...(f.action.addLabelIds ?? []), ...(f.action.removeLabelIds ?? [])].join(", ") || "none"}`}
+                            : vargasjrLabelId &&
+                                (f.action.addLabelIds ?? []).includes(
+                                  vargasjrLabelId,
+                                )
+                              ? "via filter@vargasjr.dev — archived + labeled VargasJR"
+                              : `labels: ${[...(f.action.addLabelIds ?? []), ...(f.action.removeLabelIds ?? [])].join(", ") || "none"}`}
                         </p>
                       </div>
                       <button
