@@ -1,4 +1,7 @@
-const SPA_PREFIX = "/assistant";
+// The gateway's dev release moved the desktop shell onto /assistant/* and
+// mounted the assistant SPA's own url space at /web/assistant — embed the SPA
+// mount directly so the frame speaks the nav protocol to this page itself.
+const SPA_PREFIX = "/web/assistant";
 const ADMIN_PREFIX = "/admin/assistant";
 
 function remap(path: string, from: string, to: string): string {
@@ -56,7 +59,10 @@ export function assistantNavigationMessage(
   // "mycadet-web-nav" is the remote-gateway cadet SPA's bridge protocol
   // (mycadet-temp clients/web/src/lib/auth/remote-gateway-nav-bridge.ts).
   if (value.source !== "mycadet-web-nav") return null;
-  if (typeof value.path !== "string" || !value.path.startsWith("/assistant/"))
+  if (
+    typeof value.path !== "string" ||
+    !value.path.startsWith(`${SPA_PREFIX}/`)
+  )
     return null;
   if (value.nav !== "push" && value.nav !== "replace" && value.nav !== "pop")
     return null;

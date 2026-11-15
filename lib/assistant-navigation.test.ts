@@ -22,7 +22,7 @@ test("admin and SPA routes preserve a pairing fragment and query without adding 
     "/admin/assistant/pair?returnTo=%2Fassistant%2F#device_code=CODE-123";
   assert.equal(
     parentToSpa(source),
-    "/assistant/pair/?returnTo=%2Fassistant%2F#device_code=CODE-123",
+    "/web/assistant/pair/?returnTo=%2Fassistant%2F#device_code=CODE-123",
   );
   assert.equal(
     spaToParent(parentToSpa(source)),
@@ -34,16 +34,16 @@ test("gateway paths retain the configured host prefix and the pairing route", ()
   assert.equal(
     gatewayAssistantUrl(
       "https://gateway.example/instance-1/",
-      "/assistant/pair/#device_code=CODE-123",
+      "/web/assistant/pair/#device_code=CODE-123",
     ),
-    "https://gateway.example/instance-1/assistant/pair/#device_code=CODE-123",
+    "https://gateway.example/instance-1/web/assistant/pair/#device_code=CODE-123",
   );
   assert.equal(
     gatewayAssistantUrl(
       "https://gateway.example/instance-1/assistant/",
-      "/assistant/pair/",
+      "/web/assistant/pair/",
     ),
-    "https://gateway.example/instance-1/assistant/pair/",
+    "https://gateway.example/instance-1/web/assistant/pair/",
   );
 });
 
@@ -52,13 +52,13 @@ test("the admin frame loads the fixed same-site Cadet domain with the pairing fr
     assistantFrameUrl(
       "/admin/assistant/pair/?returnTo=%2Fassistant%2F#device_code=CODE-123",
     ),
-    "https://assistant.vargasjr.dev/assistant/pair/?returnTo=%2Fassistant%2F#device_code=CODE-123",
+    "https://assistant.vargasjr.dev/web/assistant/pair/?returnTo=%2Fassistant%2F#device_code=CODE-123",
   );
   assert.equal(
     assistantFrameUrl(
       "/admin/assistant/conversations/123/?view=chat#message-1",
     ),
-    "https://assistant.vargasjr.dev/assistant/conversations/123/?view=chat#message-1",
+    "https://assistant.vargasjr.dev/web/assistant/conversations/123/?view=chat#message-1",
   );
 });
 
@@ -88,15 +88,15 @@ test("navigation messages validate the protocol and assistant path", () => {
     assistantNavigationMessage({
       source: "mycadet-web-nav",
       nav: "push",
-      path: "/assistant/conversations/123/",
+      path: "/web/assistant/conversations/123/",
     }),
-    { nav: "push", path: "/assistant/conversations/123/" },
+    { nav: "push", path: "/web/assistant/conversations/123/" },
   );
   assert.equal(
     assistantNavigationMessage({
       source: "mycadet-web-nav",
       nav: "push",
-      path: "/assistant/../../admin/",
+      path: "/web/assistant/../../admin/",
     }),
     null,
   );
@@ -104,7 +104,7 @@ test("navigation messages validate the protocol and assistant path", () => {
     assistantNavigationMessage({
       source: "mycadet-web-nav",
       nav: "push",
-      path: "https://evil.example/assistant/",
+      path: "https://evil.example/web/assistant/",
     }),
     null,
   );
@@ -112,7 +112,19 @@ test("navigation messages validate the protocol and assistant path", () => {
     assistantNavigationMessage({
       source: "other",
       nav: "push",
-      path: "/assistant/",
+      path: "/web/assistant/",
+    }),
+    null,
+  );
+
+  // The desktop shell owns the bare /assistant url space since the dev
+  // release moved it there — it never speaks this protocol, and a message
+  // naming it must not be mirrored into the admin url.
+  assert.equal(
+    assistantNavigationMessage({
+      source: "mycadet-web-nav",
+      nav: "push",
+      path: "/assistant/conversations/123/",
     }),
     null,
   );
@@ -131,7 +143,7 @@ test("navigation messages validate the protocol and assistant path", () => {
     assistantNavigationMessage({
       source: "mycadet-web-nav",
       nav: "other",
-      path: "/assistant/",
+      path: "/web/assistant/",
     }),
     null,
   );
