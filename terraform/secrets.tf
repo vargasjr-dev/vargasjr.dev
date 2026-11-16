@@ -41,6 +41,13 @@ data "google_secret_manager_secret_version" "google_client_secret" {
   secret  = "GOOGLE_CLIENT_SECRET"
 }
 
+# Vargas's address for velcro case-closure mail (customer to + owner bcc /
+# reply-to). Consumed by the deployed site via Vercel env vars.
+data "google_secret_manager_secret_version" "owner_email" {
+  project = "vargasjr-dev"
+  secret  = "OWNER_EMAIL"
+}
+
 # The CI identity reads this repo's vault directly at apply time — same
 # values the providers and resources above consume. (Other repos' secrets
 # are granted from their own repos; the owner grants, nobody else bleeds in.)
@@ -50,6 +57,7 @@ resource "google_secret_manager_secret_iam_member" "ci_secret_reader" {
     "VERCEL_API_TOKEN",
     "GOOGLE_CLIENT_ID",
     "GOOGLE_CLIENT_SECRET",
+    "OWNER_EMAIL",
     "TEST_STRIPE_API_KEY",
   ])
 

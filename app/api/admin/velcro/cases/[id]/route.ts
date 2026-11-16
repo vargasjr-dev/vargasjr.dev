@@ -7,6 +7,10 @@ import {
   velcroCases,
   velcroCustomers,
 } from "@/db/schema";
+import {
+  isClosingTransition,
+  notifyCaseClosed,
+} from "@/lib/velcro-close-email";
 
 function isAuthorized(request: Request): boolean {
   return request.headers.get("x-admin-token") === process.env.ADMIN_TOKEN;
@@ -162,6 +166,18 @@ export async function PATCH(
     return NextResponse.json({ error: "nothing to update" }, { status: 400 });
   }
 
+  // The transition guard needs the status BEFORE this PATCH: a re-close of
+  // an already-closed case must not re-notify the customer.
+  const previousStatus = updates.status
+    ? ((
+        await db
+          .select({ status: velcroCases.status })
+          .from(velcroCases)
+          .where(eq(velcroCases.id, caseId))
+          .limit(1)
+      )[0]?.status ?? null)
+    : null;
+
   const [updated] = await db
     .update(velcroCases)
     .set(updates)
@@ -171,5 +187,10 @@ export async function PATCH(
   if (!updated) {
     return NextResponse.json({ error: "Case not found" }, { status: 404 });
   }
+
+  if (isClosingTransition(previousStatus, updated.status)) {
+    await notifyCaseClosed(updated.id, updated.title, updated.customerId);
+  }
+
   return NextResponse.json({ case: updated });
 }
