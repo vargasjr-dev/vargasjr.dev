@@ -28,3 +28,11 @@ resource "vercel_project_environment_variable" "google_client_secret" {
   target     = ["production", "preview"]
   sensitive  = true
 }
+
+resource "vercel_project_environment_variable" "owner_email" {
+  project_id = "prj_qMPM1ihlNlPbkUYPm0rMUuCsZguI"
+  key        = "OWNER_EMAIL"
+  value      = var.owner_email
+  target     = ["production", "preview"]
+  sensitive  = true
+}

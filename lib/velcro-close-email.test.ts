@@ -31,11 +31,11 @@ test("customerEmailFrom prefers the email-channel account handle", () => {
 });
 
 test("customerEmailFrom falls back to a name that is an email", () => {
+  assert.equal(customerEmailFrom([], "John@paladin.farm"), "John@paladin.farm");
   assert.equal(
-    customerEmailFrom([], "John@paladin.farm"),
-    "John@paladin.farm",
+    customerEmailFrom([{ channel: "sms", handle: "+1555" }], "John"),
+    null,
   );
-  assert.equal(customerEmailFrom([{ channel: "sms", handle: "+1555" }], "John"), null);
   assert.equal(customerEmailFrom([], null), null);
   // Malformed email-channel handles are not trusted over the name.
   assert.equal(
@@ -47,7 +47,7 @@ test("customerEmailFrom falls back to a name that is an email", () => {
 test("buildCaseClosedEmail names the case and the next-release note", () => {
   const { subject, text, html } = buildCaseClosedEmail(
     9,
-    'Main-agent cache breakpoints <hardcode> 5m ttl',
+    "Main-agent cache breakpoints <hardcode> 5m ttl",
   );
   assert.ok(subject.includes("#9"));
   assert.ok(subject.includes("5m ttl"));

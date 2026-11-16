@@ -17,6 +17,11 @@ variable "google_client_secret" {
   sensitive = true
 }
 
+variable "owner_email" {
+  type      = string
+  sensitive = true
+}
+
 variable "webhook_events" {
   type = list(string)
 }

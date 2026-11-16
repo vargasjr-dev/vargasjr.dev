@@ -7,7 +7,10 @@ import {
   velcroCases,
   velcroCustomers,
 } from "@/db/schema";
-import { isClosingTransition, notifyCaseClosed } from "@/lib/velcro-close-email";
+import {
+  isClosingTransition,
+  notifyCaseClosed,
+} from "@/lib/velcro-close-email";
 
 function isAuthorized(request: Request): boolean {
   return request.headers.get("x-admin-token") === process.env.ADMIN_TOKEN;
@@ -166,13 +169,13 @@ export async function PATCH(
   // The transition guard needs the status BEFORE this PATCH: a re-close of
   // an already-closed case must not re-notify the customer.
   const previousStatus = updates.status
-    ? (
+    ? ((
         await db
           .select({ status: velcroCases.status })
           .from(velcroCases)
           .where(eq(velcroCases.id, caseId))
           .limit(1)
-      )[0]?.status ?? null
+      )[0]?.status ?? null)
     : null;
 
   const [updated] = await db

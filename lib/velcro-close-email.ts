@@ -21,7 +21,13 @@ import {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const FROM_ADDRESS = "Vargas JR <hello@vargasjr.dev>";
-const OWNER_BCC = "dvargasfuertes@gmail.com";
+
+/**
+ * Vargas's address, read from the environment (wired through terraform:
+ * GCP Secret Manager OWNER_EMAIL -> vercel_project_environment_variable).
+ * When unset the mail goes out without the owner bcc/reply-to.
+ */
+const OWNER_EMAIL = process.env.OWNER_EMAIL;
 
 export function isClosingTransition(
   prevStatus: string | null | undefined,
@@ -51,15 +57,15 @@ export function buildCaseClosedEmail(caseId: number, title: string) {
     `We've closed case #${caseId} — "${title}".`,
     "",
     "The fix should be live on the next release. If anything still looks",
-    "off after you upgrade, just reply to this email and we'll reopen it.",
+    "off after you upgrade, just reply to this email.",
     "",
     "— Vargas JR",
   ].join("\n");
   const html = [
     `<p>We've closed case <b>#${caseId}</b> — &ldquo;${escapeHtml(title)}&rdquo;.</p>`,
     "<p>The fix should be live on the next release. If anything still looks",
-    "off after you upgrade, just reply to this email and we'll reopen it.</p>",
-    "<p style=\"color:#666\">— Vargas JR</p>",
+    "off after you upgrade, just reply to this email.</p>",
+    '<p style="color:#666">— Vargas JR</p>',
   ].join("");
   return { subject, text, html };
 }
@@ -88,12 +94,18 @@ export async function notifyCaseClosed(
 ): Promise<void> {
   try {
     if (customerId === null) {
-      await recordEvent(caseId, "Closed without a customer — no closing email.");
+      await recordEvent(
+        caseId,
+        "Closed without a customer — no closing email.",
+      );
       return;
     }
 
     const accounts = await db
-      .select({ channel: velcroCustomerAccounts.channel, handle: velcroCustomerAccounts.handle })
+      .select({
+        channel: velcroCustomerAccounts.channel,
+        handle: velcroCustomerAccounts.handle,
+      })
       .from(velcroCustomerAccounts)
       .where(eq(velcroCustomerAccounts.customerId, customerId));
     const [customer] = await db
@@ -104,13 +116,18 @@ export async function notifyCaseClosed(
 
     const to = customerEmailFrom(accounts, customer?.name);
     if (!to) {
-      await recordEvent(caseId, "Customer has no email on file — no closing email.");
+      await recordEvent(
+        caseId,
+        "Customer has no email on file — no closing email.",
+      );
       return;
     }
 
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
-      console.warn(`[velcro] case #${caseId} closed but RESEND_API_KEY unset — no closing email`);
+      console.warn(
+        `[velcro] case #${caseId} closed but RESEND_API_KEY unset — no closing email`,
+      );
       return;
     }
 
@@ -124,19 +141,29 @@ export async function notifyCaseClosed(
       body: JSON.stringify({
         from: FROM_ADDRESS,
         to: [to],
-        bcc: [OWNER_BCC],
-        reply_to: "hello@vargasjr.dev",
         subject,
         text,
         html,
+        // Owner bcc + reply-to ride on Vargas's address when configured.
+        ...(OWNER_EMAIL ? { bcc: [OWNER_EMAIL], reply_to: OWNER_EMAIL } : {}),
       }),
     });
     if (!res.ok) {
-      console.warn(`[velcro] closing email for case #${caseId} failed (${res.status})`);
-      await recordEvent(caseId, `Closing email to ${to} failed (${res.status}).`);
+      console.warn(
+        `[velcro] closing email for case #${caseId} failed (${res.status})`,
+      );
+      await recordEvent(
+        caseId,
+        `Closing email to ${to} failed (${res.status}).`,
+      );
       return;
     }
-    await recordEvent(caseId, `Closing email sent to ${to} (bcc Vargas).`);
+    await recordEvent(
+      caseId,
+      OWNER_EMAIL
+        ? `Closing email sent to ${to} (bcc Vargas).`
+        : `Closing email sent to ${to}.`,
+    );
   } catch (err) {
     console.warn(
       `[velcro] closing email for case #${caseId} errored:`,

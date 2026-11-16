@@ -47,6 +47,7 @@ module "prod" {
   stripe_api_key           = data.google_secret_manager_secret_version.stripe_api_key.secret_data
   google_client_id         = data.google_secret_manager_secret_version.google_client_id.secret_data
   google_client_secret     = data.google_secret_manager_secret_version.google_client_secret.secret_data
+  owner_email              = data.google_secret_manager_secret_version.owner_email.secret_data
   webhook_events           = module.shared.webhook_events
 
   # A providers argument on a module block disables default inheritance
