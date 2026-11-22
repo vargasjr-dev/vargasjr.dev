@@ -17,6 +17,10 @@ export const emails = pgTable(
     to: varchar("to", { length: 256 }).notNull(), // e.g. vargas@vargasjr.dev
     from: varchar("from", { length: 256 }).notNull(),
     subject: text("subject").notNull().default(""),
+    // The sender's RFC 5322 Message-ID header (from the Receiving API's
+    // headers), NOT the Resend id above — replies thread in the sender's
+    // client via In-Reply-To/References against THIS value.
+    messageId: varchar("message_id", { length: 998 }),
     receivedAt: timestamp("received_at", { withTimezone: true }).notNull(),
     blobKey: varchar("blob_key", { length: 512 }).notNull(), // webhook payload stored in Blob
     // Full message content, fetched from Resend's Receiving API
