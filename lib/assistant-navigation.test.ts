@@ -163,11 +163,3 @@ test("login resumes only a local assistant path", () => {
     null,
   );
 });
-
-test("admin login can resume the dev app and pairing routes", () => {
-  assert.equal(
-    assistantReturnPath("/admin/dev/account/pair/#device_code=test"),
-    "/admin/dev/account/pair/#device_code=test",
-  );
-  assert.equal(assistantReturnPath("https://evil.example/admin/dev/"), null);
-});

@@ -72,6 +72,3 @@ terraform/*.tfvars
 
 # service-level installs (root ignore is anchored)
 services/*/node_modules/
-
-/playwright-report/
-/test-results/

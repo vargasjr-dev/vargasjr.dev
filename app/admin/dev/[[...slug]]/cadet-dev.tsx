@@ -47,7 +47,7 @@ export function CadetDev() {
   }, [router]);
   return (
     <main className="h-dvh w-full">
-      <link rel="stylesheet" href="/cadet-dev/app.css" />
+      <link rel="stylesheet" href="/admin/dev/styles/" />
       {ready ? (
         <EmbeddedApp basename="/admin/dev" />
       ) : (
