@@ -6,7 +6,8 @@ function isNonPagePath(pathname: string): boolean {
     segment.includes(".") ||
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/.well-known/") ||
-    pathname.startsWith("/api/")
+    pathname.startsWith("/api/") ||
+    /^\/(?:v1|web|_allauth)(?:\/|$)/.test(pathname)
   );
 }
 

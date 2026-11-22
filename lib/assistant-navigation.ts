@@ -33,7 +33,11 @@ export function gatewayAssistantUrl(gateway: string, spaPath: string): string {
 }
 
 export function assistantReturnPath(value: string | null): string | null {
-  if (!value || !value.startsWith(`${ADMIN_PREFIX}/`)) return null;
+  if (
+    !value ||
+    (!value.startsWith(`${ADMIN_PREFIX}/`) && !value.startsWith("/admin/dev/"))
+  )
+    return null;
   return value;
 }
 

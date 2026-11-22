@@ -62,3 +62,6 @@ Thumbs.db
 .memory
 .mypy_cache
 .vercel
+
+# Generated, already compiled Tailwind 4 CSS
+public/cadet-dev/app.css

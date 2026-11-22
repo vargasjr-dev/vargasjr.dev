@@ -1,0 +1,184 @@
+diff --git a/clients/app/src/app-shell.tsx b/clients/app/src/app-shell.tsx
+index 04deee4..7e0f924 100644
+--- a/clients/app/src/app-shell.tsx
++++ b/clients/app/src/app-shell.tsx
+@@ -10,6 +10,7 @@ import { AssistantFrame } from "./shell/assistant-frame";
+ import { routes } from "./utils/routes";
+ 
+ export interface AppShellProps {
++  framePath?: string;
+   apiBaseUrl?: string;
+   assistantId?: string;
+   onNavigate(path: string, options: { replace: boolean }): void;
+@@ -61,6 +62,7 @@ function wakeFailureMessage(body: unknown): string | null {
+ 
+ function AssistantShell({
+   apiBaseUrl = "/",
++  framePath,
+   assistantId,
+   onNavigate,
+   title,
+@@ -163,6 +165,7 @@ function AssistantShell({
+   return (
+     <AssistantFrame
+       key={`${assistant.id}:${assistant.version}`}
++      path={framePath}
+       onNavigate={onNavigate}
+       title={title ?? t("appShell.title")}
+     />
+diff --git a/clients/app/src/embedded.tsx b/clients/app/src/embedded.tsx
+new file mode 100644
+index 0000000..ce4bb0c
+--- /dev/null
++++ b/clients/app/src/embedded.tsx
+@@ -0,0 +1,22 @@
++"use client";
++import { useEffect, useState } from "react";
++import { RouterProvider } from "react-router";
++import { createAppRouter } from "./standalone";
++import { initI18n } from "./i18n";
++import "./index.css";
++
++/** Browser-only app route tree, with an explicit mount independent of API paths. */
++export function EmbeddedApp({ basename = "/" }: { basename?: string }) {
++  const [router, setRouter] = useState<ReturnType<typeof createAppRouter>>();
++  useEffect(() => {
++    let active = true;
++    let current: ReturnType<typeof createAppRouter> | undefined;
++    void initI18n().then(() => {
++      if (!active) return;
++      current = createAppRouter(basename);
++      setRouter(current);
++    });
++    return () => { active = false; current?.dispose(); };
++  }, [basename]);
++  return router ? <RouterProvider router={router} /> : null;
++}
+diff --git a/clients/app/src/main.tsx b/clients/app/src/main.tsx
+index 219955f..923a6bc 100644
+--- a/clients/app/src/main.tsx
++++ b/clients/app/src/main.tsx
+@@ -3,10 +3,11 @@ import { StrictMode } from "react";
+ import { createRoot } from "react-dom/client";
+ import { RouterProvider } from "react-router";
+ import { initI18n } from "@app/i18n";
+-import { router } from "./standalone";
++import { createAppRouter } from "./standalone";
+ import "./index.css";
+ 
+ await initI18n();
++const router = createAppRouter();
+ const root = document.getElementById("root");
+ if (!root) {
+   throw new Error("App root element is missing.");
+diff --git a/clients/app/src/shell/assistant-frame.tsx b/clients/app/src/shell/assistant-frame.tsx
+index 3bc0e90..efc2cc8 100644
+--- a/clients/app/src/shell/assistant-frame.tsx
++++ b/clients/app/src/shell/assistant-frame.tsx
+@@ -7,22 +7,23 @@ import {
+ } from "../assistant/resolution-contract";
+ 
+ export interface AssistantFrameProps {
++  path?: string;
+   onNavigate(path: string, options: { replace: boolean }): void;
+   title: string;
+ }
+ 
+ const mount = "/web";
+ 
+-function frameUrl(): string {
++function frameUrl(path?: string): string {
+   return new URL(
+-    `${mount}${location.pathname}${location.search}${location.hash}`,
++    `${mount}${path ?? `${location.pathname}${location.search}${location.hash}`}`,
+     window.location.origin,
+   ).href;
+ }
+ 
+-export function AssistantFrame({ onNavigate, title }: AssistantFrameProps) {
++export function AssistantFrame({ onNavigate, title, path }: AssistantFrameProps) {
+   const ref = useRef<HTMLIFrameElement>(null);
+-  const [src] = useState(frameUrl);
++  const [src] = useState(() => frameUrl(path));
+   const currentPath = useRef(src);
+   const frameOrigin = useMemo(() => window.location.origin, []);
+   useEffect(() => {
+@@ -90,7 +91,7 @@ export function AssistantFrame({ onNavigate, title }: AssistantFrameProps) {
+   }, [frameOrigin, onNavigate]);
+ 
+   useEffect(() => {
+-    const next = frameUrl();
++    const next = frameUrl(path);
+     if (next !== currentPath.current) {
+       currentPath.current = next;
+       ref.current?.contentWindow?.postMessage(
+@@ -98,7 +99,7 @@ export function AssistantFrame({ onNavigate, title }: AssistantFrameProps) {
+         frameOrigin,
+       );
+     }
+-  }, [location, frameOrigin]);
++  }, [path, frameOrigin]);
+ 
+   return (
+     <iframe
+diff --git a/clients/app/src/shell/assistant-page.tsx b/clients/app/src/shell/assistant-page.tsx
+index 160bbcf..a9eb1dc 100644
+--- a/clients/app/src/shell/assistant-page.tsx
++++ b/clients/app/src/shell/assistant-page.tsx
+@@ -29,6 +29,7 @@ export function AssistantPage() {
+ 
+   return (
+     <AppShell
++      framePath={`${location.pathname}${location.search}${location.hash}`}
+       assistantId={selection?.id}
+       apiBaseUrl={selection?.apiBase}
+       onNavigate={(path, options) => {
+diff --git a/clients/app/src/standalone.tsx b/clients/app/src/standalone.tsx
+index 1b53050..787cbb1 100644
+--- a/clients/app/src/standalone.tsx
++++ b/clients/app/src/standalone.tsx
+@@ -138,7 +138,8 @@ export function DesktopChrome() {
+   );
+ }
+ 
+-export const router = createBrowserRouter(
++export function createAppRouter(basename = "/") {
++return createBrowserRouter(
+   [
+     {
+       Component: DesktopChrome,
+@@ -187,5 +188,7 @@ export const router = createBrowserRouter(
+       ],
+     },
+   ],
+-  { future: { v8_middleware: true } },
++  { basename, future: { v8_middleware: true } },
+ );
++
++}
+diff --git a/clients/app/vite.embedded.config.ts b/clients/app/vite.embedded.config.ts
+new file mode 100644
+index 0000000..5b9298c
+--- /dev/null
++++ b/clients/app/vite.embedded.config.ts
+@@ -0,0 +1,20 @@
++import path from "node:path";
++import react from "@vitejs/plugin-react";
++import tailwindcss from "@tailwindcss/vite";
++import { defineConfig } from "vite";
++export default defineConfig({
++  base: "./",
++  publicDir: false,
++  define: { __INCLUDES_ACCOUNT__: "false", "process.env.NODE_ENV": JSON.stringify("production") },
++  plugins: [tailwindcss(), react()],
++  resolve: { alias: [
++    { find: /^@app\//, replacement: path.resolve(import.meta.dirname, "src") + "/" },
++    { find: /^@design\//, replacement: path.resolve(import.meta.dirname, "../../packages/design-library/src") + "/" },
++    { find: /^@\//, replacement: path.resolve(import.meta.dirname, "../web/src") + "/" },
++  ] },
++  build: {
++    outDir: "dist/embedded", emptyOutDir: true,
++    lib: { entry: path.resolve(import.meta.dirname, "src/embedded.tsx"), formats: ["es"], fileName: () => "index.js" },
++    rolldownOptions: { external: [/^react(?:\/|$)/, /^react-dom(?:\/|$)/, /^react-i18next(?:\/|$)/, /^use-sync-external-store(?:\/|$)/] },
++  },
++});
