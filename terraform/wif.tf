@@ -151,3 +151,13 @@ resource "google_project_iam_member" "vargas_jr_logging_viewer" {
   role    = "roles/logging.viewer"
   member  = "serviceAccount:${module.shared.vargas_jr_sa}"
 }
+
+# Read-only Cloud Run visibility for the assistant's creds (describe services:
+# env, traffic) — the debugging door when a deployed service misbehaves.
+resource "google_project_iam_member" "vargas_jr_run_viewer" {
+  for_each = local.pairs
+
+  project = each.value.project
+  role    = "roles/run.viewer"
+  member  = "serviceAccount:${module.shared.vargas_jr_sa}"
+}
