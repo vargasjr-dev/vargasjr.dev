@@ -298,6 +298,7 @@ export async function POST(req: NextRequest) {
   // payload is metadata-only), store it in the table + payload in Blob.
   let html: string | null = null;
   let bodyText: string | null = null;
+  let rfcMessageId: string | null = null;
   const fetchUrl = `https://api.resend.com/emails/receiving/${messageId}`;
   try {
     const contentRes = await fetch(fetchUrl, {
@@ -307,9 +308,13 @@ export async function POST(req: NextRequest) {
       const content = (await contentRes.json()) as {
         html?: string | null;
         text?: string | null;
+        headers?: Record<string, string>;
       };
       html = content.html ?? null;
       bodyText = content.text ?? null;
+      // Lowercased header keys — keep the RFC Message-ID so replies can
+      // thread against this message via In-Reply-To/References.
+      rfcMessageId = content.headers?.["message-id"] ?? null;
     } else {
       console.warn(
         `[resend webhook] receiving fetch failed (${contentRes.status}) for ${messageId}`,
@@ -339,6 +344,7 @@ export async function POST(req: NextRequest) {
       to,
       from,
       subject,
+      messageId: rfcMessageId,
       receivedAt,
       blobKey,
       html,
