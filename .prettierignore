@@ -62,3 +62,6 @@ Thumbs.db
 .memory
 .mypy_cache
 .vercel
+
+# Generated patched app package and its build workspace
+/.cadet-app/
