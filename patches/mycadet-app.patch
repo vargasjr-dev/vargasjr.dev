@@ -1,70 +1,34 @@
-diff --git a/bun.lock b/bun.lock
-index 052a7c7..3889c17 100644
---- a/bun.lock
-+++ b/bun.lock
-@@ -177,0 +178 @@
-+        "use-sync-external-store": "1.7.0",
 diff --git a/clients/app/package.json b/clients/app/package.json
-index 904994f..cfe1808 100644
+index 904994f..13cd3a7 100644
 --- a/clients/app/package.json
 +++ b/clients/app/package.json
-@@ -9 +9 @@
--  "description": "Cadet account/client shell \u2014 portable package plus a standalone bundle for self-hosted edges",
-+  "description": "Cadet account/client shell — portable package plus a standalone bundle for self-hosted edges",
 @@ -17 +17 @@
 -      "types": "./dist/package/types/index.d.ts",
 +      "types": "./dist/package/types/package-api.d.ts",
-@@ -24 +24,2 @@
+@@ -24 +24,4 @@
 -    "./capacitor.config.base": "./capacitor.config.base.ts"
 +    "./capacitor.config.base": "./capacitor.config.base.ts",
-+    "./style.css": "./dist/package/app.css"
-@@ -46 +47,2 @@
--    "zustand": "5.0.13"
-+    "zustand": "5.0.13",
-+    "use-sync-external-store": "1.7.0"
-diff --git a/clients/app/src/app-shell-props.ts b/clients/app/src/app-shell-props.ts
-new file mode 100644
-index 0000000..c67a9dc
---- /dev/null
-+++ b/clients/app/src/app-shell-props.ts
-@@ -0,0 +1,11 @@
-+export interface AppShellProps {
-+  framePath?: string;
-+  apiBaseUrl?: string;
-+  assistantId?: string;
-+  onNavigate(path: string, options: { replace: boolean }): void;
-+  title?: string;
-+}
-+
-+export interface EmbeddedAppProps {
-+  basename?: string;
-+}
++    "./style.css": {
++      "default": "./dist/package/app.css"
++    }
 diff --git a/clients/app/src/app-shell.tsx b/clients/app/src/app-shell.tsx
-index 04deee4..d7d70c8 100644
+index 04deee4..7e0f924 100644
 --- a/clients/app/src/app-shell.tsx
 +++ b/clients/app/src/app-shell.tsx
-@@ -12,6 +12,2 @@ import { routes } from "./utils/routes";
--export interface AppShellProps {
--  apiBaseUrl?: string;
--  assistantId?: string;
--  onNavigate(path: string, options: { replace: boolean }): void;
--  title?: string;
--}
-+import type { AppShellProps } from "./app-shell-props";
-+export type { AppShellProps } from "./app-shell-props";
-@@ -63,0 +60 @@ function AssistantShell({
+@@ -12,0 +13 @@ export interface AppShellProps {
++  framePath?: string;
+@@ -63,0 +65 @@ function AssistantShell({
 +  framePath,
-@@ -165,0 +163 @@ function AssistantShell({
+@@ -165,0 +168 @@ function AssistantShell({
 +      path={framePath}
 diff --git a/clients/app/src/embedded.tsx b/clients/app/src/embedded.tsx
 new file mode 100644
-index 0000000..c833635
+index 0000000..2fe3174
 --- /dev/null
 +++ b/clients/app/src/embedded.tsx
-@@ -0,0 +1,27 @@
+@@ -0,0 +1,26 @@
 +"use client";
 +import { useEffect, useState, type ReactElement } from "react";
-+import type { EmbeddedAppProps } from "./app-shell-props";
 +import { RouterProvider } from "react-router";
 +import { createAppRouter } from "./standalone";
 +import { initI18n } from "./i18n";
@@ -72,7 +36,7 @@ index 0000000..c833635
 +/** Browser-only app route tree, with an explicit mount independent of API paths. */
 +export function EmbeddedApp({
 +  basename = "/",
-+}: EmbeddedAppProps): ReactElement | null {
++}: { basename?: string }): ReactElement | null {
 +  const [router, setRouter] = useState<ReturnType<typeof createAppRouter>>();
 +  useEffect(() => {
 +    let active = true;
@@ -90,16 +54,14 @@ index 0000000..c833635
 +  return router ? <RouterProvider router={router} /> : null;
 +}
 diff --git a/clients/app/src/index.ts b/clients/app/src/index.ts
-index 313c0a5..97e1a2f 100644
+index 313c0a5..ba629c7 100644
 --- a/clients/app/src/index.ts
 +++ b/clients/app/src/index.ts
 @@ -1,0 +2 @@
 +import "./index.css";
-@@ -3,0 +5,4 @@ export { AppShell, type AppShellProps } from "./app-shell";
+@@ -3,0 +5,2 @@ export { AppShell, type AppShellProps } from "./app-shell";
 +
 +export { EmbeddedApp } from "./embedded";
-+
-+export type { EmbeddedAppProps } from "./app-shell-props";
 diff --git a/clients/app/src/main.tsx b/clients/app/src/main.tsx
 index 219955f..923a6bc 100644
 --- a/clients/app/src/main.tsx
@@ -111,18 +73,15 @@ index 219955f..923a6bc 100644
 +const router = createAppRouter();
 diff --git a/clients/app/src/package-api.ts b/clients/app/src/package-api.ts
 new file mode 100644
-index 0000000..7ea60e5
+index 0000000..b5eafe5
 --- /dev/null
 +++ b/clients/app/src/package-api.ts
-@@ -0,0 +1,8 @@
+@@ -0,0 +1,5 @@
 +import type { ReactElement } from "react";
-+import type { AppShellProps, EmbeddedAppProps } from "./app-shell-props";
-+
-+export type { AppShellProps, EmbeddedAppProps } from "./app-shell-props";
++import type { AppShellProps } from "./app-shell";
++export type { AppShellProps } from "./app-shell";
 +export declare function AppShell(props: AppShellProps): ReactElement;
-+export declare function EmbeddedApp(
-+  props: EmbeddedAppProps,
-+): ReactElement | null;
++export declare function EmbeddedApp(props: { basename?: string }): ReactElement | null;
 diff --git a/clients/app/src/shell/assistant-frame.tsx b/clients/app/src/shell/assistant-frame.tsx
 index 3bc0e90..f67be48 100644
 --- a/clients/app/src/shell/assistant-frame.tsx
@@ -264,51 +223,9 @@ index 1b53050..8c2ec93 100644
 +  );
 +}
 diff --git a/clients/app/tsconfig.package.json b/clients/app/tsconfig.package.json
-index 17652fd..c800d60 100644
+index 17652fd..894d723 100644
 --- a/clients/app/tsconfig.package.json
 +++ b/clients/app/tsconfig.package.json
 @@ -12 +12 @@
 -    "src/index.ts",
 +    "src/package-api.ts",
-@@ -16,4 +16 @@
--  "exclude": [
--    "**/*.test.ts",
--    "**/*.test.tsx"
--  ]
-+  "exclude": ["**/*.test.ts", "**/*.test.tsx"]
-diff --git a/clients/app/vite.config.ts b/clients/app/vite.config.ts
-index e8f542c..14f95ed 100644
---- a/clients/app/vite.config.ts
-+++ b/clients/app/vite.config.ts
-@@ -148,0 +149 @@ export default defineConfig(({ mode, command }) => {
-+                /^use-sync-external-store(?:\/|$)/,
-diff --git a/clients/app/vite/app-package.ts b/clients/app/vite/app-package.ts
-index 981224d..73c031d 100644
---- a/clients/app/vite/app-package.ts
-+++ b/clients/app/vite/app-package.ts
-@@ -8,0 +9 @@ export const packageDependencies = {
-+  "use-sync-external-store": source.dependencies["use-sync-external-store"],
-@@ -81 +82 @@ export function appPackage(): Plugin {
--            sideEffects: false,
-+            sideEffects: ["**/*.css"],
-@@ -85,6 +86,8 @@ export function appPackage(): Plugin {
--                Object.fromEntries(
--                  Object.entries(conditions).map(([condition, target]) => [
--                    condition,
--                    target.replace("./dist/package/", "./"),
--                  ]),
--                ),
-+                typeof conditions === "string"
-+                  ? conditions.replace("./dist/package/", "./")
-+                  : Object.fromEntries(
-+                      Object.entries(conditions).map(([condition, target]) => [
-+                        condition,
-+                        target.replace("./dist/package/", "./"),
-+                      ]),
-+                    ),
-@@ -93 +96 @@ export function appPackage(): Plugin {
--            peerDependencies: { react: ">=19.0.0" },
-+            peerDependencies: { react: ">=19.0.0", "react-dom": ">=19.0.0" },
-@@ -95 +98 @@ export function appPackage(): Plugin {
--            files: ["**/*.js", "types"],
-+            files: ["**/*.js", "**/*.css", "types"],

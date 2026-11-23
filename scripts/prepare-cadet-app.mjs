@@ -37,85 +37,87 @@ function run(command, args, cwd) {
     throw new Error(`${command} failed (${result.status})`);
 }
 
-mkdirSync(cache, { recursive: true });
-if (
-  !existsSync(stampFile) ||
-  readFileSync(stampFile, "utf8") !== stamp ||
-  !existsSync(path.join(output, "index.js"))
-) {
-  rmSync(source, { recursive: true, force: true });
-  mkdirSync(source, { recursive: true });
-  run("git", ["init", "-q"], source);
-  run(
-    "git",
-    [
-      "fetch",
-      "--depth",
-      "1",
-      "https://github.com/vargasjr-dev/mycadet-temp.git",
-      revision,
-    ],
-    source,
-  );
-  run("git", ["checkout", "--detach", "FETCH_HEAD"], source);
-  run("git", ["apply", "--unidiff-zero", patch], source);
-  const bun = process.env.BUN_BINARY || "bun";
-  run(
-    bun,
-    [
-      "install",
-      "--frozen-lockfile",
-      "--ignore-scripts",
-      "--filter",
-      "@mycadet/app",
-    ],
-    source,
-  );
-  // Use the package's existing Vite library build, not a website-specific config.
-  const app = path.join(source, "clients/app");
-  const build = spawnSync(
-    bun,
-    ["--bun", "node_modules/vite/bin/vite.js", "build"],
-    {
-      cwd: app,
-      env: { ...process.env, APP_BUILD_TARGET: "package" },
-      stdio: "inherit",
-      windowsHide: true,
-    },
-  );
-  if (build.error || build.status !== 0)
-    throw build.error ?? new Error("Cadet package build failed");
-  rmSync(output, { recursive: true, force: true });
-  cpSync(path.join(app, "dist/package"), output, { recursive: true });
-  // Leave React/ReactDOM as peers of the website; install only library runtime dependencies.
-  run(
-    "npm",
-    [
-      "install",
-      "--omit=dev",
-      "--ignore-scripts",
-      "--legacy-peer-deps",
-      "--no-package-lock",
-      "--no-audit",
-      "--no-fund",
-    ],
-    output,
-  );
-  writeFileSync(stampFile, stamp);
-}
+export function prepareCadetApp() {
+  mkdirSync(cache, { recursive: true });
+  if (
+    !existsSync(stampFile) ||
+    readFileSync(stampFile, "utf8") !== stamp ||
+    !existsSync(path.join(output, "index.js"))
+  ) {
+    rmSync(source, { recursive: true, force: true });
+    mkdirSync(source, { recursive: true });
+    run("git", ["init", "-q"], source);
+    run(
+      "git",
+      [
+        "fetch",
+        "--depth",
+        "1",
+        "https://github.com/vargasjr-dev/mycadet-temp.git",
+        revision,
+      ],
+      source,
+    );
+    run("git", ["checkout", "--detach", "FETCH_HEAD"], source);
+    run("git", ["apply", "--unidiff-zero", patch], source);
+    const bun = process.env.BUN_BINARY || "bun";
+    run(
+      bun,
+      [
+        "install",
+        "--frozen-lockfile",
+        "--ignore-scripts",
+        "--filter",
+        "@mycadet/app",
+      ],
+      source,
+    );
+    // Use the package's existing Vite library build, not a website-specific config.
+    const app = path.join(source, "clients/app");
+    const build = spawnSync(
+      bun,
+      ["--bun", "node_modules/vite/bin/vite.js", "build"],
+      {
+        cwd: app,
+        env: { ...process.env, APP_BUILD_TARGET: "package" },
+        stdio: "inherit",
+        windowsHide: true,
+      },
+    );
+    if (build.error || build.status !== 0)
+      throw build.error ?? new Error("Cadet package build failed");
+    rmSync(output, { recursive: true, force: true });
+    cpSync(path.join(app, "dist/package"), output, { recursive: true });
+    // Leave React/ReactDOM as peers of the website; install only library runtime dependencies.
+    run(
+      "npm",
+      [
+        "install",
+        "--omit=dev",
+        "--ignore-scripts",
+        "--legacy-peer-deps",
+        "--no-package-lock",
+        "--no-audit",
+        "--no-fund",
+      ],
+      output,
+    );
+    writeFileSync(stampFile, stamp);
+  }
 
-// Keep the patch outside package-manager caches. Repoint only this project's
-// installed package after a normal npm/bun install has resolved the pinned release.
-const installed = path.join(root, "node_modules/@mycadet/app");
-try {
-  if (lstatSync(installed).isSymbolicLink()) unlinkSync(installed);
-  else rmSync(installed, { recursive: true });
-} catch (error) {
-  if (error.code !== "ENOENT") throw error;
+  // Keep the patch outside package-manager caches. Repoint only this project's
+  // installed package after a normal npm/bun install has resolved the pinned release.
+  const installed = path.join(root, "node_modules/@mycadet/app");
+  try {
+    if (lstatSync(installed).isSymbolicLink()) unlinkSync(installed);
+    else rmSync(installed, { recursive: true });
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  mkdirSync(path.dirname(installed), { recursive: true });
+  symlinkSync(
+    path.relative(path.dirname(installed), output),
+    installed,
+    "junction",
+  );
 }
-mkdirSync(path.dirname(installed), { recursive: true });
-symlinkSync(
-  path.relative(path.dirname(installed), output),
-  installed,
-  "junction",
-);

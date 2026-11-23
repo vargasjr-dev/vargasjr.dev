@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "setup": "npx tsx scripts/setup.ts",
-    "dev": "npm run prepare:cadet && next dev",
-    "build": "npm run prepare:cadet && next build",
+    "dev": "tsx scripts/dev.ts",
+    "build": "tsx scripts/build.ts",
     "start": "next start",
     "lint": "next . lint && POSTGRES_URL=postgresql://dummy:dummy@localhost:5432/dummy knip",
     "format:check": "prettier --check .",
@@ -18,8 +18,7 @@
     "setup:local": "npx tsx scripts/setup-local.ts",
     "healthcheck": "npx tsx scripts/healthcheck.ts",
     "connect": "npx tsx scripts/ssh-connect.ts",
-    "db:push": "bunx drizzle-kit push",
-    "prepare:cadet": "node scripts/prepare-cadet-app.mjs"
+    "db:push": "bunx drizzle-kit push"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
