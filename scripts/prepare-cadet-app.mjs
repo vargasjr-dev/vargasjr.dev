@@ -23,6 +23,7 @@ const patch = path.join(root, "patches/mycadet-app.patch");
 const stamp = createHash("sha256")
   .update(revision)
   .update(readFileSync(patch))
+  .update(readFileSync(fileURLToPath(import.meta.url)))
   .digest("hex");
 const stampFile = path.join(cache, "stamp");
 
@@ -88,11 +89,14 @@ export function prepareCadetApp() {
       throw build.error ?? new Error("Cadet package build failed");
     rmSync(output, { recursive: true, force: true });
     cpSync(path.join(app, "dist/package"), output, { recursive: true });
-    // Leave React/ReactDOM as peers of the website; install only library runtime dependencies.
+    // Reuse the website React peers. ICU still needs its non-React peer,
+    // at the version pinned by the app source lockfile.
     run(
       "npm",
       [
         "install",
+        "intl-messageformat@11.2.13",
+        "--no-save",
         "--omit=dev",
         "--ignore-scripts",
         "--legacy-peer-deps",
