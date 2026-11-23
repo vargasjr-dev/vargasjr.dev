@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "setup": "npx tsx scripts/setup.ts",
-    "dev": "npx tsx scripts/dev.ts",
-    "build": "next build",
+    "dev": "tsx scripts/dev.ts",
+    "build": "tsx scripts/build.ts",
     "start": "next start",
     "lint": "next . lint && POSTGRES_URL=postgresql://dummy:dummy@localhost:5432/dummy knip",
     "format:check": "prettier --check .",
@@ -31,7 +31,8 @@
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "typescript": "^5",
-    "zod": "^3.24.1"
+    "zod": "^3.24.1",
+    "@mycadet/app": "0.13.0-dev.202611221519.9d7c818"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

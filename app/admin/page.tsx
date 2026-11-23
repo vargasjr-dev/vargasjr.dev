@@ -74,6 +74,12 @@ export default function AdminPage() {
               Assistant
             </Link>
             <Link
+              href="/admin/dev/"
+              className="block w-full py-3 rounded-lg bg-gray-800 text-gray-200"
+            >
+              Assistant (dev)
+            </Link>
+            <Link
               href="/admin/connect-bank"
               className="block w-full py-3 rounded-lg bg-gray-800 text-gray-200 font-semibold hover:bg-gray-700 transition-colors"
             >

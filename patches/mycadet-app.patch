@@ -1,0 +1,231 @@
+diff --git a/clients/app/package.json b/clients/app/package.json
+index 904994f..13cd3a7 100644
+--- a/clients/app/package.json
++++ b/clients/app/package.json
+@@ -17 +17 @@
+-      "types": "./dist/package/types/index.d.ts",
++      "types": "./dist/package/types/package-api.d.ts",
+@@ -24 +24,4 @@
+-    "./capacitor.config.base": "./capacitor.config.base.ts"
++    "./capacitor.config.base": "./capacitor.config.base.ts",
++    "./style.css": {
++      "default": "./dist/package/app.css"
++    }
+diff --git a/clients/app/src/app-shell.tsx b/clients/app/src/app-shell.tsx
+index 04deee4..7e0f924 100644
+--- a/clients/app/src/app-shell.tsx
++++ b/clients/app/src/app-shell.tsx
+@@ -12,0 +13 @@ export interface AppShellProps {
++  framePath?: string;
+@@ -63,0 +65 @@ function AssistantShell({
++  framePath,
+@@ -165,0 +168 @@ function AssistantShell({
++      path={framePath}
+diff --git a/clients/app/src/embedded.tsx b/clients/app/src/embedded.tsx
+new file mode 100644
+index 0000000..2fe3174
+--- /dev/null
++++ b/clients/app/src/embedded.tsx
+@@ -0,0 +1,26 @@
++"use client";
++import { useEffect, useState, type ReactElement } from "react";
++import { RouterProvider } from "react-router";
++import { createAppRouter } from "./standalone";
++import { initI18n } from "./i18n";
++
++/** Browser-only app route tree, with an explicit mount independent of API paths. */
++export function EmbeddedApp({
++  basename = "/",
++}: { basename?: string }): ReactElement | null {
++  const [router, setRouter] = useState<ReturnType<typeof createAppRouter>>();
++  useEffect(() => {
++    let active = true;
++    let current: ReturnType<typeof createAppRouter> | undefined;
++    void initI18n().then(() => {
++      if (!active) return;
++      current = createAppRouter(basename);
++      setRouter(current);
++    });
++    return () => {
++      active = false;
++      current?.dispose();
++    };
++  }, [basename]);
++  return router ? <RouterProvider router={router} /> : null;
++}
+diff --git a/clients/app/src/index.ts b/clients/app/src/index.ts
+index 313c0a5..ba629c7 100644
+--- a/clients/app/src/index.ts
++++ b/clients/app/src/index.ts
+@@ -1,0 +2 @@
++import "./index.css";
+@@ -3,0 +5,2 @@ export { AppShell, type AppShellProps } from "./app-shell";
++
++export { EmbeddedApp } from "./embedded";
+diff --git a/clients/app/src/main.tsx b/clients/app/src/main.tsx
+index 219955f..923a6bc 100644
+--- a/clients/app/src/main.tsx
++++ b/clients/app/src/main.tsx
+@@ -6 +6 @@ import { initI18n } from "@app/i18n";
+-import { router } from "./standalone";
++import { createAppRouter } from "./standalone";
+@@ -9,0 +10 @@ await initI18n();
++const router = createAppRouter();
+diff --git a/clients/app/src/package-api.ts b/clients/app/src/package-api.ts
+new file mode 100644
+index 0000000..b5eafe5
+--- /dev/null
++++ b/clients/app/src/package-api.ts
+@@ -0,0 +1,5 @@
++import type { ReactElement } from "react";
++import type { AppShellProps } from "./app-shell";
++export type { AppShellProps } from "./app-shell";
++export declare function AppShell(props: AppShellProps): ReactElement;
++export declare function EmbeddedApp(props: { basename?: string }): ReactElement | null;
+diff --git a/clients/app/src/shell/assistant-frame.tsx b/clients/app/src/shell/assistant-frame.tsx
+index 3bc0e90..f67be48 100644
+--- a/clients/app/src/shell/assistant-frame.tsx
++++ b/clients/app/src/shell/assistant-frame.tsx
+@@ -9,0 +10 @@ export interface AssistantFrameProps {
++  path?: string;
+@@ -16 +17 @@ const mount = "/web";
+-function frameUrl(): string {
++function frameUrl(path?: string): string {
+@@ -18 +19 @@ function frameUrl(): string {
+-    `${mount}${location.pathname}${location.search}${location.hash}`,
++    `${mount}${path ?? `${location.pathname}${location.search}${location.hash}`}`,
+@@ -23 +24,5 @@ function frameUrl(): string {
+-export function AssistantFrame({ onNavigate, title }: AssistantFrameProps) {
++export function AssistantFrame({
++  onNavigate,
++  title,
++  path,
++}: AssistantFrameProps) {
+@@ -25 +30 @@ export function AssistantFrame({ onNavigate, title }: AssistantFrameProps) {
+-  const [src] = useState(frameUrl);
++  const [src] = useState(() => frameUrl(path));
+@@ -93 +98 @@ export function AssistantFrame({ onNavigate, title }: AssistantFrameProps) {
+-    const next = frameUrl();
++    const next = frameUrl(path);
+@@ -101 +106 @@ export function AssistantFrame({ onNavigate, title }: AssistantFrameProps) {
+-  }, [location, frameOrigin]);
++  }, [path, frameOrigin]);
+diff --git a/clients/app/src/shell/assistant-page.tsx b/clients/app/src/shell/assistant-page.tsx
+index 160bbcf..a9eb1dc 100644
+--- a/clients/app/src/shell/assistant-page.tsx
++++ b/clients/app/src/shell/assistant-page.tsx
+@@ -31,0 +32 @@ export function AssistantPage() {
++      framePath={`${location.pathname}${location.search}${location.hash}`}
+diff --git a/clients/app/src/standalone.tsx b/clients/app/src/standalone.tsx
+index 1b53050..8c2ec93 100644
+--- a/clients/app/src/standalone.tsx
++++ b/clients/app/src/standalone.tsx
+@@ -141,18 +141,20 @@ export function DesktopChrome() {
+-export const router = createBrowserRouter(
+-  [
+-    {
+-      Component: DesktopChrome,
+-      ErrorBoundary: RouteErrorBoundary,
+-      HydrateFallback: RootHydrateFallback,
+-      children: [
+-        accountRoute,
+-        consentRoute,
+-        {
+-          // Standalone About page rendered inside the Electron About
+-          // BrowserWindow — metadata, not the app: a sibling of the auth
+-          // tree so no auth middleware or shell chrome wraps it.
+-          path: "/about",
+-          HydrateFallback: RootHydrateFallback,
+-          lazy: {
+-            Component: () =>
+-              import("@app/components/about-page").then((m) => m.AboutPage),
++export function createAppRouter(basename = "/") {
++  return createBrowserRouter(
++    [
++      {
++        Component: DesktopChrome,
++        ErrorBoundary: RouteErrorBoundary,
++        HydrateFallback: RootHydrateFallback,
++        children: [
++          accountRoute,
++          consentRoute,
++          {
++            // Standalone About page rendered inside the Electron About
++            // BrowserWindow — metadata, not the app: a sibling of the auth
++            // tree so no auth middleware or shell chrome wraps it.
++            path: "/about",
++            HydrateFallback: RootHydrateFallback,
++            lazy: {
++              Component: () =>
++                import("@app/components/about-page").then((m) => m.AboutPage),
++            },
+@@ -160,8 +162,8 @@ export const router = createBrowserRouter(
+-        },
+-        {
+-          path: "/",
+-          lazy: {
+-            Component: () =>
+-              import("@app/domains/onboarding/pages/welcome-screen").then(
+-                (m) => m.WelcomeScreen,
+-              ),
++          {
++            path: "/",
++            lazy: {
++              Component: () =>
++                import("@app/domains/onboarding/pages/welcome-screen").then(
++                  (m) => m.WelcomeScreen,
++                ),
++            },
+@@ -169,16 +171,6 @@ export const router = createBrowserRouter(
+-        },
+-        {
+-          // The onboarding funnel's post-hatch steps — claimed before the
+-          // /assistant/* shell catch-all so the funnel renders app-native
+-          // (web's research route died with the research turn).
+-          path: routes.onboarding.research,
+-          Component: OnboardingFlowRoute,
+-        },
+-        { path: "/assistant/*", Component: AssistantPage },
+-        {
+-          path: "/logout",
+-          lazy: {
+-            Component: () =>
+-              import("@app/domains/account/pages/logout-page").then(
+-                (m) => m.LogoutPage,
+-              ),
++          {
++            // The onboarding funnel's post-hatch steps — claimed before the
++            // /assistant/* shell catch-all so the funnel renders app-native
++            // (web's research route died with the research turn).
++            path: routes.onboarding.research,
++            Component: OnboardingFlowRoute,
+@@ -186,6 +178,16 @@ export const router = createBrowserRouter(
+-        },
+-      ],
+-    },
+-  ],
+-  { future: { v8_middleware: true } },
+-);
++          { path: "/assistant/*", Component: AssistantPage },
++          {
++            path: "/logout",
++            lazy: {
++              Component: () =>
++                import("@app/domains/account/pages/logout-page").then(
++                  (m) => m.LogoutPage,
++                ),
++            },
++          },
++        ],
++      },
++    ],
++    { basename, future: { v8_middleware: true } },
++  );
++}
+diff --git a/clients/app/tsconfig.package.json b/clients/app/tsconfig.package.json
+index 17652fd..894d723 100644
+--- a/clients/app/tsconfig.package.json
++++ b/clients/app/tsconfig.package.json
+@@ -12 +12 @@
+-    "src/index.ts",
++    "src/package-api.ts",

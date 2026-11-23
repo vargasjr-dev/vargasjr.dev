@@ -1,6 +1,6 @@
 {
   "installCommand": "bun install --frozen-lockfile",
-  "buildCommand": "next build",
+  "buildCommand": "bun run build",
   "crons": [
     {
       "path": "/api/cron/financial-ingest",
