@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import postcss from "postcss";
 import { createHash } from "node:crypto";
 import {
   cpSync,
@@ -108,6 +109,18 @@ export function prepareCadetApp() {
     );
     writeFileSync(stampFile, stamp);
   }
+
+  // Tailwind 3 emits unlayered site CSS, which otherwise outranks every
+  // layered Tailwind 4 app utility (including its button colors and reset).
+  // Generate a static stylesheet so serving it needs no runtime package lookup.
+  const css = postcss.parse(readFileSync(path.join(output, "app.css"), "utf8"));
+  css.walkAtRules("layer", (layer) => {
+    if (layer.nodes) layer.replaceWith(...layer.nodes);
+    else layer.remove();
+  });
+  const styles = path.join(root, "public/cadet-dev");
+  mkdirSync(styles, { recursive: true });
+  writeFileSync(path.join(styles, "app.css"), css.toString());
 
   // Keep the patch outside package-manager caches. Repoint only this project's
   // installed package after a normal npm/bun install has resolved the pinned release.

@@ -4,10 +4,6 @@ const nextConfig: NextConfig = {
   // Compress responses
   compress: true,
 
-  outputFileTracingIncludes: {
-    "/admin/dev/styles": ["./.cadet-app/package/app.css"],
-  },
-
   // Strict mode for catching bugs
   reactStrictMode: true,
 
