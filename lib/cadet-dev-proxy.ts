@@ -3,7 +3,10 @@ import { ASSISTANT_GATEWAY_ORIGIN } from "./assistant-navigation";
 /** Fixed upstream only. Cadet remains responsible for pairing and API authorization. */
 export async function proxyCadetDev(request: Request): Promise<Response> {
   const url = new URL(request.url);
-  if (!/^\/(?:v1|web|_allauth)(?:\/|$)/.test(url.pathname)) {
+  if (
+    !/^\/(?:v1|web|_allauth)(?:\/|$)/.test(url.pathname) &&
+    !url.pathname.startsWith("/assistant/assets/")
+  ) {
     return new Response("Not found", { status: 404 });
   }
   const mutating = !["GET", "HEAD", "OPTIONS"].includes(request.method);
