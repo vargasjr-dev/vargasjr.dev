@@ -1,7 +1,11 @@
 import { ASSISTANT_GATEWAY_ORIGIN } from "./assistant-navigation";
 
-/** Fixed upstream only. Cadet remains responsible for pairing and API authorization. */
-export async function proxyCadetDev(request: Request): Promise<Response> {
+/**
+ * Same-origin reverse proxy for the embedded Cadet app's gateway traffic
+ * (/v1, /web, /_allauth, /assistant/assets). Fixed upstream only — Cadet
+ * remains responsible for pairing and API authorization.
+ */
+export async function proxyCadetApp(request: Request): Promise<Response> {
   const url = new URL(request.url);
   if (
     !/^\/(?:v1|web|_allauth)(?:\/|$)/.test(url.pathname) &&

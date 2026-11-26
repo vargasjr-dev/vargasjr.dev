@@ -1,10 +1,10 @@
-import { proxyCadetDev } from "@/lib/cadet-dev-proxy";
+import { proxyCadetApp } from "@/lib/cadet-app-proxy";
 
 export const dynamic = "force-dynamic";
-export const GET = proxyCadetDev;
-export const HEAD = proxyCadetDev;
-export const POST = proxyCadetDev;
-export const PUT = proxyCadetDev;
-export const PATCH = proxyCadetDev;
-export const DELETE = proxyCadetDev;
-export const OPTIONS = proxyCadetDev;
+export const GET = proxyCadetApp;
+export const HEAD = proxyCadetApp;
+export const POST = proxyCadetApp;
+export const PUT = proxyCadetApp;
+export const PATCH = proxyCadetApp;
+export const DELETE = proxyCadetApp;
+export const OPTIONS = proxyCadetApp;

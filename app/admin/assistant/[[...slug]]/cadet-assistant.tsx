@@ -11,7 +11,7 @@ const EmbeddedApp = dynamic(
   { ssr: false },
 );
 
-export function CadetDev() {
+export function CadetAssistant() {
   const [ready, setReady] = useState(false);
   const router = useRouter();
   useEffect(() => {
@@ -47,9 +47,9 @@ export function CadetDev() {
   }, [router]);
   return (
     <main className="h-dvh w-full" data-theme="dark">
-      <link rel="stylesheet" href="/cadet-dev/app.css" />
+      <link rel="stylesheet" href="/cadet-app/app.css" />
       {ready ? (
-        <EmbeddedApp basename="/admin/dev" />
+        <EmbeddedApp basename="/admin" />
       ) : (
         <p className="p-8">Loading…</p>
       )}
