@@ -1,27 +1,9 @@
-// The gateway's dev release moved the desktop shell onto /assistant/* and
-// mounted the assistant SPA's own url space at /web/assistant — embed the SPA
-// mount directly so the frame speaks the nav protocol to this page itself.
-const SPA_PREFIX = "/web/assistant";
-const ADMIN_PREFIX = "/admin/assistant";
+// The admin page renders Cadet in-process (@mycadet/app's EmbeddedApp at
+// basename /admin), so the old iframe nav protocol and its url remapping are
+// gone. What survives: the gateway's fixed origin (deep links + the proxy)
+// and the login-return path bookkeeping.
 
-function remap(path: string, from: string, to: string): string {
-  const url = new URL(path, "https://site.example");
-  if (url.pathname !== from && !url.pathname.startsWith(`${from}/`)) {
-    throw new Error("Not an assistant route");
-  }
-  const suffix = url.pathname.slice(from.length);
-  const pathname = `${to}${suffix}`.replace(/\/*$/, "/");
-  return pathname + url.search + url.hash;
-}
-
-export function parentToSpa(path: string): string {
-  return remap(path, ADMIN_PREFIX, SPA_PREFIX);
-}
-
-export function spaToParent(path: string): string {
-  return remap(path, SPA_PREFIX, ADMIN_PREFIX);
-}
-
+/** Cadet deep links redirect to its fixed ingress domain. */
 export function gatewayAssistantUrl(gateway: string, spaPath: string): string {
   const target = new URL(gateway);
   const route = new URL(spaPath, "https://site.example");
@@ -32,48 +14,13 @@ export function gatewayAssistantUrl(gateway: string, spaPath: string): string {
   return target.href;
 }
 
+const ADMIN_PREFIX = "/admin/assistant";
+
 export function assistantReturnPath(value: string | null): string | null {
-  if (
-    !value ||
-    (!value.startsWith(`${ADMIN_PREFIX}/`) && !value.startsWith("/admin/dev/"))
-  )
-    return null;
+  if (!value || !value.startsWith(`${ADMIN_PREFIX}/`)) return null;
   return value;
 }
 
 export const ASSISTANT_RETURN_KEY = "adminAssistantReturnTo";
 
 export const ASSISTANT_GATEWAY_ORIGIN = "https://assistant.vargasjr.dev";
-
-export function assistantFrameUrl(parentPath: string): string {
-  return gatewayAssistantUrl(ASSISTANT_GATEWAY_ORIGIN, parentToSpa(parentPath));
-}
-
-export function assistantNavigationMessage(
-  value: unknown,
-): { path: string; nav: "push" | "replace" | "pop" } | null {
-  if (
-    !value ||
-    typeof value !== "object" ||
-    !("source" in value) ||
-    !("path" in value) ||
-    !("nav" in value)
-  )
-    return null;
-  // "mycadet-web-nav" is the remote-gateway cadet SPA's bridge protocol
-  // (mycadet-temp clients/web/src/lib/auth/remote-gateway-nav-bridge.ts).
-  if (value.source !== "mycadet-web-nav") return null;
-  if (
-    typeof value.path !== "string" ||
-    !value.path.startsWith(`${SPA_PREFIX}/`)
-  )
-    return null;
-  if (value.nav !== "push" && value.nav !== "replace" && value.nav !== "pop")
-    return null;
-  try {
-    spaToParent(value.path);
-  } catch {
-    return null;
-  }
-  return { path: value.path, nav: value.nav };
-}

@@ -118,7 +118,7 @@ export function prepareCadetApp() {
     if (layer.nodes) layer.replaceWith(...layer.nodes);
     else layer.remove();
   });
-  const styles = path.join(root, "public/cadet-dev");
+  const styles = path.join(root, "public/cadet-app");
   mkdirSync(styles, { recursive: true });
   writeFileSync(path.join(styles, "app.css"), css.toString());
 
