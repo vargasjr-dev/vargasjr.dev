@@ -53,18 +53,18 @@ export function customerEmailFrom(
 
 export function buildCaseClosedEmail(caseId: number, title: string) {
   const subject = `Case #${caseId} closed: ${title}`;
+  const closing =
+    "The fix should be live on the next release. If anything still looks off after you upgrade, just reply to this email.";
   const text = [
     `We've closed case #${caseId} — "${title}".`,
     "",
-    "The fix should be live on the next release. If anything still looks",
-    "off after you upgrade, just reply to this email.",
+    closing,
     "",
     "— Vargas JR",
   ].join("\n");
   const html = [
     `<p>We've closed case <b>#${caseId}</b> — &ldquo;${escapeHtml(title)}&rdquo;.</p>`,
-    "<p>The fix should be live on the next release. If anything still looks",
-    "off after you upgrade, just reply to this email.</p>",
+    `<p>${closing}</p>`,
     '<p style="color:#666">— Vargas JR</p>',
   ].join("");
   return { subject, text, html };

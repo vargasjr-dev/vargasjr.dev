@@ -57,3 +57,14 @@ test("buildCaseClosedEmail names the case and the next-release note", () => {
   assert.ok(!html.includes("<hardcode>"));
   assert.ok(html.includes("&lt;hardcode&gt;"));
 });
+
+test("buildCaseClosedEmail keeps the closing sentence whole in both formats", () => {
+  const { text, html } = buildCaseClosedEmail(9, "example case");
+  // The HTML body joins its lines with no separator, so a sentence split
+  // across array entries renders glued — "looksoff". Both formats must
+  // carry the sentence as one unbroken string.
+  assert.ok(text.includes("still looks off after you upgrade"));
+  assert.ok(html.includes("still looks off after you upgrade"));
+  assert.ok(!text.includes("looksoff"));
+  assert.ok(!html.includes("looksoff"));
+});
